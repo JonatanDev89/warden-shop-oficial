@@ -9,6 +9,7 @@ import { toast } from "sonner";
 
 export default function ApiDocsPage() {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const baseUrl = typeof window !== "undefined" ? `${window.location.origin}/api/trpc` : "/api/trpc";
 
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
@@ -135,7 +136,7 @@ export default function ApiDocsPage() {
             </CardHeader>
             <CardContent>
               <CodeBlock
-                code="https://wardenshop-8k5n6vk7.manus.space/api/trpc"
+                code={baseUrl}
                 id="base-url"
               />
               <p className="text-xs text-muted-foreground mt-3">
@@ -181,7 +182,7 @@ export default function ApiDocsPage() {
 }`}
                 example={`// JavaScript/TypeScript
 const response = await fetch(
-  'https://wardenshop-8k5n6vk7.manus.space/api/trpc/shop.getSettings'
+  '\${baseUrl}/shop.getSettings'
 );
 const settings = await response.json();
 console.log(settings.result.data);`}
@@ -202,7 +203,7 @@ console.log(settings.result.data);`}
 }[]`}
                 example={`// JavaScript
 const response = await fetch(
-  'https://wardenshop-8k5n6vk7.manus.space/api/trpc/shop.getCategories'
+  '\${baseUrl}/shop.getCategories'
 );
 const categories = await response.json();
 categories.result.data.forEach(cat => {
@@ -228,7 +229,7 @@ categories.result.data.forEach(cat => {
 }[]`}
                 example={`// JavaScript
 const response = await fetch(
-  'https://wardenshop-8k5n6vk7.manus.space/api/trpc/shop.getProducts'
+  '\${baseUrl}/shop.getProducts'
 );
 const products = await response.json();
 products.result.data.forEach(p => {
@@ -252,7 +253,7 @@ products.result.data.forEach(p => {
 }[]`}
                 example={`// JavaScript
 const response = await fetch(
-  'https://wardenshop-8k5n6vk7.manus.space/api/trpc/shop.searchProducts?input={"query":"kit"}'
+  '\${baseUrl}/shop.searchProducts?input={"query":"kit"}'
 );
 const results = await response.json();
 console.log(results.result.data);`}
@@ -273,7 +274,7 @@ console.log(results.result.data);`}
 }`}
                 example={`// JavaScript
 const response = await fetch(
-  'https://wardenshop-8k5n6vk7.manus.space/api/trpc/shop.validateCoupon',
+  '\${baseUrl}/shop.validateCoupon',
   {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -307,7 +308,7 @@ console.log(\`Desconto: \${result.result.data.discount}%\`);`}
 }`}
                 example={`// JavaScript
 const response = await fetch(
-  'https://wardenshop-8k5n6vk7.manus.space/api/trpc/shop.createOrder',
+  '\${baseUrl}/shop.createOrder',
   {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -354,7 +355,7 @@ console.log(\`Pedido criado: #\${order.result.data.id}\`);`}
 }`}
                 example={`// JavaScript
 const response = await fetch(
-  'https://wardenshop-8k5n6vk7.manus.space/api/trpc/addon.health',
+  '\${baseUrl}/addon.health',
   {
     headers: {
       'Authorization': 'Bearer warden_xxxxx...'
@@ -382,7 +383,7 @@ console.log(health.result.data.status);`}
 }[]`}
                 example={`// JavaScript
 const response = await fetch(
-  'https://wardenshop-8k5n6vk7.manus.space/api/trpc/addon.getPendingOrders',
+  '\${baseUrl}/addon.getPendingOrders',
   {
     headers: {
       'Authorization': 'Bearer warden_xxxxx...'
@@ -411,7 +412,7 @@ orders.result.data.forEach(order => {
 }`}
                 example={`// JavaScript
 const response = await fetch(
-  'https://wardenshop-8k5n6vk7.manus.space/api/trpc/addon.markDelivered',
+  '\${baseUrl}/addon.markDelivered',
   {
     method: 'POST',
     headers: {
@@ -604,3 +605,4 @@ console.log(result.result.data.message);`}
     </ShopLayout>
   );
 }
+
