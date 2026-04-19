@@ -1,1 +1,0 @@
-ALTER TABLE `categories` ADD `imageUrl` text;
