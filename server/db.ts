@@ -291,10 +291,15 @@ export async function deleteCoupon(id: number) {
 export async function incrementCouponUsage(code: string) {
   const db = await getDb();
   if (!db) return;
+  
+  const upperCode = code.toUpperCase();
+  const coupon = await getCouponByCode(upperCode);
+  if (!coupon) return;
+  
   await db
     .update(coupons)
-    .set({ usageCount: sql`usageCount + 1` })
-    .where(eq(coupons.code, code.toUpperCase()));
+    .set({ usageCount: (coupon.usageCount ?? 0) + 1 })
+    .where(eq(coupons.code, upperCode));
 }
 
 // ─── Orders ────────────────────────────────────────────────────────────────────
