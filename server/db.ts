@@ -25,6 +25,7 @@ export async function getDb() {
       const pool = new Pool({
         connectionString: process.env.DATABASE_URL,
         ssl: { rejectUnauthorized: false },
+        family: 4,
       });
       // Test connection
       pool.on("error", (err) => console.error("[Database] Pool error:", err.message));
