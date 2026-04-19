@@ -1,0 +1,1 @@
+ALTER TABLE `orders` MODIFY COLUMN `status` enum('pending_approval','game_pending','delivered','cancelled') NOT NULL DEFAULT 'pending_approval';

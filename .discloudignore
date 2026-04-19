@@ -1,0 +1,17 @@
+node_modules
+client
+drizzle
+patches
+.manus
+.manus-logs
+.vscode
+.git
+*.mjs
+*.sql
+*.md
+.env
+.prettierrc
+.prettierignore
+drizzle.config.ts
+components.json
+pnpm-lock.yaml

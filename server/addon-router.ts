@@ -1,0 +1,243 @@
+/**
+ * Router tRPC para endpoints do addon Minecraft Bedrock
+ * Endpoints: /api/trpc/addon.*
+ */
+
+import { z } from "zod";
+import { TRPCError } from "@trpc/server";
+import { publicProcedure, router } from "./_core/trpc";
+import {
+  getPendingOrdersForAddon,
+  markOrderAsDelivered,
+  getOrderForAddon,
+  updateOrderStatusForAddon,
+} from "./addon-helpers";
+import crypto from "crypto";
+
+/**
+ * Validar API Key do addon
+ * Compara o hash SHA-256 da chave fornecida com as chaves armazenadas
+ */
+async function validateAddonApiKey(apiKey: string): Promise<boolean> {
+  if (!apiKey || !apiKey.startsWith("warden_")) {
+    return false;
+  }
+
+  try {
+    // Importar função de validação de API Key
+    const { getDb } = await import("./db");
+    const { apiKeys } = await import("../drizzle/schema");
+    const { eq } = await import("drizzle-orm");
+
+    const db = await getDb();
+    if (!db) return false;
+
+    // Hash da chave fornecida
+    const keyHash = crypto.createHash("sha256").update(apiKey).digest("hex");
+
+    // Procurar chave no banco
+    const result = await db
+      .select()
+      .from(apiKeys)
+      .where(eq(apiKeys.keyHash, keyHash))
+      .limit(1);
+
+    if (result.length === 0) return false;
+
+    const key = result[0];
+    return key && key.active === true;
+  } catch (error) {
+    console.error("[Addon] Erro ao validar API Key:", error);
+    return false;
+  }
+}
+
+export const addonRouter = router({
+  /**
+   * Health check - verifica se a API está online
+   * GET /api/trpc/addon.health
+   */
+  health: publicProcedure.query(async () => {
+    return {
+      status: "ok",
+      timestamp: new Date().toISOString(),
+      version: "1.0.0",
+    };
+  }),
+
+  /**
+   * Listar pedidos pendentes
+   * POST /api/trpc/addon.getPendingOrders
+   * Body: {"apiKey": "warden_..."}
+   */
+  getPendingOrders: publicProcedure
+    .input(
+      z.object({
+        apiKey: z.string().min(1),
+      })
+    )
+    .mutation(async ({ input }) => {
+      // Validar API Key
+      const isValid = await validateAddonApiKey(input.apiKey);
+      if (!isValid) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "API Key inválida ou revogada",
+        });
+      }
+
+      try {
+        const pendingOrders = await getPendingOrdersForAddon();
+
+        // Formatar resposta para o addon
+        return {
+          success: true,
+          orders: pendingOrders.map((order) => ({
+            id: order.id,
+            orderNumber: order.orderNumber,
+            nickname: order.minecraftNickname,
+            email: order.email,
+            status: order.status,
+            total: parseFloat(order.total.toString()),
+            commands: order.commands
+              ? (() => {
+                  try {
+                    return JSON.parse(order.commands);
+                  } catch {
+                    return [];
+                  }
+                })()
+              : [],
+            createdAt: order.createdAt.toISOString(),
+          })),
+          count: pendingOrders.length,
+        };
+      } catch (error) {
+        console.error("[Addon] Erro ao listar pedidos:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Erro ao listar pedidos",
+        });
+      }
+    }),
+
+  /**
+   * Marcar pedido como entregue
+   * POST /api/trpc/addon.markDelivered
+   * Requer: Authorization: Bearer {API_KEY}
+   */
+  markDelivered: publicProcedure
+    .input(
+      z.object({
+        apiKey: z.string().min(1),
+        orderId: z.number().int().positive(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      // Validar API Key
+      const isValid = await validateAddonApiKey(input.apiKey);
+      if (!isValid) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "API Key inválida ou revogada",
+        });
+      }
+
+      try {
+        // Verificar se pedido existe
+        const order = await getOrderForAddon(input.orderId);
+        if (!order) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: `Pedido #${input.orderId} não encontrado`,
+          });
+        }
+
+        // Marcar como entregue
+        const success = await markOrderAsDelivered(input.orderId);
+
+        if (!success) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Erro ao atualizar pedido",
+          });
+        }
+
+        return {
+          success: true,
+          orderId: input.orderId,
+          message: `Pedido #${input.orderId} marcado como entregue`,
+        };
+      } catch (error) {
+        console.error("[Addon] Erro ao marcar entregue:", error);
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Erro ao processar pedido",
+        });
+      }
+    }),
+
+  /**
+   * Obter detalhes de um pedido específico
+   * GET /api/trpc/addon.getOrder
+   * Requer: Authorization: Bearer {API_KEY}
+   */
+  getOrder: publicProcedure
+    .input(
+      z.object({
+        apiKey: z.string().min(1),
+        orderId: z.number().int().positive(),
+      })
+    )
+    .query(async ({ input }) => {
+      // Validar API Key
+      const isValid = await validateAddonApiKey(input.apiKey);
+      if (!isValid) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "API Key inválida ou revogada",
+        });
+      }
+
+      try {
+        const order = await getOrderForAddon(input.orderId);
+
+        if (!order) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: `Pedido #${input.orderId} não encontrado`,
+          });
+        }
+
+        return {
+          success: true,
+          order: {
+            id: order.id,
+            orderNumber: order.orderNumber,
+            nickname: order.minecraftNickname,
+            email: order.email,
+            status: order.status,
+            total: parseFloat(order.total.toString()),
+            commands: order.commands
+              ? (() => {
+                  try {
+                    return JSON.parse(order.commands);
+                  } catch {
+                    return [];
+                  }
+                })()
+              : [],
+            createdAt: order.createdAt.toISOString(),
+          },
+        };
+      } catch (error) {
+        console.error("[Addon] Erro ao obter pedido:", error);
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Erro ao obter pedido",
+        });
+      }
+    }),
+});
