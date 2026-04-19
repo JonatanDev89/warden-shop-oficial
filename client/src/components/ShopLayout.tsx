@@ -1,5 +1,5 @@
 import { trpc } from "@/lib/trpc";
-import { Search, ShoppingBag, Sword, Menu, X } from "lucide-react";
+import { Search, ShoppingBag, Sword, Menu, X, BadgeCheck } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -59,9 +59,12 @@ export default function ShopLayout({ children }: ShopLayoutProps) {
                 </div>
               )}
               <div className="hidden sm:block">
-                <span className="font-bold text-lg text-foreground" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-                  {storeName}
-                </span>
+                <div className="flex items-center gap-1">
+                  <span className="font-bold text-lg text-foreground" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                    {storeName}
+                  </span>
+                  <BadgeCheck className="h-5 w-5 text-primary" />
+                </div>
                 <p className="text-xs text-muted-foreground leading-none">Loja oficial</p>
               </div>
             </Link>
