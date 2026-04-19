@@ -21,13 +21,18 @@ let _db: ReturnType<typeof drizzle> | null = null;
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
+      console.log("[Database] Connecting to:", process.env.DATABASE_URL.replace(/:([^:@]+)@/, ":***@"));
       const pool = new Pool({
         connectionString: process.env.DATABASE_URL,
         ssl: { rejectUnauthorized: false },
       });
+      // Test connection
+      pool.on("error", (err) => console.error("[Database] Pool error:", err.message));
+      await pool.query("SELECT 1");
+      console.log("[Database] Connected successfully");
       _db = drizzle(pool);
     } catch (error) {
-      console.warn("[Database] Failed to connect:", error);
+      console.error("[Database] Failed to connect:", error);
       _db = null;
     }
   }
