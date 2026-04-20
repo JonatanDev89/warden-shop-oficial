@@ -155,6 +155,11 @@ async function startServer() {
     }
   });
   
+  // Ping endpoint para manter o servidor acordado
+  app.get("/ping", (_req, res) => {
+    res.status(200).send("ok");
+  });
+
   // tRPC API
   app.use(
     "/api/trpc",
