@@ -354,10 +354,10 @@ const adminRouter = router({
   // Webhooks
   getWebhooks: adminProcedure.query(() => getWebhooks()),
   createWebhook: adminProcedure
-    .input(z.object({ type: z.enum(["receipt", "notification"]), url: z.string().url() }))
+    .input(z.object({ type: z.enum(["receipt", "notification"]), url: z.string().url(), message: z.string().optional(), msgPendente: z.string().optional(), msgAceito: z.string().optional(), msgRecusado: z.string().optional(), msgEntregue: z.string().optional(), msgDeletado: z.string().optional() }))
     .mutation(({ input }) => createWebhook(input)),
   updateWebhook: adminProcedure
-    .input(z.object({ id: z.number(), url: z.string().url().optional(), active: z.boolean().optional() }))
+    .input(z.object({ id: z.number(), url: z.string().url().optional(), active: z.boolean().optional(), message: z.string().optional(), msgPendente: z.string().optional(), msgAceito: z.string().optional(), msgRecusado: z.string().optional(), msgEntregue: z.string().optional(), msgDeletado: z.string().optional() }))
     .mutation(({ input }) => {
       const { id, ...data } = input;
       return updateWebhook(id, data);

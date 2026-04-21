@@ -58,14 +58,14 @@ export default function ShopLayout({ children }: ShopLayoutProps) {
                   <Sword className="h-5 w-5 text-primary-foreground" />
                 </div>
               )}
-              <div className="hidden sm:block">
+              <div className="block">
                 <div className="flex items-center gap-1">
-                  <span className="font-bold text-lg text-foreground" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                  <span className="font-bold text-base sm:text-lg text-foreground" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                     {storeName}
                   </span>
-                  <BadgeCheck className="h-5 w-5 text-primary" />
+                  <BadgeCheck className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                 </div>
-                <p className="text-xs text-muted-foreground leading-none">Loja oficial</p>
+                <p className="text-xs text-muted-foreground leading-none hidden sm:block">Loja oficial</p>
               </div>
             </Link>
 
@@ -169,9 +169,13 @@ export default function ShopLayout({ children }: ShopLayoutProps) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <div className="h-7 w-7 rounded bg-primary flex items-center justify-center">
-                  <Sword className="h-4 w-4 text-primary-foreground" />
-                </div>
+                {logoUrl ? (
+                  <img src={logoUrl} alt={storeName} className="h-7 w-7 object-contain rounded" />
+                ) : (
+                  <div className="h-7 w-7 rounded bg-primary flex items-center justify-center">
+                    <Sword className="h-4 w-4 text-primary-foreground" />
+                  </div>
+                )}
                 <span className="font-bold text-foreground" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                   {storeName}
                 </span>

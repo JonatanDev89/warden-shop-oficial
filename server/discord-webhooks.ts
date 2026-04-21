@@ -4,11 +4,7 @@ interface DiscordEmbed {
   title: string;
   description: string;
   color: number;
-  fields?: Array<{
-    name: string;
-    value: string;
-    inline?: boolean;
-  }>;
+  fields?: Array<{ name: string; value: string; inline?: boolean }>;
   timestamp?: string;
 }
 
@@ -21,12 +17,9 @@ async function sendWebhook(webhookUrl: string, message: DiscordMessage): Promise
   try {
     const response = await fetch(webhookUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(message),
     });
-
     return response.ok;
   } catch (error) {
     console.error('Erro ao enviar webhook Discord:', error);
@@ -34,150 +27,138 @@ async function sendWebhook(webhookUrl: string, message: DiscordMessage): Promise
   }
 }
 
-/**
- * Notifica quando um novo pedido é criado e aguarda aprovação
- */
+function applyVariables(template: string, order: any): string {
+  return template
+    .replace(/\{nick\}/g, order.minecraftNickname ?? '')
+    .replace(/\{pedido\}/g, order.orderNumber ?? '')
+    .replace(/\{total\}/g, `R$ ${parseFloat(String(order.total)).toFixed(2)}`)
+    .replace(/\{email\}/g, order.email ?? '')
+    .replace(/\{data\}/g, new Date().toLocaleString('pt-BR'))
+    .replace(/\{status\}/g, order.status ?? '');
+}
+
 export async function notifyPendingOrder(order: any) {
   const webhooks = await getActiveWebhooksByType('notification');
-  if (!webhooks || webhooks.length === 0) {
-    console.log('[Discord] Sem webhooks de notificação configurados');
-    return;
-  }
-
-  const embed: DiscordEmbed = {
-    title: '📋 Pedido Pendente',
-    description: `Novo pedido aguardando aprovação do administrador`,
-    color: 0xFFA500, // Orange
-    fields: [
-      { name: 'Número do Pedido', value: `#${order.orderNumber}`, inline: true },
-      { name: 'Jogador', value: order.minecraftNickname, inline: true },
-      { name: 'Total', value: `R$ ${(typeof order.total === 'string' ? parseFloat(order.total) : order.total).toFixed(2)}`, inline: true },
-      { name: 'Data', value: new Date().toLocaleString('pt-BR'), inline: true },
-    ],
-    timestamp: new Date().toISOString(),
-  };
-
+  if (!webhooks?.length) return;
   for (const webhook of webhooks) {
+    const customMsg = webhook.msgPendente ? applyVariables(webhook.msgPendente, order) : null;
+    const embed: DiscordEmbed = {
+      title: '📋 Pedido Pendente',
+      description: customMsg ?? 'Novo pedido aguardando aprovação do administrador',
+      color: 0xFFA500,
+      fields: customMsg ? [] : [
+        { name: 'Número do Pedido', value: `#${order.orderNumber}`, inline: true },
+        { name: 'Jogador', value: order.minecraftNickname, inline: true },
+        { name: 'Total', value: `R$ ${parseFloat(String(order.total)).toFixed(2)}`, inline: true },
+        { name: 'Data', value: new Date().toLocaleString('pt-BR'), inline: true },
+      ],
+      timestamp: new Date().toISOString(),
+    };
     await sendWebhook(webhook.url, { embeds: [embed] });
   }
 }
 
-/**
- * Notifica quando um pedido é aceito pelo administrador
- */
 export async function notifyOrderAccepted(order: any) {
   const webhooks = await getActiveWebhooksByType('notification');
-  if (!webhooks || webhooks.length === 0) {
-    console.log('[Discord] Sem webhooks de notificação configurados');
-    return;
-  }
-
-  const embed: DiscordEmbed = {
-    title: '✅ Pedido Aceito',
-    description: `Pedido aprovado e pronto para entrega no jogo`,
-    color: 0x00FF00, // Green
-    fields: [
-      { name: 'Número do Pedido', value: `#${order.orderNumber}`, inline: true },
-      { name: 'Jogador', value: order.minecraftNickname, inline: true },
-      { name: 'Total', value: `R$ ${(typeof order.total === 'string' ? parseFloat(order.total) : order.total).toFixed(2)}`, inline: true },
-      { name: 'Data de Aprovação', value: new Date().toLocaleString('pt-BR'), inline: true },
-    ],
-    timestamp: new Date().toISOString(),
-  };
-
+  if (!webhooks?.length) return;
   for (const webhook of webhooks) {
+    const customMsg = webhook.msgAceito ? applyVariables(webhook.msgAceito, order) : null;
+    const embed: DiscordEmbed = {
+      title: '✅ Pedido Aceito',
+      description: customMsg ?? 'Pedido aprovado e pronto para entrega no jogo',
+      color: 0x00FF00,
+      fields: customMsg ? [] : [
+        { name: 'Número do Pedido', value: `#${order.orderNumber}`, inline: true },
+        { name: 'Jogador', value: order.minecraftNickname, inline: true },
+        { name: 'Total', value: `R$ ${parseFloat(String(order.total)).toFixed(2)}`, inline: true },
+        { name: 'Data de Aprovação', value: new Date().toLocaleString('pt-BR'), inline: true },
+      ],
+      timestamp: new Date().toISOString(),
+    };
     await sendWebhook(webhook.url, { embeds: [embed] });
   }
 }
 
-/**
- * Notifica quando um pedido é rejeitado pelo administrador
- */
 export async function notifyOrderRejected(order: any) {
   const webhooks = await getActiveWebhooksByType('notification');
-  if (!webhooks || webhooks.length === 0) {
-    console.log('[Discord] Sem webhooks de notificação configurados');
-    return;
-  }
-
-  const embed: DiscordEmbed = {
-    title: '❌ Pedido Recusado',
-    description: `Pedido foi recusado pelo administrador`,
-    color: 0xFF0000, // Red
-    fields: [
-      { name: 'Número do Pedido', value: `#${order.orderNumber}`, inline: true },
-      { name: 'Jogador', value: order.minecraftNickname, inline: true },
-      { name: 'Total', value: `R$ ${(typeof order.total === 'string' ? parseFloat(order.total) : order.total).toFixed(2)}`, inline: true },
-      { name: 'Data de Recusa', value: new Date().toLocaleString('pt-BR'), inline: true },
-    ],
-    timestamp: new Date().toISOString(),
-  };
-
+  if (!webhooks?.length) return;
   for (const webhook of webhooks) {
+    const customMsg = webhook.msgRecusado ? applyVariables(webhook.msgRecusado, order) : null;
+    const embed: DiscordEmbed = {
+      title: '❌ Pedido Recusado',
+      description: customMsg ?? 'Pedido foi recusado pelo administrador',
+      color: 0xFF0000,
+      fields: customMsg ? [] : [
+        { name: 'Número do Pedido', value: `#${order.orderNumber}`, inline: true },
+        { name: 'Jogador', value: order.minecraftNickname, inline: true },
+        { name: 'Total', value: `R$ ${parseFloat(String(order.total)).toFixed(2)}`, inline: true },
+        { name: 'Data de Recusa', value: new Date().toLocaleString('pt-BR'), inline: true },
+      ],
+      timestamp: new Date().toISOString(),
+    };
     await sendWebhook(webhook.url, { embeds: [embed] });
   }
 }
 
-/**
- * Notifica quando um pedido é entregue com sucesso no jogo
- */
 export async function notifyOrderDelivered(order: any) {
   const webhooks = await getActiveWebhooksByType('notification');
-  if (!webhooks || webhooks.length === 0) {
-    console.log('[Discord] Sem webhooks de notificação configurados');
-    return;
-  }
-
-  const embed: DiscordEmbed = {
-    title: '🎁 Pedido Entregue',
-    description: `Pedido foi entregue com sucesso no jogo!`,
-    color: 0x0099FF, // Blue
-    fields: [
-      { name: 'Número do Pedido', value: `#${order.orderNumber}`, inline: true },
-      { name: 'Jogador', value: order.minecraftNickname, inline: true },
-      { name: 'Total', value: `R$ ${(typeof order.total === 'string' ? parseFloat(order.total) : order.total).toFixed(2)}`, inline: true },
-      { name: 'Data de Entrega', value: new Date().toLocaleString('pt-BR'), inline: true },
-    ],
-    timestamp: new Date().toISOString(),
-  };
-
+  if (!webhooks?.length) return;
   for (const webhook of webhooks) {
+    const customMsg = webhook.msgEntregue ? applyVariables(webhook.msgEntregue, order) : null;
+    const embed: DiscordEmbed = {
+      title: '🎁 Pedido Entregue',
+      description: customMsg ?? 'Pedido foi entregue com sucesso no jogo!',
+      color: 0x0099FF,
+      fields: customMsg ? [] : [
+        { name: 'Número do Pedido', value: `#${order.orderNumber}`, inline: true },
+        { name: 'Jogador', value: order.minecraftNickname, inline: true },
+        { name: 'Total', value: `R$ ${parseFloat(String(order.total)).toFixed(2)}`, inline: true },
+        { name: 'Data de Entrega', value: new Date().toLocaleString('pt-BR'), inline: true },
+      ],
+      timestamp: new Date().toISOString(),
+    };
     await sendWebhook(webhook.url, { embeds: [embed] });
   }
 }
 
-/**
- * Envia comprovante de entrega (sem expor email do jogador)
- * Este webhook é enviado para um canal separado de recibos
- * APENAS quando o pedido é entregue com sucesso
- */
-export async function sendDeliveryReceipt(order: any) {
-  // Só envia comprovante se o pedido foi entregue
-  if (order.status !== 'delivered') {
-    console.log(`[Discord] Comprovante não enviado: pedido ${order.orderNumber} não foi entregue (status: ${order.status})`);
-    return;
-  }
-
-  const webhooks = await getActiveWebhooksByType('receipt');
-  if (!webhooks || webhooks.length === 0) {
-    console.log('[Discord] Sem webhooks de recibos configurados');
-    return;
-  }
-
-  const embed: DiscordEmbed = {
-    title: '🎁 Comprovante de Entrega',
-    description: `Pedido entregue com sucesso no jogo!`,
-    color: 0x00FF00, // Green
-    fields: [
-      { name: 'Número do Pedido', value: `#${order.orderNumber}`, inline: true },
-      { name: 'Jogador', value: order.minecraftNickname, inline: true },
-      { name: 'Total', value: `R$ ${(typeof order.total === 'string' ? parseFloat(order.total) : order.total).toFixed(2)}`, inline: true },
-      { name: 'Data de Entrega', value: new Date().toLocaleString('pt-BR'), inline: true },
-    ],
-    timestamp: new Date().toISOString(),
-  };
-
+export async function notifyOrderDeleted(order: any) {
+  const webhooks = await getActiveWebhooksByType('notification');
+  if (!webhooks?.length) return;
   for (const webhook of webhooks) {
+    const customMsg = webhook.msgDeletado ? applyVariables(webhook.msgDeletado, order) : null;
+    const embed: DiscordEmbed = {
+      title: '🗑️ Pedido Deletado',
+      description: customMsg ?? 'Pedido foi removido do sistema',
+      color: 0x888888,
+      fields: customMsg ? [] : [
+        { name: 'Número do Pedido', value: `#${order.orderNumber}`, inline: true },
+        { name: 'Jogador', value: order.minecraftNickname, inline: true },
+        { name: 'Data', value: new Date().toLocaleString('pt-BR'), inline: true },
+      ],
+      timestamp: new Date().toISOString(),
+    };
+    await sendWebhook(webhook.url, { embeds: [embed] });
+  }
+}
+
+export async function sendDeliveryReceipt(order: any) {
+  if (order.status !== 'delivered') return;
+  const webhooks = await getActiveWebhooksByType('receipt');
+  if (!webhooks?.length) return;
+  for (const webhook of webhooks) {
+    const customMsg = webhook.msgEntregue ? applyVariables(webhook.msgEntregue, order) : null;
+    const embed: DiscordEmbed = {
+      title: '🎁 Comprovante de Entrega',
+      description: customMsg ?? 'Pedido entregue com sucesso no jogo!',
+      color: 0x00FF00,
+      fields: customMsg ? [] : [
+        { name: 'Número do Pedido', value: `#${order.orderNumber}`, inline: true },
+        { name: 'Jogador', value: order.minecraftNickname, inline: true },
+        { name: 'Total', value: `R$ ${parseFloat(String(order.total)).toFixed(2)}`, inline: true },
+        { name: 'Data de Entrega', value: new Date().toLocaleString('pt-BR'), inline: true },
+      ],
+      timestamp: new Date().toISOString(),
+    };
     await sendWebhook(webhook.url, { embeds: [embed] });
   }
 }

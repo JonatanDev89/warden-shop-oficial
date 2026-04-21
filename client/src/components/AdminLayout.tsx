@@ -1,5 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
 import {
@@ -40,6 +41,9 @@ interface AdminLayoutProps {
 
 export default function AdminLayout({ children, title }: AdminLayoutProps) {
   const { user, isAuthenticated, loading, logout } = useAuth();
+  const { data: settings } = trpc.shop.getSettings.useQuery();
+  const logoUrl = settings?.logoUrl ?? "";
+  const storeName = settings?.storeName ?? "Warden Shop";
   const [location] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -95,12 +99,16 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
       {/* Logo */}
       <div className="p-4 border-b border-border">
         <Link href="/" className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded bg-primary flex items-center justify-center">
-            <Sword className="h-5 w-5 text-primary-foreground" />
-          </div>
+          {logoUrl ? (
+            <img src={logoUrl} alt={storeName} className="h-8 w-8 object-contain rounded" />
+          ) : (
+            <div className="h-8 w-8 rounded bg-primary flex items-center justify-center">
+              <Sword className="h-5 w-5 text-primary-foreground" />
+            </div>
+          )}
           <div>
             <p className="font-bold text-sm text-foreground" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-              Warden Shop
+              {storeName}
             </p>
             <p className="text-xs text-muted-foreground">Admin Panel</p>
           </div>

@@ -69,7 +69,7 @@ export default function Home() {
 
         <div className="container relative z-10 py-20">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div>
+            <div className="relative">
               <Badge
               variant="outline"
               className="mb-4 border-primary/50 text-primary bg-primary/10 text-xs tracking-widest uppercase"
@@ -83,13 +83,34 @@ export default function Home() {
               {heroTitle}
             </h1>
             <p className="text-lg text-muted-foreground mb-8 leading-relaxed">{heroSubtitle}</p>
-            <div className="flex flex-wrap gap-3">
+
+            {/* Mobile: warden à direita + botões empilhados */}
+            <div className="lg:hidden flex items-center gap-4 mb-6">
+              <div className="flex flex-col gap-3 flex-1">
+                <Link href="/loja">
+                  <Button size="lg" className="gap-2 font-semibold w-full" style={{ boxShadow: "0 0 20px oklch(0.65 0.22 200 / 0.4)" }}>
+                    <Sword className="h-5 w-5" />
+                    Ver Produtos
+                  </Button>
+                </Link>
+                <Link href="/api-docs">
+                  <Button size="lg" variant="outline" className="gap-2 border-border/60 w-full">
+                    <Zap className="h-5 w-5" />
+                    API Docs
+                  </Button>
+                </Link>
+              </div>
+              <img
+                src={wardenGifUrl}
+                alt="Warden Minecraft"
+                className="w-32 h-32 object-contain drop-shadow-2xl shrink-0"
+              />
+            </div>
+
+            {/* Desktop: botões lado a lado */}
+            <div className="hidden lg:flex flex-wrap gap-3">
               <Link href="/loja">
-                <Button
-                  size="lg"
-                  className="gap-2 font-semibold"
-                  style={{ boxShadow: "0 0 20px oklch(0.65 0.22 200 / 0.4)" }}
-                >
+                <Button size="lg" className="gap-2 font-semibold" style={{ boxShadow: "0 0 20px oklch(0.65 0.22 200 / 0.4)" }}>
                   <Sword className="h-5 w-5" />
                   Ver Produtos
                 </Button>
@@ -102,7 +123,7 @@ export default function Home() {
               </Link>
             </div>
             </div>
-            {/* Warden GIF */}
+            {/* Warden GIF desktop */}
             <div className="hidden lg:flex items-center justify-center">
               <img
                 src={wardenGifUrl}
@@ -110,44 +131,6 @@ export default function Home() {
                 className="w-full max-w-sm drop-shadow-2xl"
               />
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Features ── */}
-      <section className="py-12 border-b border-border">
-        <div className="container">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              {
-                icon: Package,
-                title: "Entrega no Jogo",
-                desc: "Itens entregues diretamente no seu personagem via addon.",
-              },
-              {
-                icon: Shield,
-                title: "Compra Segura",
-                desc: "Seus dados são protegidos e o pedido é confirmado pelo admin.",
-              },
-              {
-                icon: MessageCircle,
-                title: "Suporte Discord",
-                desc: "Equipe disponível no Discord para qualquer dúvida.",
-              },
-            ].map(({ icon: Icon, title, desc }) => (
-              <div
-                key={title}
-                className="flex items-start gap-4 p-5 rounded-lg bg-card border border-border hover:border-primary/40 transition-colors"
-              >
-                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <Icon className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-foreground mb-1">{title}</h3>
-                  <p className="text-sm text-muted-foreground">{desc}</p>
-                </div>
-              </div>
-            ))}
           </div>
         </div>
       </section>
@@ -197,6 +180,44 @@ export default function Home() {
               })}
             </div>
           )}
+        </div>
+      </section>
+
+      {/* ── Features ── */}
+      <section className="py-12 border-b border-border">
+        <div className="container">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              {
+                icon: Package,
+                title: "Entrega no Jogo",
+                desc: "Itens entregues diretamente no seu personagem via addon.",
+              },
+              {
+                icon: Shield,
+                title: "Compra Segura",
+                desc: "Seus dados são protegidos e o pedido é confirmado pelo admin.",
+              },
+              {
+                icon: MessageCircle,
+                title: "Suporte Discord",
+                desc: "Equipe disponível no Discord para qualquer dúvida.",
+              },
+            ].map(({ icon: Icon, title, desc }) => (
+              <div
+                key={title}
+                className="flex items-start gap-4 p-5 rounded-lg bg-card border border-border hover:border-primary/40 transition-colors"
+              >
+                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <Icon className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground mb-1">{title}</h3>
+                  <p className="text-sm text-muted-foreground">{desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 

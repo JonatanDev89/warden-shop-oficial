@@ -11,7 +11,6 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Sword, Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "wouter";
-
 const loginSchema = z.object({
   email: z.string().email("Email inválido"),
   password: z.string().min(1, "Senha obrigatória"),
@@ -35,6 +34,9 @@ export default function LoginPage() {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [showPassword, setShowPassword] = useState(false);
   const utils = trpc.useUtils();
+  const { data: settings } = trpc.shop.getSettings.useQuery();
+  const logoUrl = settings?.logoUrl ?? "";
+  const storeName = settings?.storeName ?? "Warden Shop";
 
   const loginForm = useForm<LoginForm>({ resolver: zodResolver(loginSchema) });
   const registerForm = useForm<RegisterForm>({ resolver: zodResolver(registerSchema) });
@@ -81,11 +83,15 @@ export default function LoginPage() {
         <div className="flex flex-col items-center mb-8">
           <Link href="/">
             <div className="flex items-center gap-3 cursor-pointer">
-              <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center shadow-lg" style={{ boxShadow: "0 0 24px oklch(0.65 0.22 200 / 0.4)" }}>
-                <Sword className="h-6 w-6 text-primary-foreground" />
-              </div>
+              {logoUrl ? (
+                <img src={logoUrl} alt={storeName} className="h-12 w-12 object-contain rounded-xl shadow-lg" style={{ boxShadow: "0 0 24px oklch(0.65 0.22 200 / 0.4)" }} />
+              ) : (
+                <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center shadow-lg" style={{ boxShadow: "0 0 24px oklch(0.65 0.22 200 / 0.4)" }}>
+                  <Sword className="h-6 w-6 text-primary-foreground" />
+                </div>
+              )}
               <span className="text-2xl font-bold text-foreground" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-                Warden Shop
+                {storeName}
               </span>
             </div>
           </Link>

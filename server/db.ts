@@ -469,13 +469,13 @@ export async function getWebhooks() {
   return db.select().from(discordWebhooks).orderBy(desc(discordWebhooks.createdAt));
 }
 
-export async function createWebhook(data: { type: "receipt" | "notification"; url: string }) {
+export async function createWebhook(data: { type: "receipt" | "notification"; url: string; message?: string; msgPendente?: string; msgAceito?: string; msgRecusado?: string; msgEntregue?: string; msgDeletado?: string }) {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
   await db.insert(discordWebhooks).values({ ...data, active: true });
 }
 
-export async function updateWebhook(id: number, data: { url?: string; active?: boolean }) {
+export async function updateWebhook(id: number, data: { url?: string; active?: boolean; message?: string; msgPendente?: string; msgAceito?: string; msgRecusado?: string; msgEntregue?: string; msgDeletado?: string }) {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
   await db.update(discordWebhooks).set(data).where(eq(discordWebhooks.id, id));
