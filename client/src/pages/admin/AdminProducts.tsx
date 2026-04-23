@@ -34,7 +34,7 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Loader2, Plus, Pencil, Trash2, Package, GripVertical } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Package, GripVertical, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -45,7 +45,7 @@ type ProductForm = {
   kitContents: string;
   price: string;
   stock: string;
-  imageUrl: string;
+  imageUrls: string[]; // multiple images
   commands: string;
   active: boolean;
 };
@@ -57,7 +57,7 @@ const emptyForm: ProductForm = {
   kitContents: "",
   price: "",
   stock: "-1",
-  imageUrl: "",
+  imageUrls: [""],
   commands: "",
   active: true,
 };
@@ -199,6 +199,15 @@ export default function AdminProducts() {
     const cmdArr: string[] = (() => {
       try { return p.commands ? JSON.parse(p.commands) : []; } catch { return []; }
     })();
+    // Parse imageUrl: JSON array or single URL
+    const imgArr: string[] = (() => {
+      if (!p.imageUrl) return [""];
+      try {
+        const parsed = JSON.parse(p.imageUrl);
+        if (Array.isArray(parsed)) return parsed.length > 0 ? parsed : [""];
+      } catch {}
+      return [p.imageUrl];
+    })();
     setForm({
       categoryId: String(p.categoryId),
       name: p.name,
@@ -206,7 +215,7 @@ export default function AdminProducts() {
       kitContents: kitArr.join("\n"),
       price: String(p.price),
       stock: String(p.stock),
-      imageUrl: p.imageUrl ?? "",
+      imageUrls: imgArr,
       commands: cmdArr.join("\n"),
       active: p.active,
     });
@@ -222,6 +231,14 @@ export default function AdminProducts() {
       ? JSON.stringify(form.commands.split("\n").map((s) => s.trim()).filter(Boolean))
       : undefined;
 
+    // Serialize images: single URL stays as plain string, multiple as JSON array
+    const validImages = form.imageUrls.map((u) => u.trim()).filter(Boolean);
+    const imageUrl = validImages.length === 0
+      ? undefined
+      : validImages.length === 1
+        ? validImages[0]
+        : JSON.stringify(validImages);
+
     if (editingId) {
       updateProduct.mutate({
         id: editingId,
@@ -231,7 +248,7 @@ export default function AdminProducts() {
         kitContents: kitContentsJson,
         price: form.price,
         stock: parseInt(form.stock),
-        imageUrl: form.imageUrl || undefined,
+        imageUrl,
         commands: commandsJson,
         active: form.active,
       });
@@ -243,7 +260,7 @@ export default function AdminProducts() {
         kitContents: kitContentsJson,
         price: form.price,
         stock: parseInt(form.stock),
-        imageUrl: form.imageUrl || undefined,
+        imageUrl,
         commands: commandsJson,
         active: form.active,
       });
@@ -365,13 +382,54 @@ export default function AdminProducts() {
               </div>
             </div>
             <div>
-              <Label className="text-foreground mb-1.5 block">URL da Imagem</Label>
-              <Input
-                value={form.imageUrl}
-                onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
-                className="bg-muted border-border"
-                placeholder="https://..."
-              />
+              <Label className="text-foreground mb-1.5 block">Imagens do Produto</Label>
+              <div className="space-y-2">
+                {form.imageUrls.map((url, i) => (
+                  <div key={i} className="flex gap-2 items-center">
+                    {/* Thumbnail preview */}
+                    <div className="h-10 w-10 rounded-lg bg-muted border border-border shrink-0 overflow-hidden flex items-center justify-center">
+                      {url.trim() ? (
+                        <img src={url} alt="" className="h-full w-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                      ) : (
+                        <Package className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </div>
+                    <Input
+                      value={url}
+                      onChange={(e) => {
+                        const next = [...form.imageUrls];
+                        next[i] = e.target.value;
+                        setForm({ ...form, imageUrls: next });
+                      }}
+                      className="bg-muted border-border flex-1"
+                      placeholder="https://..."
+                    />
+                    {form.imageUrls.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="text-destructive hover:text-destructive shrink-0"
+                        onClick={() => {
+                          const next = form.imageUrls.filter((_, idx) => idx !== i);
+                          setForm({ ...form, imageUrls: next });
+                        }}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-1 text-xs"
+                  onClick={() => setForm({ ...form, imageUrls: [...form.imageUrls, ""] })}
+                >
+                  <Plus className="h-3 w-3" /> Adicionar imagem
+                </Button>
+              </div>
             </div>
             <div>
               <Label className="text-foreground mb-1.5 block">Comandos Minecraft (um por linha)</Label>
