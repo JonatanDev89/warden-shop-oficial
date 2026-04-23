@@ -5,27 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import ShopLayout from "@/components/ShopLayout";
 import { ChevronRight, Package, Shield, Truck, CreditCard, Check, Infinity } from "lucide-react";
 import { useState } from "react";
-
-// imageUrl can be:
-//   - plain string  → just the main image
-//   - JSON { main: string, kitImages: string[] }
-function parseProductImages(imageUrl: string | null | undefined): {
-  main: string | null;
-  kitImages: string[];
-} {
-  if (!imageUrl) return { main: null, kitImages: [] };
-  try {
-    const parsed = JSON.parse(imageUrl);
-    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-      return {
-        main: parsed.main ?? null,
-        kitImages: Array.isArray(parsed.kitImages) ? parsed.kitImages.filter(Boolean) : [],
-      };
-    }
-  } catch {}
-  // plain string fallback
-  return { main: imageUrl, kitImages: [] };
-}
+import { parseProductImages } from "@/lib/productImages";
 
 export default function ProductPage() {
   const params = useParams<{ id: string }>();

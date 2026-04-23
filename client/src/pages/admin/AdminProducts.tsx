@@ -37,6 +37,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { Loader2, Plus, Pencil, Trash2, Package, GripVertical, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { parseProductImages } from "@/lib/productImages";
 
 type ProductForm = {
   categoryId: string;
@@ -92,11 +93,14 @@ function SortableProduct({
         <GripVertical className="h-4 w-4" />
       </button>
       <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
-        {product.imageUrl ? (
-          <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover rounded-lg" />
-        ) : (
-          <Package className="h-5 w-5 text-muted-foreground" />
-        )}
+        {(() => {
+          const { main } = parseProductImages(product.imageUrl);
+          return main ? (
+            <img src={main} alt={product.name} className="h-full w-full object-cover rounded-lg" />
+          ) : (
+            <Package className="h-5 w-5 text-muted-foreground" />
+          );
+        })()}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">

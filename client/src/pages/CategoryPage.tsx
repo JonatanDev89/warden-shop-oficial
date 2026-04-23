@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import ShopLayout from "@/components/ShopLayout";
 import { ChevronRight, Package, ShoppingCart, Infinity } from "lucide-react";
+import { parseProductImages } from "@/lib/productImages";
 
 export default function CategoryPage() {
   const params = useParams<{ id: string }>();
@@ -61,17 +62,16 @@ export default function CategoryPage() {
                 className="group border-border hover:border-primary/50 transition-all duration-200 hover:shadow-lg hover:shadow-primary/10 bg-card overflow-hidden"
               >
                 <CardContent className="p-5">
-                  {/* Product image placeholder */}
+                  {/* Product image */}
                   <div className="aspect-square w-full rounded-lg bg-muted flex items-center justify-center mb-4 group-hover:bg-primary/5 transition-colors overflow-hidden">
-                    {product.imageUrl ? (
-                      <img
-                        src={product.imageUrl}
-                        alt={product.name}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <Package className="h-10 w-10 text-muted-foreground" />
-                    )}
+                    {(() => {
+                      const { main } = parseProductImages(product.imageUrl);
+                      return main ? (
+                        <img src={main} alt={product.name} className="h-full w-full object-cover" />
+                      ) : (
+                        <Package className="h-10 w-10 text-muted-foreground" />
+                      );
+                    })()}
                   </div>
 
                   <h3
