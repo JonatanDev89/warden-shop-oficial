@@ -62,12 +62,12 @@ export default function CategoryPage() {
               >
                 <CardContent className="p-5">
                   {/* Product image placeholder */}
-                  <div className="h-32 rounded-lg bg-muted flex items-center justify-center mb-4 group-hover:bg-primary/5 transition-colors">
+                  <div className="aspect-square w-full rounded-lg bg-muted flex items-center justify-center mb-4 group-hover:bg-primary/5 transition-colors overflow-hidden">
                     {product.imageUrl ? (
                       <img
                         src={product.imageUrl}
                         alt={product.name}
-                        className="h-full w-full object-cover rounded-lg"
+                        className="h-full w-full object-cover"
                       />
                     ) : (
                       <Package className="h-10 w-10 text-muted-foreground" />
