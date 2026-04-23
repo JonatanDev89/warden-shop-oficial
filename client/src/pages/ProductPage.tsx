@@ -3,17 +3,28 @@ import { Link, useParams } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import ShopLayout from "@/components/ShopLayout";
-import { ChevronRight, Package, Shield, Truck, CreditCard, Check, Infinity, ChevronLeft, ChevronRight as ChevronRightIcon } from "lucide-react";
+import { ChevronRight, Package, Shield, Truck, CreditCard, Check, Infinity, X } from "lucide-react";
 import { useState } from "react";
 
-// Parse imageUrl: supports JSON array or single URL
-function parseImages(imageUrl: string | null | undefined): string[] {
-  if (!imageUrl) return [];
+// imageUrl can be:
+//   - plain string  → just the main image
+//   - JSON { main: string, kitImages: string[] }
+function parseProductImages(imageUrl: string | null | undefined): {
+  main: string | null;
+  kitImages: string[];
+} {
+  if (!imageUrl) return { main: null, kitImages: [] };
   try {
     const parsed = JSON.parse(imageUrl);
-    if (Array.isArray(parsed)) return parsed.filter(Boolean);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return {
+        main: parsed.main ?? null,
+        kitImages: Array.isArray(parsed.kitImages) ? parsed.kitImages.filter(Boolean) : [],
+      };
+    }
   } catch {}
-  return [imageUrl];
+  // plain string fallback
+  return { main: imageUrl, kitImages: [] };
 }
 
 export default function ProductPage() {
@@ -36,8 +47,10 @@ export default function ProductPage() {
     }
   })();
 
-  const images = parseImages(product?.imageUrl);
-  const [activeIndex, setActiveIndex] = useState(0);
+  const { main: mainImage, kitImages } = parseProductImages(product?.imageUrl);
+
+  // lightbox state for kit images
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   if (isLoading) {
     return (
@@ -84,51 +97,30 @@ export default function ProductPage() {
         </nav>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-          {/* Product image gallery */}
+          {/* Product main image */}
           <div className="flex flex-col gap-3">
-            {/* Main image */}
-            <div className="relative aspect-square rounded-xl bg-card border border-border flex items-center justify-center overflow-hidden">
-              {images.length > 0 ? (
+            <div className="aspect-square rounded-xl bg-card border border-border flex items-center justify-center overflow-hidden">
+              {mainImage ? (
                 <img
-                  src={images[activeIndex]}
+                  src={mainImage}
                   alt={product.name}
                   className="h-full w-full object-cover"
                 />
               ) : (
                 <Package className="h-20 w-20 text-muted-foreground" />
               )}
-              {/* Prev/Next arrows when multiple images */}
-              {images.length > 1 && (
-                <>
-                  <button
-                    onClick={() => setActiveIndex((i) => (i - 1 + images.length) % images.length)}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center text-white transition-colors"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => setActiveIndex((i) => (i + 1) % images.length)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center text-white transition-colors"
-                  >
-                    <ChevronRightIcon className="h-4 w-4" />
-                  </button>
-                </>
-              )}
             </div>
-            {/* Thumbnails */}
-            {images.length > 1 && (
+
+            {/* Kit image thumbnails below main image */}
+            {kitImages.length > 0 && (
               <div className="flex gap-2 flex-wrap">
-                {images.map((img, i) => (
+                {kitImages.map((img, i) => (
                   <button
                     key={i}
-                    onClick={() => setActiveIndex(i)}
-                    className={`h-14 w-14 rounded-lg overflow-hidden border-2 transition-all shrink-0 ${
-                      i === activeIndex
-                        ? "border-primary shadow-md shadow-primary/30"
-                        : "border-border hover:border-primary/50"
-                    }`}
+                    onClick={() => setLightboxIndex(i)}
+                    className="h-14 w-14 rounded-lg overflow-hidden border-2 border-primary/60 hover:border-primary transition-all shrink-0 shadow-sm hover:shadow-primary/30 hover:shadow-md"
                   >
-                    <img src={img} alt={`${product.name} ${i + 1}`} className="h-full w-full object-cover" />
+                    <img src={img} alt={`Kit foto ${i + 1}`} className="h-full w-full object-cover" />
                   </button>
                 ))}
               </div>
@@ -234,6 +226,44 @@ export default function ProductPage() {
           )}
         </div>
       </div>
+
+      {/* Lightbox for kit images */}
+      {lightboxIndex !== null && kitImages.length > 0 && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+          onClick={() => setLightboxIndex(null)}
+        >
+          <div className="relative max-w-2xl w-full" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setLightboxIndex(null)}
+              className="absolute -top-10 right-0 text-white/70 hover:text-white transition-colors"
+            >
+              <X className="h-6 w-6" />
+            </button>
+            <img
+              src={kitImages[lightboxIndex]}
+              alt={`Kit foto ${lightboxIndex + 1}`}
+              className="w-full rounded-xl object-contain max-h-[80vh]"
+            />
+            {/* Thumbnail strip inside lightbox */}
+            {kitImages.length > 1 && (
+              <div className="flex gap-2 justify-center mt-3 flex-wrap">
+                {kitImages.map((img, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setLightboxIndex(i)}
+                    className={`h-12 w-12 rounded-lg overflow-hidden border-2 transition-all ${
+                      i === lightboxIndex ? "border-primary" : "border-white/30 hover:border-white/60"
+                    }`}
+                  >
+                    <img src={img} alt="" className="h-full w-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </ShopLayout>
   );
 }

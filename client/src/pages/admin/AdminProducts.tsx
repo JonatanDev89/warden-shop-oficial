@@ -45,7 +45,8 @@ type ProductForm = {
   kitContents: string;
   price: string;
   stock: string;
-  imageUrls: string[]; // multiple images
+  imageUrl: string;      // foto principal
+  kitImages: string[];   // fotos do kit (thumbnails)
   commands: string;
   active: boolean;
 };
@@ -57,7 +58,8 @@ const emptyForm: ProductForm = {
   kitContents: "",
   price: "",
   stock: "-1",
-  imageUrls: [""],
+  imageUrl: "",
+  kitImages: [],
   commands: "",
   active: true,
 };
@@ -199,15 +201,18 @@ export default function AdminProducts() {
     const cmdArr: string[] = (() => {
       try { return p.commands ? JSON.parse(p.commands) : []; } catch { return []; }
     })();
-    // Parse imageUrl: JSON array or single URL
-    const imgArr: string[] = (() => {
-      if (!p.imageUrl) return [""];
+    // Parse imageUrl: JSON { main, kitImages } or plain string
+    let mainUrl = p.imageUrl ?? "";
+    let kitImgs: string[] = [];
+    if (p.imageUrl) {
       try {
         const parsed = JSON.parse(p.imageUrl);
-        if (Array.isArray(parsed)) return parsed.length > 0 ? parsed : [""];
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          mainUrl = parsed.main ?? "";
+          kitImgs = Array.isArray(parsed.kitImages) ? parsed.kitImages.filter(Boolean) : [];
+        }
       } catch {}
-      return [p.imageUrl];
-    })();
+    }
     setForm({
       categoryId: String(p.categoryId),
       name: p.name,
@@ -215,7 +220,8 @@ export default function AdminProducts() {
       kitContents: kitArr.join("\n"),
       price: String(p.price),
       stock: String(p.stock),
-      imageUrls: imgArr,
+      imageUrl: mainUrl,
+      kitImages: kitImgs,
       commands: cmdArr.join("\n"),
       active: p.active,
     });
@@ -231,13 +237,11 @@ export default function AdminProducts() {
       ? JSON.stringify(form.commands.split("\n").map((s) => s.trim()).filter(Boolean))
       : undefined;
 
-    // Serialize images: single URL stays as plain string, multiple as JSON array
-    const validImages = form.imageUrls.map((u) => u.trim()).filter(Boolean);
-    const imageUrl = validImages.length === 0
-      ? undefined
-      : validImages.length === 1
-        ? validImages[0]
-        : JSON.stringify(validImages);
+    // Serialize imageUrl: if kit images exist, store as JSON { main, kitImages }
+    const validKitImages = form.kitImages.map((u) => u.trim()).filter(Boolean);
+    const imageUrl = validKitImages.length > 0
+      ? JSON.stringify({ main: form.imageUrl.trim() || null, kitImages: validKitImages })
+      : form.imageUrl.trim() || undefined;
 
     if (editingId) {
       updateProduct.mutate({
@@ -382,12 +386,29 @@ export default function AdminProducts() {
               </div>
             </div>
             <div>
-              <Label className="text-foreground mb-1.5 block">Imagens do Produto</Label>
+              <Label className="text-foreground mb-1.5 block">Foto Principal do Produto</Label>
+              <div className="flex gap-2 items-center">
+                <div className="h-10 w-10 rounded-lg bg-muted border border-border shrink-0 overflow-hidden flex items-center justify-center">
+                  {form.imageUrl.trim() ? (
+                    <img src={form.imageUrl} alt="" className="h-full w-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                  ) : (
+                    <Package className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </div>
+                <Input
+                  value={form.imageUrl}
+                  onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
+                  className="bg-muted border-border flex-1"
+                  placeholder="https://..."
+                />
+              </div>
+            </div>
+            <div>
+              <Label className="text-foreground mb-1.5 block">Fotos do Kit (thumbnails clicáveis)</Label>
               <div className="space-y-2">
-                {form.imageUrls.map((url, i) => (
+                {form.kitImages.map((url, i) => (
                   <div key={i} className="flex gap-2 items-center">
-                    {/* Thumbnail preview */}
-                    <div className="h-10 w-10 rounded-lg bg-muted border border-border shrink-0 overflow-hidden flex items-center justify-center">
+                    <div className="h-10 w-10 rounded-lg bg-muted border border-primary/40 shrink-0 overflow-hidden flex items-center justify-center">
                       {url.trim() ? (
                         <img src={url} alt="" className="h-full w-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
                       ) : (
@@ -397,27 +418,25 @@ export default function AdminProducts() {
                     <Input
                       value={url}
                       onChange={(e) => {
-                        const next = [...form.imageUrls];
+                        const next = [...form.kitImages];
                         next[i] = e.target.value;
-                        setForm({ ...form, imageUrls: next });
+                        setForm({ ...form, kitImages: next });
                       }}
                       className="bg-muted border-border flex-1"
                       placeholder="https://..."
                     />
-                    {form.imageUrls.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="text-destructive hover:text-destructive shrink-0"
-                        onClick={() => {
-                          const next = form.imageUrls.filter((_, idx) => idx !== i);
-                          setForm({ ...form, imageUrls: next });
-                        }}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive hover:text-destructive shrink-0"
+                      onClick={() => {
+                        const next = form.kitImages.filter((_, idx) => idx !== i);
+                        setForm({ ...form, kitImages: next });
+                      }}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
                   </div>
                 ))}
                 <Button
@@ -425,9 +444,9 @@ export default function AdminProducts() {
                   variant="outline"
                   size="sm"
                   className="gap-1 text-xs"
-                  onClick={() => setForm({ ...form, imageUrls: [...form.imageUrls, ""] })}
+                  onClick={() => setForm({ ...form, kitImages: [...form.kitImages, ""] })}
                 >
-                  <Plus className="h-3 w-3" /> Adicionar imagem
+                  <Plus className="h-3 w-3" /> Adicionar foto do kit
                 </Button>
               </div>
             </div>
