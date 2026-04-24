@@ -19,7 +19,9 @@ type ItemForm = {
   minecraftId: string;
   name: string;
   price: string;
+  minPerSlot: string;
   maxPerSlot: string;
+  pricePerUnit: boolean;
   imageUrl: string;
   active: boolean;
 };
@@ -28,7 +30,9 @@ const emptyForm: ItemForm = {
   minecraftId: "",
   name: "",
   price: "0",
+  minPerSlot: "1",
   maxPerSlot: "64",
+  pricePerUnit: false,
   imageUrl: "",
   active: true,
 };
@@ -110,7 +114,9 @@ export default function AdminKitItems() {
       minecraftId: item.minecraftId,
       name: item.name,
       price: String(item.price),
+      minPerSlot: String(item.minPerSlot),
       maxPerSlot: String(item.maxPerSlot),
+      pricePerUnit: item.pricePerUnit,
       imageUrl: item.imageUrl ?? "",
       active: item.active,
     });
@@ -123,7 +129,9 @@ export default function AdminKitItems() {
       minecraftId: form.minecraftId.trim().toLowerCase().replace(/\s+/g, "_"),
       name: form.name.trim(),
       price: form.price,
+      minPerSlot: parseInt(form.minPerSlot) || 1,
       maxPerSlot: parseInt(form.maxPerSlot) || 64,
+      pricePerUnit: form.pricePerUnit,
       imageUrl: form.imageUrl.trim() || undefined,
       active: form.active,
     });
@@ -210,7 +218,9 @@ export default function AdminKitItems() {
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-sm font-bold text-primary">{formatPrice(item.price)}</p>
-                  <p className="text-xs text-muted-foreground">max {item.maxPerSlot}/slot</p>
+                  <p className="text-xs text-muted-foreground">
+                    {item.pricePerUnit ? "por unidade" : "por slot"} · {item.minPerSlot}–{item.maxPerSlot}
+                  </p>
                 </div>
                 <div className="flex gap-2 shrink-0">
                   <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
@@ -300,7 +310,7 @@ export default function AdminKitItems() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="text-foreground mb-1.5 block">Preço por unidade (R$) *</Label>
+                <Label className="text-foreground mb-1.5 block">Preço (R$) *</Label>
                 <Input
                   type="number"
                   step="0.01"
@@ -312,7 +322,36 @@ export default function AdminKitItems() {
                 />
               </div>
               <div>
-                <Label className="text-foreground mb-1.5 block">Máx. por slot</Label>
+                <Label className="text-foreground mb-1.5 block">Tipo de preço</Label>
+                <select
+                  value={form.pricePerUnit ? "unit" : "slot"}
+                  onChange={(e) => setForm({ ...form, pricePerUnit: e.target.value === "unit" })}
+                  className="w-full px-3 py-2 bg-muted border border-border rounded-md text-foreground text-sm h-10"
+                >
+                  <option value="slot">Por slot (fixo)</option>
+                  <option value="unit">Por unidade</option>
+                </select>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground -mt-2">
+              {form.pricePerUnit
+                ? "O preço será multiplicado pela quantidade escolhida."
+                : "O preço é fixo por slot, independente da quantidade."}
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-foreground mb-1.5 block">Qtd. mínima</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="64"
+                  value={form.minPerSlot}
+                  onChange={(e) => setForm({ ...form, minPerSlot: e.target.value })}
+                  className="bg-muted border-border"
+                />
+              </div>
+              <div>
+                <Label className="text-foreground mb-1.5 block">Qtd. máxima</Label>
                 <Input
                   type="number"
                   min="1"

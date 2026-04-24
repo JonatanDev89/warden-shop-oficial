@@ -566,7 +566,9 @@ export async function upsertKitItem(data: {
   minecraftId: string;
   name: string;
   price: string;
+  minPerSlot?: number;
   maxPerSlot?: number;
+  pricePerUnit?: boolean;
   imageUrl?: string;
   active?: boolean;
 }) {
@@ -574,10 +576,19 @@ export async function upsertKitItem(data: {
   if (!db) throw new Error("DB unavailable");
   await db
     .insert(kitItems)
-    .values({ ...data, maxPerSlot: data.maxPerSlot ?? 64, active: data.active ?? true })
+    .values({ ...data, minPerSlot: data.minPerSlot ?? 1, maxPerSlot: data.maxPerSlot ?? 64, pricePerUnit: data.pricePerUnit ?? false, active: data.active ?? true })
     .onConflictDoUpdate({
       target: kitItems.minecraftId,
-      set: { name: data.name, price: data.price, maxPerSlot: data.maxPerSlot ?? 64, imageUrl: data.imageUrl ?? null, active: data.active ?? true, updatedAt: new Date() },
+      set: {
+        name: data.name,
+        price: data.price,
+        minPerSlot: data.minPerSlot ?? 1,
+        maxPerSlot: data.maxPerSlot ?? 64,
+        pricePerUnit: data.pricePerUnit ?? false,
+        imageUrl: data.imageUrl ?? null,
+        active: data.active ?? true,
+        updatedAt: new Date(),
+      },
     });
 }
 
@@ -608,6 +619,12 @@ export async function runMigrations() {
     // Add imageUrl column if table already exists without it
     await db.execute(sql`
       ALTER TABLE "kit_items" ADD COLUMN IF NOT EXISTS "imageUrl" text
+    `);
+    await db.execute(sql`
+      ALTER TABLE "kit_items" ADD COLUMN IF NOT EXISTS "minPerSlot" integer NOT NULL DEFAULT 1
+    `);
+    await db.execute(sql`
+      ALTER TABLE "kit_items" ADD COLUMN IF NOT EXISTS "pricePerUnit" boolean NOT NULL DEFAULT false
     `);
     console.log("[DB] Migrations applied.");
   } catch (e) {

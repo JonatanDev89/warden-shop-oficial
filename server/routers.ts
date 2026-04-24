@@ -459,7 +459,9 @@ const adminRouter = router({
       minecraftId: z.string().min(1),
       name: z.string().min(1),
       price: z.string(),
+      minPerSlot: z.number().optional(),
       maxPerSlot: z.number().optional(),
+      pricePerUnit: z.boolean().optional(),
       imageUrl: z.string().optional(),
       active: z.boolean().optional(),
     }))

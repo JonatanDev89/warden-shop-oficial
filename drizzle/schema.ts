@@ -182,7 +182,9 @@ export const kitItems = pgTable("kit_items", {
   minecraftId: varchar("minecraftId", { length: 128 }).notNull().unique(), // e.g. "diamond_sword"
   name: varchar("name", { length: 256 }).notNull(),                        // e.g. "Espada de Diamante"
   price: decimal("price", { precision: 10, scale: 2 }).notNull().default("0"),
+  minPerSlot: integer("minPerSlot").default(1).notNull(),
   maxPerSlot: integer("maxPerSlot").default(64).notNull(),
+  pricePerUnit: boolean("pricePerUnit").default(false).notNull(), // false = preço fixo por slot, true = preço por unidade
   imageUrl: text("imageUrl"),                                               // custom image/gif override
   active: boolean("active").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

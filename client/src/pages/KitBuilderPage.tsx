@@ -24,6 +24,7 @@ type SlotItem = {
   name: string;
   quantity: number;
   unitPrice: string;
+  pricePerUnit: boolean;
   imageUrl?: string | null;
 };
 
@@ -54,7 +55,7 @@ export default function KitBuilderPage() {
 
   const totalPrice = slots.reduce((sum, s) => {
     if (!s) return sum;
-    return sum + parseFloat(s.unitPrice) * s.quantity;
+    return sum + (s.pricePerUnit ? parseFloat(s.unitPrice) * s.quantity : parseFloat(s.unitPrice));
   }, 0);
 
   const filledSlots = slots.filter(Boolean).length;
@@ -68,13 +69,14 @@ export default function KitBuilderPage() {
 
   function placeItem(item: (typeof kitItems)[0]) {
     if (selectedSlot === null) return;
-    const qty = Math.max(1, Math.min(item.maxPerSlot, parseInt(quantityInput) || 1));
+    const qty = Math.max(item.minPerSlot, Math.min(item.maxPerSlot, parseInt(quantityInput) || item.minPerSlot));
     const next = [...slots];
     next[selectedSlot] = {
       minecraftId: item.minecraftId,
       name: item.name,
       quantity: qty,
       unitPrice: String(item.price),
+      pricePerUnit: item.pricePerUnit,
       imageUrl: item.imageUrl,
     };
     setSlots(next);
@@ -187,6 +189,7 @@ export default function KitBuilderPage() {
                     onChange={(e) => setQuantityInput(e.target.value)}
                     className="bg-muted border-border h-8 w-20 text-sm"
                   />
+                  <span className="text-xs text-muted-foreground">(escolha o item para ver limites)</span>
                 </div>
 
                 {/* Search */}
@@ -225,6 +228,14 @@ export default function KitBuilderPage() {
                           <p className="text-xs font-medium text-foreground truncate">{item.name}</p>
                           <p className="text-xs text-primary font-bold">
                             R$ {parseFloat(String(item.price)).toFixed(2).replace(".", ",")}
+                            <span className="text-muted-foreground font-normal ml-1">
+                              {item.pricePerUnit ? "/un" : "/slot"}
+                            </span>
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {item.minPerSlot === item.maxPerSlot
+                              ? `${item.minPerSlot} un`
+                              : `${item.minPerSlot}–${item.maxPerSlot} un`}
                           </p>
                         </div>
                       </button>
@@ -258,7 +269,10 @@ export default function KitBuilderPage() {
                       <span className="flex-1 text-foreground truncate">{s.name}</span>
                       <span className="text-muted-foreground shrink-0">x{s.quantity}</span>
                       <span className="text-primary font-bold shrink-0">
-                        R$ {(parseFloat(s.unitPrice) * s.quantity).toFixed(2).replace(".", ",")}
+                        R$ {(s.pricePerUnit
+                          ? parseFloat(s.unitPrice) * s.quantity
+                          : parseFloat(s.unitPrice)
+                        ).toFixed(2).replace(".", ",")}
                       </span>
                       <button onClick={(e) => clearSlot(i, e)} className="text-muted-foreground hover:text-destructive shrink-0">
                         <Trash2 className="h-3 w-3" />
