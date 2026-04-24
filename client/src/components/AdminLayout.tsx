@@ -26,6 +26,7 @@ const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/pedidos", label: "Pedidos", icon: ShoppingCart },
   { href: "/admin/produtos", label: "Produtos", icon: Package },
+  { href: "/admin/kit-items", label: "Itens do Kit", icon: Sword },
   { href: "/admin/categorias", label: "Categorias", icon: Tag },
   { href: "/admin/cupons", label: "Cupons", icon: Ticket },
   { href: "/admin/webhooks", label: "Webhooks Discord", icon: Webhook },

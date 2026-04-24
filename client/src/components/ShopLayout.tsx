@@ -77,6 +77,9 @@ export default function ShopLayout({ children }: ShopLayoutProps) {
               <Link href="/loja">
                 <Button variant="ghost" size="sm">Loja</Button>
               </Link>
+              <Link href="/monte-seu-kit">
+                <Button variant="ghost" size="sm">Monte seu Kit</Button>
+              </Link>
               <a href="https://discord.gg" target="_blank" rel="noopener noreferrer">
                 <Button variant="ghost" size="sm">Discord</Button>
               </a>
@@ -151,6 +154,9 @@ export default function ShopLayout({ children }: ShopLayoutProps) {
               </Link>
               <Link href="/loja" onClick={() => setMobileOpen(false)}>
                 <Button variant="ghost" size="sm" className="w-full justify-start">Loja</Button>
+              </Link>
+              <Link href="/monte-seu-kit" onClick={() => setMobileOpen(false)}>
+                <Button variant="ghost" size="sm" className="w-full justify-start">Monte seu Kit</Button>
               </Link>
               <a href="https://discord.gg" target="_blank" rel="noopener noreferrer">
                 <Button variant="ghost" size="sm" className="w-full justify-start">Discord</Button>

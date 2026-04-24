@@ -51,6 +51,9 @@ import {
   updateStoreCustomization,
   reorderCategories,
   reorderProducts,
+  getKitItems,
+  upsertKitItem,
+  deleteKitItem,
 } from "./db";
 import { getPendingOrdersForAddon } from "./addon-helpers";
 import {
@@ -119,6 +122,47 @@ const shopRouter = router({
   searchProducts: publicProcedure
     .input(z.object({ query: z.string().min(1) }))
     .query(({ input }) => searchProducts(input.query)),
+
+  getKitItems: publicProcedure.query(() => getKitItems(true)),
+
+  createKitOrder: publicProcedure
+    .input(z.object({
+      minecraftNickname: z.string().min(1),
+      email: z.string().email(),
+      slots: z.array(z.object({
+        slot: z.number(),
+        minecraftId: z.string(),
+        name: z.string(),
+        quantity: z.number().min(1),
+        unitPrice: z.string(),
+      })),
+    }))
+    .mutation(async ({ input }) => {
+      if (input.slots.length === 0) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Adicione pelo menos um item ao kit." });
+      }
+      const subtotal = input.slots.reduce((sum, s) => sum + parseFloat(s.unitPrice) * s.quantity, 0);
+      const orderNumber = `#KIT${Date.now().toString().slice(-5)}`;
+      const kitSummary = input.slots.map(s => `${s.quantity}x ${s.name}`).join(", ");
+      const order = await createOrder(
+        {
+          orderNumber,
+          minecraftNickname: input.minecraftNickname,
+          email: input.email,
+          subtotal: subtotal.toFixed(2),
+          discount: "0.00",
+          total: subtotal.toFixed(2),
+          notes: `KIT PERSONALIZADO: ${kitSummary}`,
+        },
+        input.slots.map((s, i) => ({
+          productId: 0,
+          productName: `[SLOT ${s.slot + 1}] ${s.quantity}x ${s.name}`,
+          quantity: s.quantity,
+          unitPrice: s.unitPrice,
+        }))
+      );
+      return order;
+    }),
 
   validateCoupon: publicProcedure
     .input(z.object({ code: z.string() }))
@@ -407,6 +451,21 @@ const adminRouter = router({
   saveSettings: adminProcedure
     .input(z.record(z.string(), z.string()))
     .mutation(({ input }) => setSiteSettings(input)),
+
+  // Kit Items
+  getKitItems: adminProcedure.query(() => getKitItems()),
+  upsertKitItem: adminProcedure
+    .input(z.object({
+      minecraftId: z.string().min(1),
+      name: z.string().min(1),
+      price: z.string(),
+      maxPerSlot: z.number().optional(),
+      active: z.boolean().optional(),
+    }))
+    .mutation(({ input }) => upsertKitItem(input)),
+  deleteKitItem: adminProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(({ input }) => deleteKitItem(input.id)),
 
   // Admins
   getAdmins: adminProcedure.query(() => getAllAdmins()),

@@ -27,6 +27,8 @@ import AdminWebhooks from "./pages/admin/AdminWebhooks";
 import AdminCustomization from "./pages/admin/AdminCustomization";
 import AdminApiKeys from "./pages/admin/AdminApiKeys";
 import AdminAdmins from "./pages/admin/AdminAdmins";
+import AdminKitItems from "./pages/admin/AdminKitItems";
+import KitBuilderPage from "./pages/KitBuilderPage";
 
 function Router() {
   return (
@@ -42,6 +44,7 @@ function Router() {
       <Route path="/api-docs" component={ApiDocsPage} />
       <Route path="/termos" component={TermsPage} />
       <Route path="/login" component={LoginPage} />
+      <Route path="/monte-seu-kit" component={KitBuilderPage} />
 
       {/* Admin routes */}
       <Route path="/admin" component={AdminDashboard} />
@@ -53,6 +56,7 @@ function Router() {
       <Route path="/admin/personalizacao" component={AdminCustomization} />
       <Route path="/admin/api-keys" component={AdminApiKeys} />
       <Route path="/admin/admins" component={AdminAdmins} />
+      <Route path="/admin/kit-items" component={AdminKitItems} />
 
       {/* Fallback */}
       <Route path="/404" component={NotFound} />

@@ -13,6 +13,7 @@ import {
   siteSettings,
   storeCustomization,
   users,
+  kitItems,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -548,5 +549,62 @@ export async function updateStoreCustomization(data: {
     await db.update(storeCustomization).set(data).where(eq(storeCustomization.id, existing.id));
   } else {
     await db.insert(storeCustomization).values(data as any);
+  }
+}
+
+// ─── Kit Items ─────────────────────────────────────────────────────────────────
+export async function getKitItems(onlyActive = false) {
+  const db = await getDb();
+  if (!db) return [];
+  if (onlyActive) {
+    return db.select().from(kitItems).where(eq(kitItems.active, true)).orderBy(asc(kitItems.name));
+  }
+  return db.select().from(kitItems).orderBy(asc(kitItems.name));
+}
+
+export async function upsertKitItem(data: {
+  minecraftId: string;
+  name: string;
+  price: string;
+  maxPerSlot?: number;
+  active?: boolean;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db
+    .insert(kitItems)
+    .values({ ...data, maxPerSlot: data.maxPerSlot ?? 64, active: data.active ?? true })
+    .onConflictDoUpdate({
+      target: kitItems.minecraftId,
+      set: { name: data.name, price: data.price, maxPerSlot: data.maxPerSlot ?? 64, active: data.active ?? true, updatedAt: new Date() },
+    });
+}
+
+export async function deleteKitItem(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db.delete(kitItems).where(eq(kitItems.id, id));
+}
+
+export async function runMigrations() {
+  const db = await getDb();
+  if (!db) return;
+  try {
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS "kit_items" (
+        "id" serial PRIMARY KEY NOT NULL,
+        "minecraftId" varchar(128) NOT NULL,
+        "name" varchar(256) NOT NULL,
+        "price" numeric(10, 2) NOT NULL DEFAULT '0',
+        "maxPerSlot" integer NOT NULL DEFAULT 64,
+        "active" boolean NOT NULL DEFAULT true,
+        "createdAt" timestamp NOT NULL DEFAULT now(),
+        "updatedAt" timestamp NOT NULL DEFAULT now(),
+        CONSTRAINT "kit_items_minecraftId_unique" UNIQUE("minecraftId")
+      )
+    `);
+    console.log("[DB] Migrations applied.");
+  } catch (e) {
+    console.error("[DB] Migration error:", e);
   }
 }

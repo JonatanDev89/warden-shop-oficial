@@ -175,3 +175,18 @@ export const storeCustomization = pgTable("store_customization", {
 
 export type StoreCustomization = typeof storeCustomization.$inferSelect;
 export type InsertStoreCustomization = typeof storeCustomization.$inferInsert;
+
+// ─── Kit Items (for "Monte seu Kit" feature) ───────────────────────────────────
+export const kitItems = pgTable("kit_items", {
+  id: serial("id").primaryKey(),
+  minecraftId: varchar("minecraftId", { length: 128 }).notNull().unique(), // e.g. "diamond_sword"
+  name: varchar("name", { length: 256 }).notNull(),                        // e.g. "Espada de Diamante"
+  price: decimal("price", { precision: 10, scale: 2 }).notNull().default("0"),
+  maxPerSlot: integer("maxPerSlot").default(64).notNull(),
+  active: boolean("active").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export type KitItem = typeof kitItems.$inferSelect;
+export type InsertKitItem = typeof kitItems.$inferInsert;
