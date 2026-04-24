@@ -20,6 +20,7 @@ type ItemForm = {
   name: string;
   price: string;
   maxPerSlot: string;
+  imageUrl: string;
   active: boolean;
 };
 
@@ -28,6 +29,7 @@ const emptyForm: ItemForm = {
   name: "",
   price: "0",
   maxPerSlot: "64",
+  imageUrl: "",
   active: true,
 };
 
@@ -109,6 +111,7 @@ export default function AdminKitItems() {
       name: item.name,
       price: String(item.price),
       maxPerSlot: String(item.maxPerSlot),
+      imageUrl: item.imageUrl ?? "",
       active: item.active,
     });
     setDialogOpen(true);
@@ -121,6 +124,7 @@ export default function AdminKitItems() {
       name: form.name.trim(),
       price: form.price,
       maxPerSlot: parseInt(form.maxPerSlot) || 64,
+      imageUrl: form.imageUrl.trim() || undefined,
       active: form.active,
     });
   };
@@ -188,7 +192,7 @@ export default function AdminKitItems() {
               >
                 <div className="h-10 w-10 bg-[#8b8b8b] rounded-sm flex items-center justify-center shrink-0 border-2 border-[#555]">
                   <img
-                    src={itemTexture(item.minecraftId)}
+                    src={item.imageUrl || itemTexture(item.minecraftId)}
                     alt={item.name}
                     className="h-8 w-8 object-contain"
                     style={{ imageRendering: "pixelated" }}
@@ -241,13 +245,23 @@ export default function AdminKitItems() {
               <Label className="text-foreground mb-1.5 block">ID do Minecraft *</Label>
               <div className="flex gap-2 items-center">
                 <div className="h-10 w-10 bg-[#8b8b8b] rounded-sm flex items-center justify-center shrink-0 border-2 border-[#555]">
-                  <img
-                    src={itemTexture(form.minecraftId)}
-                    alt=""
-                    className="h-8 w-8 object-contain"
-                    style={{ imageRendering: "pixelated" }}
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                  />
+                  {form.imageUrl.trim() ? (
+                    <img
+                      src={form.imageUrl}
+                      alt=""
+                      className="h-8 w-8 object-contain"
+                      style={{ imageRendering: "pixelated" }}
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                    />
+                  ) : (
+                    <img
+                      src={itemTexture(form.minecraftId)}
+                      alt=""
+                      className="h-8 w-8 object-contain"
+                      style={{ imageRendering: "pixelated" }}
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                    />
+                  )}
                 </div>
                 <Input
                   value={form.minecraftId}
@@ -260,6 +274,18 @@ export default function AdminKitItems() {
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 Use o ID exato do Minecraft (ex: diamond_sword, bread, arrow)
+              </p>
+            </div>
+            <div>
+              <Label className="text-foreground mb-1.5 block">Imagem personalizada (URL ou GIF)</Label>
+              <Input
+                value={form.imageUrl}
+                onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
+                className="bg-muted border-border text-sm"
+                placeholder="https://... (deixe vazio para usar textura padrão)"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Cole um link de imagem ou GIF para substituir a textura padrão do Minecraft.
               </p>
             </div>
             <div>

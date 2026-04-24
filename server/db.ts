@@ -567,6 +567,7 @@ export async function upsertKitItem(data: {
   name: string;
   price: string;
   maxPerSlot?: number;
+  imageUrl?: string;
   active?: boolean;
 }) {
   const db = await getDb();
@@ -576,7 +577,7 @@ export async function upsertKitItem(data: {
     .values({ ...data, maxPerSlot: data.maxPerSlot ?? 64, active: data.active ?? true })
     .onConflictDoUpdate({
       target: kitItems.minecraftId,
-      set: { name: data.name, price: data.price, maxPerSlot: data.maxPerSlot ?? 64, active: data.active ?? true, updatedAt: new Date() },
+      set: { name: data.name, price: data.price, maxPerSlot: data.maxPerSlot ?? 64, imageUrl: data.imageUrl ?? null, active: data.active ?? true, updatedAt: new Date() },
     });
 }
 
@@ -597,11 +598,16 @@ export async function runMigrations() {
         "name" varchar(256) NOT NULL,
         "price" numeric(10, 2) NOT NULL DEFAULT '0',
         "maxPerSlot" integer NOT NULL DEFAULT 64,
+        "imageUrl" text,
         "active" boolean NOT NULL DEFAULT true,
         "createdAt" timestamp NOT NULL DEFAULT now(),
         "updatedAt" timestamp NOT NULL DEFAULT now(),
         CONSTRAINT "kit_items_minecraftId_unique" UNIQUE("minecraftId")
       )
+    `);
+    // Add imageUrl column if table already exists without it
+    await db.execute(sql`
+      ALTER TABLE "kit_items" ADD COLUMN IF NOT EXISTS "imageUrl" text
     `);
     console.log("[DB] Migrations applied.");
   } catch (e) {

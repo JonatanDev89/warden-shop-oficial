@@ -183,6 +183,7 @@ export const kitItems = pgTable("kit_items", {
   name: varchar("name", { length: 256 }).notNull(),                        // e.g. "Espada de Diamante"
   price: decimal("price", { precision: 10, scale: 2 }).notNull().default("0"),
   maxPerSlot: integer("maxPerSlot").default(64).notNull(),
+  imageUrl: text("imageUrl"),                                               // custom image/gif override
   active: boolean("active").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),

@@ -9,8 +9,9 @@ import { Package, Search, X, ShoppingCart, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
 
-// Minecraft item texture URL from minecraft-assets CDN
-function itemTexture(minecraftId: string) {
+// Minecraft item texture URL — uses custom imageUrl if set, falls back to CDN
+function itemTexture(minecraftId: string, imageUrl?: string | null) {
+  if (imageUrl) return imageUrl;
   return `https://minecraft-inventory.s7a.dev/items/${minecraftId}.png`;
 }
 
@@ -23,6 +24,7 @@ type SlotItem = {
   name: string;
   quantity: number;
   unitPrice: string;
+  imageUrl?: string | null;
 };
 
 export default function KitBuilderPage() {
@@ -73,6 +75,7 @@ export default function KitBuilderPage() {
       name: item.name,
       quantity: qty,
       unitPrice: String(item.price),
+      imageUrl: item.imageUrl,
     };
     setSlots(next);
     setSelectedSlot(null);
@@ -135,7 +138,7 @@ export default function KitBuilderPage() {
                     {slot ? (
                       <>
                         <img
-                          src={itemTexture(slot.minecraftId)}
+                          src={itemTexture(slot.minecraftId, slot.imageUrl)}
                           alt={slot.name}
                           className="w-full h-full object-contain p-0.5 image-rendering-pixelated"
                           style={{ imageRendering: "pixelated" }}
@@ -212,7 +215,7 @@ export default function KitBuilderPage() {
                         className="flex items-center gap-2 p-2 rounded-lg bg-muted hover:bg-primary/10 hover:border-primary border border-border transition-all text-left"
                       >
                         <img
-                          src={itemTexture(item.minecraftId)}
+                          src={itemTexture(item.minecraftId, item.imageUrl)}
                           alt={item.name}
                           className="h-8 w-8 object-contain shrink-0"
                           style={{ imageRendering: "pixelated" }}
@@ -247,7 +250,7 @@ export default function KitBuilderPage() {
                   {slots.map((s, i) => s && (
                     <li key={i} className="flex items-center gap-2 text-xs">
                       <img
-                        src={itemTexture(s.minecraftId)}
+                        src={itemTexture(s.minecraftId, s.imageUrl)}
                         alt={s.name}
                         className="h-6 w-6 object-contain shrink-0"
                         style={{ imageRendering: "pixelated" }}
