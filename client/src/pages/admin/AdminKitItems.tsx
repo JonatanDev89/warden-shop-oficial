@@ -35,33 +35,35 @@ function itemTexture(minecraftId: string) {
   return `https://minecraft-inventory.s7a.dev/items/${minecraftId}.png`;
 }
 
-// Common Minecraft items to seed quickly
+// Warden Craft kit items with prices
 const COMMON_ITEMS = [
-  { minecraftId: "diamond_sword", name: "Espada de Diamante" },
-  { minecraftId: "diamond_pickaxe", name: "Picareta de Diamante" },
-  { minecraftId: "diamond_axe", name: "Machado de Diamante" },
-  { minecraftId: "diamond_shovel", name: "Pá de Diamante" },
-  { minecraftId: "diamond_hoe", name: "Enxada de Diamante" },
-  { minecraftId: "diamond_helmet", name: "Capacete de Diamante" },
-  { minecraftId: "diamond_chestplate", name: "Peitoral de Diamante" },
-  { minecraftId: "diamond_leggings", name: "Calças de Diamante" },
-  { minecraftId: "diamond_boots", name: "Botas de Diamante" },
-  { minecraftId: "iron_sword", name: "Espada de Ferro" },
-  { minecraftId: "iron_pickaxe", name: "Picareta de Ferro" },
-  { minecraftId: "bow", name: "Arco" },
-  { minecraftId: "arrow", name: "Flecha" },
-  { minecraftId: "bread", name: "Pão" },
-  { minecraftId: "cooked_beef", name: "Bife Cozido" },
-  { minecraftId: "golden_apple", name: "Maçã Dourada" },
-  { minecraftId: "enchanted_golden_apple", name: "Maçã Dourada Encantada" },
-  { minecraftId: "potion", name: "Poção" },
-  { minecraftId: "ender_pearl", name: "Pérola do Fim" },
-  { minecraftId: "tnt", name: "TNT" },
-  { minecraftId: "obsidian", name: "Obsidiana" },
-  { minecraftId: "cobblestone", name: "Pedregulho" },
-  { minecraftId: "torch", name: "Tocha" },
-  { minecraftId: "crafting_table", name: "Mesa de Trabalho" },
-  { minecraftId: "furnace", name: "Fornalha" },
+  { minecraftId: "netherite_sword",          name: "Qualquer Item Full",           price: "3.00", maxPerSlot: 1  },
+  { minecraftId: "golden_apple",             name: "Pack Maçã Dourada",            price: "3.00", maxPerSlot: 64 },
+  { minecraftId: "shulker_shell",            name: "16 Cascos Shulker",            price: "3.00", maxPerSlot: 16 },
+  { minecraftId: "smithing_template",        name: "Molde de Atualização",         price: "2.00", maxPerSlot: 1  },
+  { minecraftId: "end_crystal",              name: "Pack Cristal do End",          price: "2.00", maxPerSlot: 64 },
+  { minecraftId: "elytra",                   name: "Elytra",                       price: "2.00", maxPerSlot: 1  },
+  { minecraftId: "iron_ingot",               name: "Pack de Ferro",                price: "1.00", maxPerSlot: 64 },
+  { minecraftId: "gold_ingot",               name: "Pack de Ouro",                 price: "1.00", maxPerSlot: 64 },
+  { minecraftId: "tnt",                      name: "Pack TNT",                     price: "1.00", maxPerSlot: 64 },
+  { minecraftId: "obsidian",                 name: "Pack Obsidiana",               price: "1.00", maxPerSlot: 64 },
+  { minecraftId: "cobweb",                   name: "Pack Teia",                    price: "1.00", maxPerSlot: 64 },
+  { minecraftId: "spawner",                  name: "1 Spawner",                    price: "1.00", maxPerSlot: 1  },
+  { minecraftId: "chiseled_stone_bricks",    name: "Moldes Normais",               price: "1.00", maxPerSlot: 64 },
+  { minecraftId: "brown_mushroom",           name: "Pack Fungos",                  price: "1.00", maxPerSlot: 64 },
+  { minecraftId: "wither_skeleton_skull",    name: "Cabeça de Mob",                price: "1.00", maxPerSlot: 1  },
+  { minecraftId: "blaze_powder",             name: "Pack de Pó de Chamas",         price: "1.00", maxPerSlot: 64 },
+  { minecraftId: "wind_charge",              name: "Pack Carga de Vento",          price: "1.00", maxPerSlot: 64 },
+  { minecraftId: "coal",                     name: "Pack de Carvão",               price: "0.75", maxPerSlot: 64 },
+  { minecraftId: "stone",                    name: "Pack Blocos de Construção",    price: "0.75", maxPerSlot: 64 },
+  { minecraftId: "blaze_rod",                name: "Pack Vara de Blaze",           price: "1.50", maxPerSlot: 64 },
+  { minecraftId: "enchanted_book",           name: "Livro Encantado",              price: "0.50", maxPerSlot: 1  },
+  { minecraftId: "firework_rocket",          name: "Pack Fogos",                   price: "0.50", maxPerSlot: 64 },
+  { minecraftId: "experience_bottle",        name: "Pack XP",                      price: "0.50", maxPerSlot: 64 },
+  { minecraftId: "netherite_ingot",          name: "Barra Netherite",              price: "0.50", maxPerSlot: 64 },
+  { minecraftId: "totem_of_undying",         name: "Totem",                        price: "0.50", maxPerSlot: 1  },
+  { minecraftId: "enchanted_golden_apple",   name: "Maçã Encantada",               price: "0.25", maxPerSlot: 64 },
+  { minecraftId: "potion",                   name: "Qualquer Poção",               price: "0.25", maxPerSlot: 1  },
 ];
 
 export default function AdminKitItems() {
@@ -88,9 +90,15 @@ export default function AdminKitItems() {
     },
   });
 
-  const openCreate = (preset?: { minecraftId: string; name: string }) => {
+  const openCreate = (preset?: { minecraftId: string; name: string; price?: string; maxPerSlot?: number }) => {
     setEditingId(null);
-    setForm({ ...emptyForm, ...(preset ?? {}) });
+    setForm({
+      ...emptyForm,
+      minecraftId: preset?.minecraftId ?? "",
+      name: preset?.name ?? "",
+      price: preset?.price ?? "0",
+      maxPerSlot: String(preset?.maxPerSlot ?? 64),
+    });
     setDialogOpen(true);
   };
 
@@ -155,6 +163,7 @@ export default function AdminKitItems() {
                   onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                 />
                 {c.name}
+                <span className="text-primary font-bold ml-1">R${c.price}</span>
               </button>
             ))}
           </div>
