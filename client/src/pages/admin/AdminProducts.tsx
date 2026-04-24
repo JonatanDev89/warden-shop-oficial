@@ -137,6 +137,7 @@ export default function AdminProducts() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<ProductForm>(emptyForm);
   const [localOrder, setLocalOrder] = useState<number[] | null>(null);
+  const [filterCategoryId, setFilterCategoryId] = useState<string>("all");
 
   const reorderProducts = trpc.admin.reorderProducts.useMutation({
     onSuccess: () => utils.admin.getProducts.invalidate(),
@@ -150,6 +151,10 @@ export default function AdminProducts() {
     if (!localOrder) return products;
     return [...products].sort((a, b) => localOrder.indexOf(a.id) - localOrder.indexOf(b.id));
   })();
+
+  const displayedProducts = filterCategoryId === "all"
+    ? orderedProducts
+    : orderedProducts.filter((p) => String(p.categoryId) === filterCategoryId);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -290,15 +295,104 @@ export default function AdminProducts() {
           </Button>
         </div>
 
+        {/* Category filter */}
+        <div className="flex gap-2 flex-wrap">
+          <button
+            onClick={() => setFilterCategoryId("all")}
+            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              filterCategoryId === "all"
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Todos
+          </button>
+          {categories?.map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => setFilterCategoryId(String(cat.id))}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                filterCategoryId === String(cat.id)
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {cat.name}
+            </button>
+          ))}
+        </div>
+
         {isLoading ? (
           <div className="flex items-center justify-center h-40">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
           </div>
+        ) : filterCategoryId === "all" ? (
+          // Grouped by category
+          <div className="space-y-6">
+            {categories?.map((cat) => {
+              const catProducts = orderedProducts.filter((p) => p.categoryId === cat.id);
+              if (catProducts.length === 0) return null;
+              return (
+                <div key={cat.id}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs font-semibold text-primary uppercase tracking-wider">{cat.name}</span>
+                    <div className="flex-1 h-px bg-border" />
+                    <span className="text-xs text-muted-foreground">{catProducts.length} produto{catProducts.length !== 1 ? "s" : ""}</span>
+                  </div>
+                  <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                    <SortableContext items={orderedProducts.map((p) => p.id)} strategy={verticalListSortingStrategy}>
+                      <div className="space-y-2">
+                        {catProducts.map((product) => (
+                          <SortableProduct
+                            key={product.id}
+                            product={product}
+                            formatPrice={formatPrice}
+                            onEdit={openEdit}
+                            onDelete={(id) => {
+                              if (confirm("Remover produto?")) deleteProduct.mutate({ id });
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </SortableContext>
+                  </DndContext>
+                </div>
+              );
+            })}
+            {/* Products with no matching category */}
+            {(() => {
+              const catIds = new Set(categories?.map((c) => c.id) ?? []);
+              const orphans = orderedProducts.filter((p) => !catIds.has(p.categoryId));
+              if (orphans.length === 0) return null;
+              return (
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Sem categoria</span>
+                    <div className="flex-1 h-px bg-border" />
+                  </div>
+                  <div className="space-y-2">
+                    {orphans.map((product) => (
+                      <SortableProduct
+                        key={product.id}
+                        product={product}
+                        formatPrice={formatPrice}
+                        onEdit={openEdit}
+                        onDelete={(id) => {
+                          if (confirm("Remover produto?")) deleteProduct.mutate({ id });
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
         ) : (
+          // Filtered by single category — with drag to reorder
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={orderedProducts.map((p) => p.id)} strategy={verticalListSortingStrategy}>
               <div className="space-y-2">
-                {orderedProducts.map((product) => (
+                {displayedProducts.map((product) => (
                   <SortableProduct
                     key={product.id}
                     product={product}
