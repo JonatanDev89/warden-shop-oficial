@@ -24,6 +24,7 @@ export default function AdminCustomization() {
   const [glowIntensity, setGlowIntensity] = useState("0.4");
   const [glowColor, setGlowColor] = useState("#00c8c8");
   const [wardenGifUrl, setWardenGifUrl] = useState("");
+  const [discordTicketsUrl, setDiscordTicketsUrl] = useState("");
   const [pixKey, setPixKey] = useState("");
   const [pixKeyType, setPixKeyType] = useState<"cpf" | "email" | "phone" | "random">("cpf");
 
@@ -40,6 +41,7 @@ export default function AdminCustomization() {
       setGlowIntensity(settings.glowIntensity ?? "0.4");
       setGlowColor(settings.glowColor ?? "#00c8c8");
       setWardenGifUrl(settings.wardenGifUrl ?? "");
+      setDiscordTicketsUrl(settings.discordTicketsUrl ?? "");
       // Carregar dados de personalização da loja (PIX, etc)
     }
   }, [settings]);
@@ -83,6 +85,7 @@ export default function AdminCustomization() {
       glowIntensity,
       glowColor,
       wardenGifUrl,
+      discordTicketsUrl,
     });
     
     saveCustomization.mutate({
@@ -275,6 +278,18 @@ export default function AdminCustomization() {
               </select>
               <p className="text-xs text-muted-foreground mt-1">
                 Selecione o tipo de chave PIX que você está usando.
+              </p>
+            </div>
+            <div>
+              <Label className="text-foreground mb-1.5 block">Link do Canal de Tickets do Discord</Label>
+              <Input
+                value={discordTicketsUrl}
+                onChange={(e) => setDiscordTicketsUrl(e.target.value)}
+                className="bg-muted border-border"
+                placeholder="https://discord.com/channels/..."
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Link exibido na página de confirmação de pedido para o cliente abrir um ticket com o comprovante.
               </p>
             </div>
           </CardContent>

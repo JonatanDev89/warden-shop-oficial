@@ -413,10 +413,10 @@ export async function getDashboardStats() {
     }
   }
 
-  // Top buyers
+  // Top buyers — only count delivered orders
   const buyerMap: Record<string, number> = {};
   for (const o of allOrders) {
-    if (o.status !== "cancelled") {
+    if (o.status === "delivered") {
       buyerMap[o.minecraftNickname] = (buyerMap[o.minecraftNickname] || 0) + parseFloat(String(o.total));
     }
   }
