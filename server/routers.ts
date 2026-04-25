@@ -154,9 +154,9 @@ const shopRouter = router({
           total: subtotal.toFixed(2),
           notes: `KIT PERSONALIZADO: ${kitSummary}`,
         },
-        input.slots.map((s, i) => ({
+        input.slots.map((s) => ({
           productId: 0,
-          productName: `[SLOT ${s.slot + 1}] ${s.quantity}x ${s.name}`,
+          productName: `[SLOT ${s.slot + 1}] ${s.quantity}x ${s.name} [${s.minecraftId}]`,
           quantity: s.quantity,
           unitPrice: s.unitPrice,
         }))

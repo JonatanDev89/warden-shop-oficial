@@ -181,7 +181,6 @@ export const addonRouter = router({
   /**
    * Obter detalhes de um pedido específico
    * GET /api/trpc/addon.getOrder
-   * Requer: Authorization: Bearer {API_KEY}
    */
   getOrder: publicProcedure
     .input(
@@ -191,24 +190,12 @@ export const addonRouter = router({
       })
     )
     .query(async ({ input }) => {
-      // Validar API Key
       const isValid = await validateAddonApiKey(input.apiKey);
-      if (!isValid) {
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "API Key inválida ou revogada",
-        });
-      }
+      if (!isValid) throw new TRPCError({ code: "UNAUTHORIZED", message: "API Key inválida ou revogada" });
 
       try {
         const order = await getOrderForAddon(input.orderId);
-
-        if (!order) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: `Pedido #${input.orderId} não encontrado`,
-          });
-        }
+        if (!order) throw new TRPCError({ code: "NOT_FOUND", message: `Pedido #${input.orderId} não encontrado` });
 
         return {
           success: true,
@@ -219,25 +206,72 @@ export const addonRouter = router({
             email: order.email,
             status: order.status,
             total: parseFloat(order.total.toString()),
-            commands: order.commands
-              ? (() => {
-                  try {
-                    return JSON.parse(order.commands);
-                  } catch {
-                    return [];
-                  }
-                })()
-              : [],
+            commands: order.commands ? (() => { try { return JSON.parse(order.commands); } catch { return []; } })() : [],
             createdAt: order.createdAt.toISOString(),
           },
         };
       } catch (error) {
-        console.error("[Addon] Erro ao obter pedido:", error);
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Erro ao obter pedido",
-        });
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Erro ao obter pedido" });
+      }
+    }),
+
+  /**
+   * Obter pedidos de kit personalizado pendentes com JSON dos itens
+   * POST /api/trpc/addon.getKitOrders
+   */
+  getKitOrders: publicProcedure
+    .input(z.object({ apiKey: z.string().min(1) }))
+    .mutation(async ({ input }) => {
+      const isValid = await validateAddonApiKey(input.apiKey);
+      if (!isValid) throw new TRPCError({ code: "UNAUTHORIZED", message: "API Key inválida ou revogada" });
+
+      try {
+        const { getDb } = await import("./db");
+        const { orders, orderItems } = await import("../drizzle/schema");
+        const { eq, and, like } = await import("drizzle-orm");
+
+        const db = await getDb();
+        if (!db) return { success: true, orders: [] };
+
+        // Kit orders have orderNumber starting with #KIT and status game_pending
+        const kitOrders = await db
+          .select()
+          .from(orders)
+          .where(and(eq(orders.status, "game_pending"), like(orders.orderNumber, "#KIT%")));
+
+        const result = await Promise.all(kitOrders.map(async (order) => {
+          const items = await db.select().from(orderItems).where(eq(orderItems.orderId, order.id));
+
+          // Parse kit items from productName field: "[SLOT X] Nx Name [minecraftId]"
+          const kitSlots = items.map((item) => {
+            const match = item.productName.match(/^\[SLOT (\d+)\] (\d+)x (.+?) \[([^\]]+)\]$/);
+            if (!match) return null;
+            return {
+              slot: parseInt(match[1]!) - 1,
+              quantity: parseInt(match[2]!),
+              name: match[3]!,
+              minecraftId: match[4]!,
+              unitPrice: parseFloat(item.unitPrice.toString()),
+            };
+          }).filter(Boolean);
+
+          // Also parse from notes: "KIT PERSONALIZADO: 64x Pack TNT, ..."
+          return {
+            id: order.id,
+            orderNumber: order.orderNumber,
+            nickname: order.minecraftNickname,
+            total: parseFloat(order.total.toString()),
+            notes: order.notes ?? "",
+            kitSlots,
+            createdAt: order.createdAt.toISOString(),
+          };
+        }));
+
+        return { success: true, orders: result };
+      } catch (error) {
+        console.error("[Addon] Erro ao obter kit orders:", error);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Erro ao obter kit orders" });
       }
     }),
 });
