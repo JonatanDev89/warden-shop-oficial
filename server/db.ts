@@ -570,6 +570,7 @@ export async function upsertKitItem(data: {
   maxPerSlot?: number;
   pricePerUnit?: boolean;
   imageUrl?: string;
+  itemConfig?: string;
   active?: boolean;
 }) {
   const db = await getDb();
@@ -586,6 +587,7 @@ export async function upsertKitItem(data: {
         maxPerSlot: data.maxPerSlot ?? 64,
         pricePerUnit: data.pricePerUnit ?? false,
         imageUrl: data.imageUrl ?? null,
+        itemConfig: data.itemConfig ?? null,
         active: data.active ?? true,
         updatedAt: new Date(),
       },
@@ -625,6 +627,9 @@ export async function runMigrations() {
     `);
     await db.execute(sql`
       ALTER TABLE "kit_items" ADD COLUMN IF NOT EXISTS "pricePerUnit" boolean NOT NULL DEFAULT false
+    `);
+    await db.execute(sql`
+      ALTER TABLE "kit_items" ADD COLUMN IF NOT EXISTS "itemConfig" text
     `);
     console.log("[DB] Migrations applied.");
   } catch (e) {

@@ -184,8 +184,12 @@ export const kitItems = pgTable("kit_items", {
   price: decimal("price", { precision: 10, scale: 2 }).notNull().default("0"),
   minPerSlot: integer("minPerSlot").default(1).notNull(),
   maxPerSlot: integer("maxPerSlot").default(64).notNull(),
-  pricePerUnit: boolean("pricePerUnit").default(false).notNull(), // false = preço fixo por slot, true = preço por unidade
-  imageUrl: text("imageUrl"),                                               // custom image/gif override
+  pricePerUnit: boolean("pricePerUnit").default(false).notNull(),
+  imageUrl: text("imageUrl"),
+  // JSON config for special items:
+  // Armor: { type:"armor", priceFull:"3.00", priceGod:"5.00", enchantsFull:[{id,name,level}], enchantsGod:[{id,name,level}] }
+  // Book:  { type:"book", enchants:[{id,name,maxLevel,price}] }
+  itemConfig: text("itemConfig"),
   active: boolean("active").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),

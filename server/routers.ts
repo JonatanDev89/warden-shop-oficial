@@ -463,6 +463,7 @@ const adminRouter = router({
       maxPerSlot: z.number().optional(),
       pricePerUnit: z.boolean().optional(),
       imageUrl: z.string().optional(),
+      itemConfig: z.string().optional(),
       active: z.boolean().optional(),
     }))
     .mutation(({ input }) => upsertKitItem(input)),
