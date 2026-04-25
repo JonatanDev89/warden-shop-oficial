@@ -47,7 +47,7 @@ export default function SearchPage() {
             <p className="text-muted-foreground">Digite algo para buscar produtos.</p>
           </div>
         ) : isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
             {[1, 2, 3].map((i) => (
               <div key={i} className="h-64 rounded-lg bg-card animate-pulse" />
             ))}
@@ -61,13 +61,13 @@ export default function SearchPage() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
             {products?.map((product) => (
               <Card
                 key={product.id}
                 className="group border-border hover:border-primary/50 transition-all duration-200 hover:shadow-lg hover:shadow-primary/10 bg-card overflow-hidden"
               >
-                <CardContent className="p-5">
+                <CardContent className="p-3 sm:p-5">
                   <div className="aspect-square w-full rounded-lg bg-muted flex items-center justify-center mb-4 group-hover:bg-primary/5 transition-colors overflow-hidden">
                     {(() => {
                       const { main } = parseProductImages(product.imageUrl);
