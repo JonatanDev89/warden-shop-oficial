@@ -67,7 +67,15 @@ export type BookConfig = {
   enchants: BookEnchantOption[];
 };
 
-export type ItemConfig = ArmorConfig | BookConfig | null;
+// Tool: 1 per slot, user picks enchants with individual prices per level
+export type ToolEnchantOption = { id: string; name: string; maxLevel: number; price: string };
+export type ToolConfig = {
+  type: "tool";
+  basePrice: string;
+  enchants: ToolEnchantOption[];
+};
+
+export type ItemConfig = ArmorConfig | BookConfig | ToolConfig | null;
 
 export function parseItemConfig(raw: string | null | undefined): ItemConfig {
   if (!raw) return null;
