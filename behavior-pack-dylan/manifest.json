@@ -1,0 +1,36 @@
+{
+    "format_version": 2,
+    "header": {
+        "name": "Warden Craft Store",
+        "description": "Addon de entrega automática para a Warden Craft Store",
+        "uuid": "3f1d2a4b-9e8c-4f3a-b7d2-6c9e2f4a1b10",
+        "version": [4, 0, 0],
+        "min_engine_version": [1, 20, 50]
+    },
+    "modules": [
+        {
+            "type": "script",
+            "language": "javascript",
+            "uuid": "3f1d2a4b-9e8c-4f3a-b7d2-6c9e2f4a1b89",
+            "version": [4, 0, 0],
+            "entry": "scripts/main.js"
+        }
+    ],
+    "dependencies": [
+        {
+            "module_name": "@minecraft/server",
+            "version": "beta"
+        },
+        {
+            "module_name": "@minecraft/server-net",
+            "version": "beta"
+        },
+        {
+            "module_name": "@minecraft/server-ui",
+            "version": "beta"
+        }
+    ],
+    "capabilities": [
+        "script_eval"
+    ]
+}

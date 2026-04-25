@@ -113,6 +113,58 @@ async function startServer() {
     }
   });
   
+  // Kit orders — pedidos de kit personalizado pendentes com itens JSON
+  app.get('/api/addon/kit-orders', async (req, res) => {
+    try {
+      const apiKey = (req.query.apiKey as string) || (req.headers['x-api-key'] as string);
+      if (!apiKey) return res.status(400).json({ error: 'API Key required' });
+
+      const crypto = await import('crypto');
+      const { getDb } = await import('../db');
+      const { apiKeys, orders, orderItems } = await import('../../drizzle/schema');
+      const { eq, and, like } = await import('drizzle-orm');
+
+      const db = await getDb();
+      if (!db) return res.status(500).json({ error: 'Database unavailable' });
+
+      const keyHash = crypto.default.createHash('sha256').update(apiKey).digest('hex');
+      const keyResult = await db.select().from(apiKeys).where(eq(apiKeys.keyHash, keyHash)).limit(1);
+      if (keyResult.length === 0 || !keyResult[0].active) return res.status(401).json({ error: 'Invalid API Key' });
+
+      // Buscar pedidos de kit (orderNumber começa com #KIT) com status game_pending
+      const kitOrders = await db.select().from(orders)
+        .where(and(eq(orders.status, 'game_pending'), like(orders.orderNumber, '#KIT%')));
+
+      const result = await Promise.all(kitOrders.map(async (order) => {
+        const items = await db.select().from(orderItems).where(eq(orderItems.orderId, order.id));
+        const kitSlots = items.map((item) => {
+          // Format: "[SLOT X] Nx Name [minecraftId]"
+          const match = item.productName.match(/^\[SLOT (\d+)\] (\d+)x (.+?) \[([^\]]+)\]$/);
+          if (!match) return null;
+          return {
+            slot: parseInt(match[1]!) - 1,
+            quantity: parseInt(match[2]!),
+            name: match[3]!,
+            minecraftId: match[4]!,
+          };
+        }).filter(Boolean);
+
+        return {
+          id: order.id,
+          orderNumber: order.orderNumber,
+          nickname: order.minecraftNickname,
+          total: parseFloat(order.total.toString()),
+          kitSlots,
+        };
+      }));
+
+      return res.json({ success: true, orders: result });
+    } catch (error) {
+      console.error('[Addon Kit API] Error:', error);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
   // Marcar pedido como entregue
   app.post('/api/addon/mark-delivered', async (req, res) => {
     try {
