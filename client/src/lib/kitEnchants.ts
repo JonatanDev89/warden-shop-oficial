@@ -62,9 +62,10 @@ export type ArmorConfig = {
   enchantsGod: EnchantEntry[];
 };
 
+// Book: admin only sets a price per level; buyer picks any enchant freely
 export type BookConfig = {
   type: "book";
-  enchants: BookEnchantOption[];
+  pricePerLevel: string;
 };
 
 // Tool: 1 per slot, user picks enchants with individual prices per level

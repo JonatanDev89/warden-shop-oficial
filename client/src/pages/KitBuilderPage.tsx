@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { parseItemConfig, type BookEnchantOption, type ToolEnchantOption } from "@/lib/kitEnchants";
+import { parseItemConfig, ALL_ENCHANTS, type ToolEnchantOption } from "@/lib/kitEnchants";
 
 function itemTexture(minecraftId: string, imageUrl?: string | null) {
   if (imageUrl) return imageUrl;
@@ -39,7 +39,7 @@ type SlotItem = {
 // Pending selection state when item needs extra config
 type PendingConfig =
   | { type: "armor"; item: KitItem }
-  | { type: "book"; item: KitItem; enchants: BookEnchantOption[] }
+  | { type: "book"; item: KitItem }
   | { type: "tool"; item: KitItem; enchants: ToolEnchantOption[] };
 
 type KitItem = NonNullable<ReturnType<typeof trpc.shop.getKitItems.useQuery>["data"]>[0];
@@ -112,10 +112,10 @@ export default function KitBuilderPage() {
       return;
     }
 
-    if (cfg?.type === "book" && cfg.enchants.length > 0) {
-      setBookEnchantId(cfg.enchants[0].id);
+    if (cfg?.type === "book") {
+      setBookEnchantId(ALL_ENCHANTS[0].id);
       setBookEnchantLevel("1");
-      setPendingConfig({ type: "book", item, enchants: cfg.enchants });
+      setPendingConfig({ type: "book", item, enchants: [] });
       return;
     }
 
@@ -168,11 +168,13 @@ export default function KitBuilderPage() {
 
   function confirmBook() {
     if (!pendingConfig || pendingConfig.type !== "book") return;
-    const enchant = pendingConfig.enchants.find((e) => e.id === bookEnchantId);
-    if (!enchant) return;
-    const level = Math.max(1, Math.min(enchant.maxLevel, parseInt(bookEnchantLevel) || 1));
-    const totalEnchantPrice = (parseFloat(enchant.price) * level).toFixed(2);
-    const label = `${enchant.name} ${level}`;
+    const cfg = parseItemConfig(pendingConfig.item.itemConfig);
+    if (cfg?.type !== "book") return;
+    const enchantMeta = ALL_ENCHANTS.find((e) => e.id === bookEnchantId);
+    if (!enchantMeta) return;
+    const level = Math.max(1, Math.min(enchantMeta.maxLevel, parseInt(bookEnchantLevel) || 1));
+    const totalEnchantPrice = (parseFloat(cfg.pricePerLevel) * level).toFixed(2);
+    const label = `${enchantMeta.name} ${level}`;
     placeItem(pendingConfig.item, totalEnchantPrice, false, label);
   }
 
@@ -364,61 +366,67 @@ export default function KitBuilderPage() {
                       </p>
                     </div>
 
-                    <div className="space-y-3">
-                      <div>
-                        <Label className="text-xs text-muted-foreground mb-1 block">
-                          Encantamento
-                        </Label>
-                        <Select value={bookEnchantId} onValueChange={(v) => {
-                          setBookEnchantId(v);
-                          setBookEnchantLevel("1");
-                        }}>
-                          <SelectTrigger className="bg-muted border-border">
-                            <SelectValue placeholder="Selecione..." />
-                          </SelectTrigger>
-                          <SelectContent className="bg-card border-border">
-                            {pendingConfig.enchants.map((e) => (
-                              <SelectItem key={e.id} value={e.id}>
-                                {e.name}{" "}
-                                <span className="text-muted-foreground text-xs">
-                                  (máx. {e.maxLevel}) — R${" "}
-                                  {parseFloat(e.price).toFixed(2).replace(".", ",")}/nv
-                                </span>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                    {(() => {
+                      const cfg = parseItemConfig(pendingConfig.item.itemConfig);
+                      const pricePerLevel = cfg?.type === "book" ? parseFloat(cfg.pricePerLevel) : 0;
+                      const enchantMeta = ALL_ENCHANTS.find((e) => e.id === bookEnchantId);
+                      const level = enchantMeta
+                        ? Math.max(1, Math.min(enchantMeta.maxLevel, parseInt(bookEnchantLevel) || 1))
+                        : 1;
+                      const price = pricePerLevel * level;
 
-                      {bookEnchantId && (() => {
-                        const enchant = pendingConfig.enchants.find((e) => e.id === bookEnchantId)!;
-                        const level = Math.max(1, Math.min(enchant.maxLevel, parseInt(bookEnchantLevel) || 1));
-                        const price = parseFloat(enchant.price) * level;
-                        return (
-                          <div className="space-y-2">
-                            <div>
-                              <Label className="text-xs text-muted-foreground mb-1 block">
-                                Nível (1–{enchant.maxLevel})
-                              </Label>
-                              <Input
-                                type="number"
-                                min={1}
-                                max={enchant.maxLevel}
-                                value={bookEnchantLevel}
-                                onChange={(e) => setBookEnchantLevel(e.target.value)}
-                                className="bg-muted border-border h-9 w-24"
-                              />
-                            </div>
-                            <p className="text-sm text-muted-foreground">
-                              Preço:{" "}
-                              <span className="text-primary font-bold">
-                                R$ {price.toFixed(2).replace(".", ",")}
-                              </span>
-                            </p>
+                      return (
+                        <div className="space-y-3">
+                          <div>
+                            <Label className="text-xs text-muted-foreground mb-1 block">
+                              Encantamento
+                            </Label>
+                            <Select value={bookEnchantId} onValueChange={(v) => {
+                              setBookEnchantId(v);
+                              setBookEnchantLevel("1");
+                            }}>
+                              <SelectTrigger className="bg-muted border-border">
+                                <SelectValue placeholder="Selecione..." />
+                              </SelectTrigger>
+                              <SelectContent className="bg-card border-border max-h-64">
+                                {ALL_ENCHANTS.map((e) => (
+                                  <SelectItem key={e.id} value={e.id}>
+                                    {e.name}{" "}
+                                    <span className="text-muted-foreground text-xs">
+                                      ({e.category} · max. {e.maxLevel})
+                                    </span>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
-                        );
-                      })()}
-                    </div>
+
+                          {bookEnchantId && enchantMeta && (
+                            <div className="space-y-2">
+                              <div>
+                                <Label className="text-xs text-muted-foreground mb-1 block">
+                                  Nivel (1–{enchantMeta.maxLevel})
+                                </Label>
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  max={enchantMeta.maxLevel}
+                                  value={bookEnchantLevel}
+                                  onChange={(e) => setBookEnchantLevel(e.target.value)}
+                                  className="bg-muted border-border h-9 w-24"
+                                />
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                {level} nivel(is) x R$ {pricePerLevel.toFixed(2).replace(".", ",")} ={" "}
+                                <span className="text-primary font-bold">
+                                  R$ {price.toFixed(2).replace(".", ",")}
+                                </span>
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                     <Button onClick={confirmBook} disabled={!bookEnchantId} className="w-full">
                       Confirmar
@@ -634,7 +642,7 @@ export default function KitBuilderPage() {
                                   <p className="text-xs text-muted-foreground">Full / God</p>
                                 ) : cfg?.type === "book" ? (
                                   <p className="text-xs text-muted-foreground">
-                                    {cfg.enchants.length} encant.
+                                    Livro de encantamento
                                   </p>
                                 ) : cfg?.type === "tool" ? (
                                   <p className="text-xs text-muted-foreground">

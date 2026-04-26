@@ -40,7 +40,6 @@ import { toast } from "sonner";
 import {
   ALL_ENCHANTS,
   type EnchantEntry,
-  type BookEnchantOption,
   type ToolEnchantOption,
 } from "@/lib/kitEnchants";
 
@@ -61,7 +60,7 @@ type KitItemForm = {
   armorPriceGod: string;
   armorEnchantsFull: EnchantEntry[];
   armorEnchantsGod: EnchantEntry[];
-  bookEnchants: BookEnchantOption[];
+  bookPricePerLevel: string;
   toolEnchants: ToolEnchantOption[];
 };
 
@@ -79,7 +78,7 @@ const emptyForm: KitItemForm = {
   armorPriceGod: "0",
   armorEnchantsFull: [],
   armorEnchantsGod: [],
-  bookEnchants: [],
+  bookPricePerLevel: "0",
   toolEnchants: [],
 };
 
@@ -105,7 +104,7 @@ function buildItemConfig(form: KitItemForm): string | undefined {
   if (form.configType === "book") {
     return JSON.stringify({
       type: "book",
-      enchants: form.bookEnchants,
+      pricePerLevel: form.bookPricePerLevel,
     });
   }
   if (form.configType === "tool") {
@@ -133,7 +132,7 @@ function parseFormFromItem(item: KitItem): KitItemForm {
     armorPriceGod: "0",
     armorEnchantsFull: [],
     armorEnchantsGod: [],
-    bookEnchants: [],
+    bookPricePerLevel: "0",
     toolEnchants: [],
   };
   if (item.itemConfig) {
@@ -147,7 +146,8 @@ function parseFormFromItem(item: KitItem): KitItemForm {
         base.armorEnchantsGod = cfg.enchantsGod ?? [];
       } else if (cfg?.type === "book") {
         base.configType = "book";
-        base.bookEnchants = cfg.enchants ?? [];
+        // support old format (enchants array) and new format (pricePerLevel)
+        base.bookPricePerLevel = cfg.pricePerLevel ?? "0";
       } else if (cfg?.type === "tool") {
         base.configType = "tool";
         base.toolEnchants = cfg.enchants ?? [];
@@ -254,12 +254,12 @@ function EnchantList({
   );
 }
 
-function BookEnchantList({
+function ToolEnchantList({
   enchants,
   onChange,
 }: {
-  enchants: BookEnchantOption[];
-  onChange: (v: BookEnchantOption[]) => void;
+  enchants: ToolEnchantOption[];
+  onChange: (v: ToolEnchantOption[]) => void;
 }) {
   const [addId, setAddId] = useState("");
   const [addPrice, setAddPrice] = useState("0");
@@ -301,7 +301,7 @@ function BookEnchantList({
                 updatePrice(e.id, ev.target.value)
               }
               className="w-24 h-7 text-xs bg-muted border-border"
-              placeholder="R$"
+              placeholder="R$/nv"
             />
             <button
               type="button"
@@ -334,7 +334,7 @@ function BookEnchantList({
             value={addPrice}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAddPrice(e.target.value)}
             className="w-24 h-8 text-xs bg-muted border-border"
-            placeholder="R$"
+            placeholder="R$/nv"
           />
           <Button
             type="button"
@@ -551,7 +551,7 @@ export default function AdminKitItems() {
                   value={form.minecraftId}
                   onChange={(e) => setF({ minecraftId: e.target.value })}
                   className="bg-muted border-border flex-1 font-mono text-sm"
-                  placeholder="diamond_sword"
+                  placeholder="enchanted_book"
                   required
                   disabled={!!editingId}
                 />
@@ -569,7 +569,7 @@ export default function AdminKitItems() {
                 value={form.name}
                 onChange={(e) => setF({ name: e.target.value })}
                 className="bg-muted border-border"
-                placeholder="Espada de Diamante"
+                placeholder="Livro de Encantamento"
                 required
               />
             </div>
@@ -711,10 +711,27 @@ export default function AdminKitItems() {
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Configuracao de Livro
                 </p>
-                <BookEnchantList
-                  enchants={form.bookEnchants}
-                  onChange={(v) => setF({ bookEnchants: v })}
-                />
+                <p className="text-xs text-muted-foreground">
+                  O comprador escolhe qualquer encantamento na hora de montar o kit.
+                  Defina o preco cobrado por nivel de encantamento.
+                </p>
+                <div>
+                  <Label className="text-foreground mb-1.5 block text-sm">
+                    Preco por nivel (R$)
+                  </Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={form.bookPricePerLevel}
+                    onChange={(e) => setF({ bookPricePerLevel: e.target.value })}
+                    className="bg-muted border-border w-40"
+                    placeholder="ex: 2.50"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Exemplo: Afiacao V = 5 niveis x R$ {parseFloat(form.bookPricePerLevel || "0").toFixed(2)} = R$ {(5 * parseFloat(form.bookPricePerLevel || "0")).toFixed(2)}
+                  </p>
+                </div>
               </div>
             )}
 
@@ -726,7 +743,7 @@ export default function AdminKitItems() {
                 <p className="text-xs text-muted-foreground">
                   Fixado em 1 por slot. O usuario escolhe os encantamentos e niveis na hora de montar o kit.
                 </p>
-                <BookEnchantList
+                <ToolEnchantList
                   enchants={form.toolEnchants}
                   onChange={(v) => setF({ toolEnchants: v })}
                 />
