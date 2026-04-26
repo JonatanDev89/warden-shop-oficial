@@ -243,16 +243,29 @@ export const addonRouter = router({
         const result = await Promise.all(kitOrders.map(async (order) => {
           const items = await db.select().from(orderItems).where(eq(orderItems.orderId, order.id));
 
-          // Parse kit items from productName field: "[SLOT X] Nx Name [minecraftId]"
+          // Parse kit items from productName field: "[SLOT X] Nx Name [minecraftId] {configLabel}"
           const kitSlots = items.map((item) => {
-            const match = item.productName.match(/^\[SLOT (\d+)\] (\d+)x (.+?) \[([^\]]+)\]$/);
+            const match = item.productName.match(/^\[SLOT (\d+)\] (\d+)x (.+?) \[([^\]]+)\](?:\s*\{([^}]*)\})?$/);
             if (!match) return null;
+            const configLabel = match[5] ?? null;
+            // Parse enchants from configLabel, e.g. "Afiação 5" or "Eficiência 3, Resistência 2"
+            const enchants: { id: string; level: number }[] = [];
+            if (configLabel && configLabel !== "Full" && configLabel !== "God" && configLabel !== "Sem encantamentos") {
+              for (const part of configLabel.split(",")) {
+                const m = part.trim().match(/^(.+?)\s+(\d+)$/);
+                if (m) {
+                  enchants.push({ id: m[1]!.trim(), level: parseInt(m[2]!) });
+                }
+              }
+            }
             return {
               slot: parseInt(match[1]!) - 1,
               quantity: parseInt(match[2]!),
               name: match[3]!,
               minecraftId: match[4]!,
               unitPrice: parseFloat(item.unitPrice.toString()),
+              configLabel,
+              enchants,
             };
           }).filter(Boolean);
 

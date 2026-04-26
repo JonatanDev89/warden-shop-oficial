@@ -32,8 +32,10 @@ type SlotItem = {
   unitPrice: string;
   pricePerUnit: boolean;
   imageUrl?: string | null;
-  // extra info for display
+  // configLabel: IDs for server/addon (e.g. "sharpness 5")
   configLabel?: string;
+  // displayLabel: human-readable for UI (e.g. "Afiação 5")
+  displayLabel?: string;
 };
 
 // Pending selection state when item needs extra config
@@ -135,7 +137,8 @@ export default function KitBuilderPage() {
     item: KitItem,
     price: string,
     pricePerUnit: boolean,
-    configLabel: string | undefined
+    configLabel: string | undefined,
+    displayLabel?: string
   ) {
     if (selectedSlot === null) return;
     const qty = Math.max(
@@ -151,6 +154,7 @@ export default function KitBuilderPage() {
       pricePerUnit,
       imageUrl: item.imageUrl,
       configLabel,
+      displayLabel: displayLabel ?? configLabel,
     };
     setSlots(next);
     setSelectedSlot(null);
@@ -174,8 +178,8 @@ export default function KitBuilderPage() {
     if (!enchantMeta) return;
     const level = Math.max(1, Math.min(enchantMeta.maxLevel, parseInt(bookEnchantLevel) || 1));
     const totalEnchantPrice = (parseFloat(cfg.pricePerLevel) * level).toFixed(2);
-    const label = `${enchantMeta.name} ${level}`;
-    placeItem(pendingConfig.item, totalEnchantPrice, false, label);
+    // configLabel uses ID for addon; displayLabel uses PT-BR name for UI
+    placeItem(pendingConfig.item, totalEnchantPrice, false, `${enchantMeta.id} ${level}`, `${enchantMeta.name} ${level}`);
   }
 
   function confirmTool() {
@@ -191,10 +195,7 @@ export default function KitBuilderPage() {
     const label =
       toolSelectedEnchants.length > 0
         ? toolSelectedEnchants
-            .map((sel) => {
-              const meta = pendingConfig.enchants.find((e) => e.id === sel.id);
-              return `${meta?.name ?? sel.id} ${sel.level}`;
-            })
+            .map((sel) => `${sel.id} ${sel.level}`)
             .join(", ")
         : "Sem encantamentos";
     const next = [...slots];
@@ -206,6 +207,12 @@ export default function KitBuilderPage() {
       pricePerUnit: false,
       imageUrl: pendingConfig.item.imageUrl,
       configLabel: label,
+      displayLabel: toolSelectedEnchants.length > 0
+        ? toolSelectedEnchants.map((sel) => {
+            const meta = pendingConfig.enchants.find((e) => e.id === sel.id);
+            return `${meta?.name ?? sel.id} ${sel.level}`;
+          }).join(", ")
+        : "Sem encantamentos",
     };
     setSlots(next);
     setSelectedSlot(null);
@@ -222,6 +229,7 @@ export default function KitBuilderPage() {
         name: string;
         quantity: number;
         unitPrice: string;
+        configLabel?: string;
       }[];
     if (filled.length === 0) {
       toast.error("Adicione pelo menos um item ao kit.");
@@ -266,7 +274,7 @@ export default function KitBuilderPage() {
                       }
                       ${slot ? "border-[#333]" : ""}
                     `}
-                    title={slot ? `${slot.name}${slot.configLabel ? ` (${slot.configLabel})` : ""} x${slot.quantity}` : `Slot ${i + 1}`}
+                    title={slot ? `${slot.name}${slot.displayLabel ? ` (${slot.displayLabel})` : ""} x${slot.quantity}` : `Slot ${i + 1}`}
                   >
                     {slot ? (
                       <>
@@ -700,8 +708,8 @@ export default function KitBuilderPage() {
                           />
                           <span className="flex-1 text-foreground truncate">
                             {s.name}
-                            {s.configLabel && (
-                              <span className="text-muted-foreground ml-1">({s.configLabel})</span>
+                            {s.displayLabel && (
+                              <span className="text-muted-foreground ml-1">({s.displayLabel})</span>
                             )}
                           </span>
                           <span className="text-muted-foreground shrink-0">x{s.quantity}</span>

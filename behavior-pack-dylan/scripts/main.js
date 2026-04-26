@@ -1,4 +1,4 @@
-import { world, system, ItemStack } from '@minecraft/server';
+import { world, system, ItemStack, EnchantmentTypes } from '@minecraft/server';
 import { http, HttpRequest, HttpRequestMethod, HttpHeader } from '@minecraft/server-net';
 import { ActionFormData, MessageFormData } from '@minecraft/server-ui';
 
@@ -238,10 +238,8 @@ class WardenShop {
                         z: Math.floor(loc.z),
                     };
 
-                    // Usar runCommand para colocar a shulker box (mais compatível)
                     dim.runCommand(`setblock ${pos.x} ${pos.y} ${pos.z} minecraft:purple_shulker_box`);
 
-                    // Aguardar 1 tick para o bloco ser colocado
                     system.runTimeout(() => {
                         try {
                             const block = dim.getBlock(pos);
@@ -260,6 +258,24 @@ class WardenShop {
                                         ? slot.minecraftId
                                         : `minecraft:${slot.minecraftId}`;
                                     const item = new ItemStack(itemId, Math.max(1, slot.quantity));
+
+                                    // Apply enchantments if present
+                                    if (slot.enchants?.length > 0) {
+                                        const enchantable = item.getComponent('minecraft:enchantable');
+                                        if (enchantable) {
+                                            for (const ench of slot.enchants) {
+                                                try {
+                                                    const enchType = EnchantmentTypes.get(ench.id);
+                                                    if (enchType) {
+                                                        enchantable.addEnchantment({ type: enchType, level: ench.level });
+                                                    }
+                                                } catch (e) {
+                                                    console.warn(`[WardenKit] Encantamento inválido: ${ench.id} — ${e}`);
+                                                }
+                                            }
+                                        }
+                                    }
+
                                     container.setItem(slot.slot, item);
                                     placed++;
                                 } catch (e) {

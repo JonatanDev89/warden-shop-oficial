@@ -138,14 +138,24 @@ async function startServer() {
       const result = await Promise.all(kitOrders.map(async (order) => {
         const items = await db.select().from(orderItems).where(eq(orderItems.orderId, order.id));
         const kitSlots = items.map((item) => {
-          // Format: "[SLOT X] Nx Name [minecraftId]"
-          const match = item.productName.match(/^\[SLOT (\d+)\] (\d+)x (.+?) \[([^\]]+)\]$/);
+          // Format: "[SLOT X] Nx Name [minecraftId] {configLabel}"
+          const match = item.productName.match(/^\[SLOT (\d+)\] (\d+)x (.+?) \[([^\]]+)\](?:\s*\{([^}]*)\})?$/);
           if (!match) return null;
+          const configLabel = match[5] ?? null;
+          const enchants: { id: string; level: number }[] = [];
+          if (configLabel && configLabel !== "Full" && configLabel !== "God" && configLabel !== "Sem encantamentos") {
+            for (const part of configLabel.split(",")) {
+              const m = part.trim().match(/^(.+?)\s+(\d+)$/);
+              if (m) enchants.push({ id: m[1]!.trim(), level: parseInt(m[2]!) });
+            }
+          }
           return {
             slot: parseInt(match[1]!) - 1,
             quantity: parseInt(match[2]!),
             name: match[3]!,
             minecraftId: match[4]!,
+            configLabel,
+            enchants,
           };
         }).filter(Boolean);
 

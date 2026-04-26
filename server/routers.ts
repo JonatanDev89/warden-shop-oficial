@@ -135,6 +135,7 @@ const shopRouter = router({
         name: z.string(),
         quantity: z.number().min(1),
         unitPrice: z.string(),
+        configLabel: z.string().optional(),
       })),
     }))
     .mutation(async ({ input }) => {
@@ -156,7 +157,7 @@ const shopRouter = router({
         },
         input.slots.map((s) => ({
           productId: 0,
-          productName: `[SLOT ${s.slot + 1}] ${s.quantity}x ${s.name} [${s.minecraftId}]`,
+          productName: `[SLOT ${s.slot + 1}] ${s.quantity}x ${s.name} [${s.minecraftId}]${s.configLabel ? ` {${s.configLabel}}` : ""}`,
           quantity: s.quantity,
           unitPrice: s.unitPrice,
         }))
