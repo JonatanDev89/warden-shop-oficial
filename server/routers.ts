@@ -178,6 +178,36 @@ const shopRouter = router({
     return stats?.topBuyers ?? [];
   }),
 
+  getMonthlyGoal: publicProcedure.query(async () => {
+    const settings = await getSiteSettings();
+    const target = parseFloat(settings.monthlyGoalTarget ?? "0");
+    const label = settings.monthlyGoalLabel ?? "Meta do mês";
+
+    // Calculate current month revenue from delivered orders
+    const db = await import("./db").then((m) => m.getDb());
+    let current = 0;
+    if (db) {
+      const { orders } = await import("../drizzle/schema");
+      const { eq, and, gte, lte } = await import("drizzle-orm");
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+      const monthOrders = await db
+        .select()
+        .from(orders)
+        .where(
+          and(
+            eq(orders.status, "delivered"),
+            gte(orders.createdAt, startOfMonth),
+            lte(orders.createdAt, endOfMonth)
+          )
+        );
+      current = monthOrders.reduce((sum, o) => sum + parseFloat(String(o.total)), 0);
+    }
+
+    return { target, current, label };
+  }),
+
   createOrder: publicProcedure
     .input(
       z.object({

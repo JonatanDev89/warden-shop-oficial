@@ -19,7 +19,6 @@ import {
   Zap,
 } from "lucide-react";
 import CategoryCard from "@/components/CategoryCard";
-import MonthlyGoal from "@/components/MonthlyGoal";
 
 export default function Home() {
   const { data: settings } = trpc.shop.getSettings.useQuery();
@@ -135,9 +134,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Monthly Goal ── */}
-      <MonthlyGoal current={60} goal={100} />
-
       {/* ── Categories ── */}
       <section className="py-16">
         <div className="container">
@@ -245,80 +241,56 @@ export default function Home() {
 
             {/* Podium — order: 2nd, 1st, 3rd */}
             <div className="flex items-end justify-center gap-4 max-w-2xl mx-auto">
-              {[1, 0, 2].map((idx) => {
+              {([1, 0, 2] as const).map((idx) => {
                 const buyer = topBuyers[idx];
                 if (!buyer) return null;
                 const rank = idx + 1;
                 const isFirst = idx === 0;
 
-                const borderColor = isFirst
-                  ? "border-yellow-500/60"
-                  : idx === 1
-                  ? "border-yellow-700/40"
-                  : "border-yellow-800/30";
-
-                const avatarBg = isFirst
-                  ? "bg-yellow-600/30 border-yellow-500"
-                  : idx === 1
-                  ? "bg-yellow-800/30 border-yellow-700"
-                  : "bg-yellow-900/20 border-yellow-800";
-
-                const starColor = isFirst
-                  ? "text-yellow-400"
-                  : idx === 1
-                  ? "text-yellow-600"
-                  : "text-yellow-700";
+                // Medal colors
+                const medal =
+                  rank === 1
+                    ? { border: "border-yellow-500/70", avatarBg: "bg-yellow-900/30 border-yellow-500", badge: "bg-yellow-400 text-yellow-900", value: "text-yellow-400", star: "text-yellow-400", crown: "bg-yellow-500" }
+                    : rank === 2
+                    ? { border: "border-slate-400/50", avatarBg: "bg-slate-700/30 border-slate-400", badge: "bg-slate-400 text-slate-900", value: "text-slate-300", star: "text-slate-400", crown: "" }
+                    : { border: "border-amber-700/50", avatarBg: "bg-amber-900/20 border-amber-700", badge: "bg-amber-700 text-amber-100", value: "text-amber-600", star: "text-amber-700", crown: "" };
 
                 const stars = rank === 1 ? 3 : rank === 2 ? 2 : 1;
 
                 return (
                   <div
                     key={buyer.nickname}
-                    className={`relative flex flex-col items-center bg-card border ${borderColor} rounded-2xl px-6 py-6 ${
-                      isFirst ? "w-52 pb-8 -mb-0" : "w-44 mb-4"
-                    } transition-all`}
-                    style={
-                      isFirst
-                        ? { boxShadow: "0 0 24px rgba(234,179,8,0.15)" }
-                        : {}
-                    }
+                    className={`relative flex flex-col items-center bg-card border ${medal.border} rounded-2xl px-5 py-6 transition-all ${
+                      isFirst ? "w-52 shadow-lg shadow-yellow-500/10" : "w-44 mb-4"
+                    }`}
                   >
                     {/* Crown for 1st */}
                     {isFirst && (
-                      <div className="absolute -top-5 left-1/2 -translate-x-1/2 h-10 w-10 rounded-full bg-yellow-500 flex items-center justify-center shadow-lg">
+                      <div className={`absolute -top-5 left-1/2 -translate-x-1/2 h-10 w-10 rounded-full ${medal.crown} flex items-center justify-center shadow-lg`}>
                         <Trophy className="h-5 w-5 text-yellow-900" />
                       </div>
                     )}
 
                     {/* Avatar */}
-                    <div
-                      className={`relative h-16 w-16 rounded-full border-2 ${avatarBg} flex items-center justify-center mb-3 ${isFirst ? "mt-4" : ""}`}
-                    >
-                      {/* Person icon */}
+                    <div className={`relative h-16 w-16 rounded-full border-2 ${medal.avatarBg} flex items-center justify-center mb-3 ${isFirst ? "mt-4" : ""}`}>
                       <svg viewBox="0 0 24 24" className="h-8 w-8 text-orange-400" fill="currentColor">
                         <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
                       </svg>
-
-                      {/* Rank badge */}
-                      <span
-                        className={`absolute -bottom-1 -right-1 h-5 w-5 rounded-full flex items-center justify-center text-[10px] font-bold text-yellow-900 ${
-                          isFirst ? "bg-yellow-400" : idx === 1 ? "bg-yellow-600" : "bg-yellow-700"
-                        }`}
-                      >
+                      <span className={`absolute -bottom-1 -right-1 h-5 w-5 rounded-full flex items-center justify-center text-[10px] font-bold ${medal.badge}`}>
                         {rank}
                       </span>
                     </div>
 
                     {/* Name */}
                     <p
-                      className={`font-bold text-foreground text-center truncate w-full text-center ${isFirst ? "text-base" : "text-sm"}`}
+                      className={`font-bold text-foreground text-center truncate w-full ${isFirst ? "text-base" : "text-sm"}`}
                       style={{ fontFamily: "'Space Grotesk', sans-serif" }}
                     >
                       {buyer.nickname}
                     </p>
 
                     {/* Value */}
-                    <div className={`flex items-center gap-1 mt-1 ${isFirst ? "text-yellow-400 font-semibold" : "text-muted-foreground"} text-sm`}>
+                    <div className={`flex items-center gap-1 mt-1 ${medal.value} text-sm font-semibold`}>
                       <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2">
                         <rect x="2" y="5" width="20" height="14" rx="2"/>
                         <path d="M2 10h20"/>
@@ -327,7 +299,7 @@ export default function Home() {
                     </div>
 
                     {/* Stars */}
-                    <div className={`flex gap-0.5 mt-3 ${starColor}`}>
+                    <div className={`flex gap-0.5 mt-3 ${medal.star}`}>
                       {Array.from({ length: stars }).map((_, i) => (
                         <svg key={i} viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
                           <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>

@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 
+import MonthlyGoal from "@/components/MonthlyGoal";
+
 interface ShopLayoutProps {
   children: React.ReactNode;
 }
@@ -168,6 +170,9 @@ export default function ShopLayout({ children }: ShopLayoutProps) {
 
       {/* Main content */}
       <main className="flex-1">{children}</main>
+
+      {/* Monthly Goal */}
+      <MonthlyGoal />
 
       {/* Footer */}
       <footer className="bg-card border-t border-border mt-16">

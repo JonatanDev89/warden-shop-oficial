@@ -27,6 +27,8 @@ export default function AdminCustomization() {
   const [discordTicketsUrl, setDiscordTicketsUrl] = useState("");
   const [pixKey, setPixKey] = useState("");
   const [pixKeyType, setPixKeyType] = useState<"cpf" | "email" | "phone" | "random">("cpf");
+  const [monthlyGoalTarget, setMonthlyGoalTarget] = useState("");
+  const [monthlyGoalLabel, setMonthlyGoalLabel] = useState("");
 
   useEffect(() => {
     if (settings) {
@@ -42,6 +44,8 @@ export default function AdminCustomization() {
       setGlowColor(settings.glowColor ?? "#00c8c8");
       setWardenGifUrl(settings.wardenGifUrl ?? "");
       setDiscordTicketsUrl(settings.discordTicketsUrl ?? "");
+      setMonthlyGoalTarget(settings.monthlyGoalTarget ?? "");
+      setMonthlyGoalLabel(settings.monthlyGoalLabel ?? "Meta do mês");
       // Carregar dados de personalização da loja (PIX, etc)
     }
   }, [settings]);
@@ -86,6 +90,8 @@ export default function AdminCustomization() {
       glowColor,
       wardenGifUrl,
       discordTicketsUrl,
+      monthlyGoalTarget,
+      monthlyGoalLabel,
     });
     
     saveCustomization.mutate({
@@ -295,8 +301,42 @@ export default function AdminCustomization() {
           </CardContent>
         </Card>
 
-        {/* Glow e Warden GIF */}
+        {/* Meta do Mês */}
         <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle className="text-foreground text-base flex items-center gap-2">
+              🎯 Meta do Mês
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label className="text-foreground mb-1.5 block">Título da Meta</Label>
+              <Input
+                value={monthlyGoalLabel}
+                onChange={(e) => setMonthlyGoalLabel(e.target.value)}
+                className="bg-muted border-border"
+                placeholder="Meta do mês"
+              />
+            </div>
+            <div>
+              <Label className="text-foreground mb-1.5 block">Valor da Meta (R$)</Label>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                value={monthlyGoalTarget}
+                onChange={(e) => setMonthlyGoalTarget(e.target.value)}
+                className="bg-muted border-border"
+                placeholder="500.00"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                O progresso é calculado automaticamente com base nos pedidos entregues do mês atual. Deixe 0 para ocultar a barra.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Glow e Warden GIF */}        <Card className="bg-card border-border">
           <CardHeader>
             <CardTitle className="text-foreground text-base">Efeitos Visuais</CardTitle>
           </CardHeader>
