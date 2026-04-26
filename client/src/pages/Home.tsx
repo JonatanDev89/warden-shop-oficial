@@ -20,6 +20,7 @@ import {
   Zap,
 } from "lucide-react";
 import CategoryCard from "@/components/CategoryCard";
+import MonthlyGoal from "@/components/MonthlyGoal";
 
 export default function Home() {
   const { data: settings } = trpc.shop.getSettings.useQuery();
@@ -134,6 +135,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* ── Monthly Goal ── */}
+      <MonthlyGoal current={60} goal={100} />
 
       {/* ── Categories ── */}
       <section className="py-16">
