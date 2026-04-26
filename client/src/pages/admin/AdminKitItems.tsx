@@ -558,7 +558,7 @@ export default function AdminKitItems() {
               </div>
               {editingId && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  O Minecraft ID não pode ser alterado após a criação.
+                  O Minecraft ID nao pode ser alterado apos a criacao.
                 </p>
               )}
             </div>
@@ -589,7 +589,7 @@ export default function AdminKitItems() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="text-foreground mb-1.5 block">Preço base (R$) *</Label>
+                <Label className="text-foreground mb-1.5 block">Preco base (R$) *</Label>
                 <Input
                   type="number"
                   step="0.01"
@@ -606,14 +606,14 @@ export default function AdminKitItems() {
                     checked={form.pricePerUnit}
                     onCheckedChange={(v) => setF({ pricePerUnit: v })}
                   />
-                  <Label className="text-foreground text-sm">Preço por unidade</Label>
+                  <Label className="text-foreground text-sm">Preco por unidade</Label>
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="text-foreground mb-1.5 block">Mín. por slot</Label>
+                <Label className="text-foreground mb-1.5 block">Min. por slot</Label>
                 <Input
                   type="number"
                   min="1"
@@ -623,7 +623,7 @@ export default function AdminKitItems() {
                 />
               </div>
               <div>
-                <Label className="text-foreground mb-1.5 block">Máx. por slot</Label>
+                <Label className="text-foreground mb-1.5 block">Max. por slot</Label>
                 <Input
                   type="number"
                   min="1"
@@ -635,7 +635,7 @@ export default function AdminKitItems() {
             </div>
 
             <div>
-              <Label className="text-foreground mb-1.5 block">Configuração especial</Label>
+              <Label className="text-foreground mb-1.5 block">Configuracao especial</Label>
               <Select
                 value={form.configType}
                 onValueChange={(v) => setF({ configType: v as ConfigType })}
@@ -655,7 +655,7 @@ export default function AdminKitItems() {
             {form.configType === "armor" && (
               <div className="rounded-lg border border-border p-3 space-y-4 bg-muted/30">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Configuração de Armadura
+                  Configuracao de Armadura
                 </p>
                 <Tabs defaultValue="full">
                   <TabsList className="bg-muted">
@@ -665,7 +665,7 @@ export default function AdminKitItems() {
                   <TabsContent value="full" className="space-y-3 pt-2">
                     <div>
                       <Label className="text-foreground mb-1.5 block text-sm">
-                        Preço Full (R$)
+                        Preco Full (R$)
                       </Label>
                       <Input
                         type="number"
@@ -685,7 +685,7 @@ export default function AdminKitItems() {
                   <TabsContent value="god" className="space-y-3 pt-2">
                     <div>
                       <Label className="text-foreground mb-1.5 block text-sm">
-                        Preço God (R$)
+                        Preco God (R$)
                       </Label>
                       <Input
                         type="number"
@@ -709,7 +709,7 @@ export default function AdminKitItems() {
             {form.configType === "book" && (
               <div className="rounded-lg border border-border p-3 space-y-3 bg-muted/30">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Configuração de Livro
+                  Configuracao de Livro
                 </p>
                 <BookEnchantList
                   enchants={form.bookEnchants}
@@ -721,10 +721,10 @@ export default function AdminKitItems() {
             {form.configType === "tool" && (
               <div className="rounded-lg border border-border p-3 space-y-3 bg-muted/30">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Configuração de Ferramenta / Arma
+                  Configuracao de Ferramenta / Arma
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Fixado em 1 por slot. O usuário escolhe os encantamentos e níveis na hora de montar o kit.
+                  Fixado em 1 por slot. O usuario escolhe os encantamentos e niveis na hora de montar o kit.
                 </p>
                 <BookEnchantList
                   enchants={form.toolEnchants}
