@@ -84,11 +84,11 @@ export default function CategoryPage() {
                     {product.description}
                   </p>
 
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xl font-bold text-primary">
+                  <div className="flex items-center justify-between mb-3 gap-2">
+                    <span className="text-xl font-bold text-primary whitespace-nowrap">
                       {formatPrice(product.price)}
                     </span>
-                    <Badge variant="outline" className="text-xs border-border text-muted-foreground">
+                    <Badge variant="outline" className="text-xs border-border text-muted-foreground shrink-0">
                       {product.stock === -1 ? (
                         <span className="flex items-center gap-1">
                           <Infinity className="h-3 w-3" /> em estoque
@@ -107,8 +107,8 @@ export default function CategoryPage() {
                         Ver detalhes
                       </Button>
                     </Link>
-                    <Link href={`/checkout?productId=${product.id}`}>
-                      <Button size="sm" className="gap-1 text-xs">
+                    <Link href={`/checkout?productId=${product.id}`} className="flex-1">
+                      <Button size="sm" className="w-full gap-1 text-xs">
                         <ShoppingCart className="h-3 w-3" />
                         Comprar
                       </Button>
