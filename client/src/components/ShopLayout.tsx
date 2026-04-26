@@ -175,7 +175,7 @@ export default function ShopLayout({ children }: ShopLayoutProps) {
       <MonthlyGoal />
 
       {/* Footer */}
-      <footer className="bg-card border-t border-border mt-16">
+      <footer className="bg-card border-t border-border">
         <div className="container py-10">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
