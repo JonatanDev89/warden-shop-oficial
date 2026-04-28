@@ -53,11 +53,13 @@ let _mpClient: MercadoPagoConfig | null = null;
 
 function getMpClient(): MercadoPagoConfig {
   if (!_mpClient) {
-    if (!ENV.mpAccessToken) {
+    // Lê em tempo de execução para garantir que as env vars do Render estão disponíveis
+    const token = process.env.MP_ACCESS_TOKEN ?? ENV.mpAccessToken;
+    if (!token) {
       throw new Error("MP_ACCESS_TOKEN não configurado.");
     }
     _mpClient = new MercadoPagoConfig({
-      accessToken: ENV.mpAccessToken,
+      accessToken: token,
       options: { timeout: 12_000, retries: 2 },
     });
   }
@@ -103,7 +105,7 @@ export async function createPreference(
 ): Promise<MpPreferenceResult> {
   const client = getMpClient();
   const preference = new Preference(client);
-  const baseUrl = ENV.appBaseUrl.replace(/\/$/, "");
+  const baseUrl = (process.env.APP_BASE_URL ?? ENV.appBaseUrl).replace(/\/$/, "");
 
   // Arredonda para 2 casas — MP rejeita mais casas decimais
   const items = input.items.map((item) => ({
@@ -152,7 +154,7 @@ export async function createPreference(
     throw new Error("Resposta inválida do Mercado Pago ao criar preferência.");
   }
 
-  const checkoutUrl = ENV.isProduction
+  const checkoutUrl = (process.env.NODE_ENV === "production" || ENV.isProduction)
     ? result.init_point
     : (result.sandbox_init_point ?? result.init_point);
 
@@ -221,7 +223,8 @@ export function validateWebhookSignature(params: {
   xRequestId: string;
   dataId: string;
 }): { valid: boolean; reason?: string } {
-  if (!ENV.mpWebhookSecret) {
+  const secret = process.env.MP_WEBHOOK_SECRET ?? ENV.mpWebhookSecret;
+  if (!secret) {
     if (!ENV.isProduction) {
       logger.warn("mp.webhook.no_secret", { msg: "MP_WEBHOOK_SECRET ausente — pulando validação em dev" });
       return { valid: true };
@@ -260,7 +263,7 @@ export function validateWebhookSignature(params: {
 
     const manifest = `id:${params.dataId};request-id:${params.xRequestId};ts:${ts};`;
     const expected = crypto
-      .createHmac("sha256", ENV.mpWebhookSecret)
+      .createHmac("sha256", secret)
       .update(manifest)
       .digest("hex");
 
