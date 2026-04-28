@@ -9,6 +9,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { runMigrations } from "../db";
+import { handleMpWebhook } from "../payment/webhook.controller";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -223,6 +224,9 @@ async function startServer() {
   app.get("/ping", (_req, res) => {
     res.status(200).send("ok");
   });
+
+  // Mercado Pago webhook — DEVE vir antes do tRPC
+  app.post("/api/mp/webhook", handleMpWebhook);
 
   // tRPC API
   app.use(

@@ -8,9 +8,6 @@ export default function MonthlyGoal() {
 
   const pct = Math.min(100, Math.round((data.current / data.target) * 100));
 
-  const fmt = (v: number) =>
-    `R$ ${v.toFixed(2).replace(".", ",")}`;
-
   return (
     <div className="w-full bg-card border-t border-border">
       <div className="container mx-auto max-w-4xl py-5 px-4">
@@ -26,10 +23,6 @@ export default function MonthlyGoal() {
             — Sua ajuda nos mantém no ar!
           </span>
         </div>
-
-        <p className="text-xs text-muted-foreground mb-2">
-          {fmt(data.current)} arrecadados de {fmt(data.target)}
-        </p>
 
         {/* Progress bar */}
         <div className="relative h-2.5 w-full rounded-full bg-muted overflow-hidden">

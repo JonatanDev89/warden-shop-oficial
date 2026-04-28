@@ -1,5 +1,4 @@
 
-import { nanoid } from "nanoid";
 import { z } from "zod";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -55,6 +54,7 @@ import {
   upsertKitItem,
   deleteKitItem,
 } from "./db";
+import { initiatePayment } from "./payment/payment.service";
 import { getPendingOrdersForAddon } from "./addon-helpers";
 import {
   notifyPendingOrder,
@@ -64,7 +64,6 @@ import {
   sendDeliveryReceipt,
 } from "./discord-webhooks";
 
-import axios from "axios";
 import crypto from "crypto";
 import { nanoid } from "nanoid";
 import { createLocalUser, getUserByEmailWithPassword } from "./db";
@@ -154,7 +153,7 @@ const shopRouter = router({
           discount: "0.00",
           total: subtotal.toFixed(2),
           notes: `KIT PERSONALIZADO: ${kitSummary}`,
-        },
+        } as Parameters<typeof createOrder>[0],
         input.slots.map((s) => ({
           productId: 0,
           productName: `[SLOT ${s.slot + 1}] ${s.quantity}x ${s.name} [${s.minecraftId}]${s.configLabel ? ` {${s.configLabel}}` : ""}`,
@@ -177,6 +176,36 @@ const shopRouter = router({
     const stats = await getDashboardStats();
     return stats?.topBuyers ?? [];
   }),
+
+  // Cria preferência de pagamento no Mercado Pago para um pedido existente
+  createMpPayment: publicProcedure
+    .input(z.object({ orderNumber: z.string().min(1).max(32) }))
+    .mutation(async ({ input }) => {
+      try {
+        return await initiatePayment(input.orderNumber);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Erro ao iniciar pagamento.";
+        if (msg.includes("não encontrado")) throw new TRPCError({ code: "NOT_FOUND", message: msg });
+        if (msg.includes("já foi pago")) throw new TRPCError({ code: "BAD_REQUEST", message: msg });
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Erro ao iniciar pagamento. Tente novamente." });
+      }
+    }),
+
+  // Polling de status — frontend usa para confirmar pagamento sem depender do redirect
+  getOrderStatus: publicProcedure
+    .input(z.object({ orderNumber: z.string().min(1).max(32) }))
+    .query(async ({ input }) => {
+      const order = await getOrderWithItemsByNumber(input.orderNumber);
+      if (!order) throw new TRPCError({ code: "NOT_FOUND", message: "Pedido não encontrado." });
+      return {
+        orderNumber: order.orderNumber,
+        status: order.status,
+        paymentStatus: order.paymentStatus ?? "pending",
+        paymentStatusDetail: (order as any).paymentStatusDetail ?? "",
+        total: order.total,
+        paidAt: order.paidAt ?? null,
+      };
+    }),
 
   getMonthlyGoal: publicProcedure.query(async () => {
     const settings = await getSiteSettings();
@@ -211,15 +240,18 @@ const shopRouter = router({
   createOrder: publicProcedure
     .input(
       z.object({
-        minecraftNickname: z.string().min(1),
-        email: z.string().email(),
-        couponCode: z.string().optional(),
+        minecraftNickname: z.string()
+          .min(1, "Nickname obrigatório")
+          .max(16, "Nickname muito longo")
+          .regex(/^[a-zA-Z0-9_]+$/, "Nickname inválido — use apenas letras, números e _"),
+        email: z.string().email("E-mail inválido").max(320),
+        couponCode: z.string().max(64).optional(),
         items: z.array(
           z.object({
-            productId: z.number(),
-            quantity: z.number().min(1),
+            productId: z.number().int().positive(),
+            quantity: z.number().int().min(1).max(99),
           })
-        ),
+        ).min(1).max(20),
       })
     )
     .mutation(async ({ input }) => {
@@ -264,7 +296,7 @@ const shopRouter = router({
       }
 
       const total = Math.max(0, subtotal - discount);
-      const orderNumber = `#${Date.now().toString().slice(-5)}`;
+      const orderNumber = `#${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 5).toUpperCase()}`;
 
       const order = await createOrder(
         {
@@ -446,8 +478,10 @@ const adminRouter = router({
   createApiKey: adminProcedure
     .input(z.object({ name: z.string().min(1) }))
     .mutation(async ({ input }) => {
-      const rawKey = `warden_${nanoid(16)}`;
-      const prefix = rawKey.slice(0, 12);
+      // 48 bytes aleatórios → 64 chars hex = 256 bits de entropia
+      const secret = crypto.randomBytes(48).toString("hex");
+      const rawKey = `wsk_${secret}`;
+      const prefix = `wsk_${secret.slice(0, 8)}`;
       const hash = crypto.createHash("sha256").update(rawKey).digest("hex");
       await createApiKey(input.name, hash, prefix);
       return { key: rawKey, prefix };

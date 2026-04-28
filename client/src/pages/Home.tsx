@@ -18,12 +18,15 @@ import {
   Sword,
   Zap,
 } from "lucide-react";
+import { useAuth } from "@/_core/hooks/useAuth";
 import CategoryCard from "@/components/CategoryCard";
 
 export default function Home() {
   const { data: settings } = trpc.shop.getSettings.useQuery();
   const { data: categories, isLoading: loadingCats } = trpc.shop.getCategories.useQuery();
   const { data: topBuyers } = trpc.shop.getTopBuyers.useQuery();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
 
   const heroTitle = settings?.heroTitle ?? "A Loja Oficial do Warden Craft";
   const heroSubtitle =
@@ -92,12 +95,14 @@ export default function Home() {
                     Ver Produtos
                   </Button>
                 </Link>
-                <Link href="/api-docs">
-                  <Button size="lg" variant="outline" className="gap-2 border-border/60 w-full">
-                    <Zap className="h-5 w-5" />
-                    API Docs
-                  </Button>
-                </Link>
+                {isAdmin && (
+                  <Link href="/api-docs">
+                    <Button size="lg" variant="outline" className="gap-2 border-border/60 w-full">
+                      <Zap className="h-5 w-5" />
+                      API Docs
+                    </Button>
+                  </Link>
+                )}
               </div>
               <img
                 src={wardenGifUrl}
@@ -114,12 +119,14 @@ export default function Home() {
                   Ver Produtos
                 </Button>
               </Link>
-              <Link href="/api-docs">
-                <Button size="lg" variant="outline" className="gap-2 border-border/60">
-                  <Zap className="h-5 w-5" />
-                  API Docs
-                </Button>
-              </Link>
+              {isAdmin && (
+                <Link href="/api-docs">
+                  <Button size="lg" variant="outline" className="gap-2 border-border/60">
+                    <Zap className="h-5 w-5" />
+                    API Docs
+                  </Button>
+                </Link>
+              )}
             </div>
             </div>
             {/* Warden GIF desktop */}

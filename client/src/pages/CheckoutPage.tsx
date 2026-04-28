@@ -6,7 +6,15 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import ShopLayout from "@/components/ShopLayout";
-import { ChevronRight, Tag, AlertTriangle, Loader2 } from "lucide-react";
+import {
+  ChevronRight,
+  Tag,
+  Loader2,
+  ShieldCheck,
+  CreditCard,
+  Smartphone,
+  Banknote,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -21,8 +29,6 @@ export default function CheckoutPage() {
     { enabled: productId > 0 }
   );
 
-  const { data: customization, isLoading: loadingCustomization } = trpc.shop.getStoreCustomization.useQuery();
-
   const [nickname, setNickname] = useState("");
   const [email, setEmail] = useState("");
   const [couponInput, setCouponInput] = useState("");
@@ -33,15 +39,27 @@ export default function CheckoutPage() {
   } | null>(null);
   const [couponError, setCouponError] = useState("");
   const [agreed, setAgreed] = useState(false);
+  const [step, setStep] = useState<"form" | "redirecting">("form");
 
   const utils = trpc.useUtils();
 
+  // Passo 1: criar pedido
   const createOrder = trpc.shop.createOrder.useMutation({
-    onSuccess: (order) => {
-      navigate(`/pedido-confirmado?orderNumber=${order?.orderNumber ?? ""}`);
-    },
     onError: (err) => {
       toast.error(err.message ?? "Erro ao criar pedido.");
+      setStep("form");
+    },
+  });
+
+  // Passo 2: criar preferência MP e redirecionar
+  const createPayment = trpc.shop.createMpPayment.useMutation({
+    onSuccess: (data) => {
+      // Redireciona para o checkout hospedado pelo Mercado Pago
+      window.location.href = data.checkoutUrl;
+    },
+    onError: (err) => {
+      toast.error(err.message ?? "Erro ao iniciar pagamento. Tente novamente.");
+      setStep("form");
     },
   });
 
@@ -57,7 +75,6 @@ export default function CheckoutPage() {
 
   const discount = calculateDiscount();
   const total = Math.max(0, productPrice - discount);
-
   const formatPrice = (v: number) => `R$ ${v.toFixed(2).replace(".", ",")}`;
 
   const handleApplyCoupon = async () => {
@@ -84,13 +101,26 @@ export default function CheckoutPage() {
     if (!agreed) return toast.error("Você precisa concordar com os termos.");
     if (!product) return;
 
-    createOrder.mutate({
+    setStep("redirecting");
+
+    // 1. Criar pedido no banco
+    const order = await createOrder.mutateAsync({
       minecraftNickname: nickname.trim(),
       email: email.trim(),
       couponCode: appliedCoupon?.code,
       items: [{ productId: product.id, quantity: 1 }],
     });
+
+    if (!order?.orderNumber) {
+      setStep("form");
+      return;
+    }
+
+    // 2. Criar preferência no Mercado Pago e redirecionar
+    createPayment.mutate({ orderNumber: order.orderNumber });
   };
+
+  const isProcessing = step === "redirecting" || createOrder.isPending || createPayment.isPending;
 
   return (
     <ShopLayout>
@@ -121,8 +151,9 @@ export default function CheckoutPage() {
         ) : (
           <form onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Form */}
+              {/* Formulário */}
               <div className="lg:col-span-2 space-y-6">
+                {/* Dados do jogador */}
                 <Card className="bg-card border-border">
                   <CardHeader>
                     <CardTitle className="text-foreground text-lg">Informações do Jogador</CardTitle>
@@ -139,6 +170,7 @@ export default function CheckoutPage() {
                         placeholder="Seu nickname exato no jogo"
                         className="bg-muted border-border"
                         required
+                        disabled={isProcessing}
                       />
                       <p className="text-xs text-muted-foreground mt-1">
                         Use exatamente como aparece no jogo — diferencia maiúsculas.
@@ -156,15 +188,16 @@ export default function CheckoutPage() {
                         placeholder="seu@email.com"
                         className="bg-muted border-border"
                         required
+                        disabled={isProcessing}
                       />
                       <p className="text-xs text-muted-foreground mt-1">
-                        Para acompanhamento do pedido.
+                        Usado para acompanhamento do pedido.
                       </p>
                     </div>
                   </CardContent>
                 </Card>
 
-                {/* Coupon */}
+                {/* Cupom */}
                 <Card className="bg-card border-border">
                   <CardHeader>
                     <CardTitle className="text-foreground text-lg flex items-center gap-2">
@@ -179,28 +212,24 @@ export default function CheckoutPage() {
                         onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
                         placeholder="CÓDIGO DO CUPOM"
                         className="bg-muted border-border font-mono"
-                        disabled={!!appliedCoupon}
+                        disabled={!!appliedCoupon || isProcessing}
                       />
                       {appliedCoupon ? (
                         <Button
                           type="button"
                           variant="outline"
-                          onClick={() => {
-                            setAppliedCoupon(null);
-                            setCouponInput("");
-                          }}
+                          onClick={() => { setAppliedCoupon(null); setCouponInput(""); }}
+                          disabled={isProcessing}
                         >
                           Remover
                         </Button>
                       ) : (
-                        <Button type="button" variant="outline" onClick={handleApplyCoupon}>
+                        <Button type="button" variant="outline" onClick={handleApplyCoupon} disabled={isProcessing}>
                           Aplicar
                         </Button>
                       )}
                     </div>
-                    {couponError && (
-                      <p className="text-destructive text-sm mt-2">{couponError}</p>
-                    )}
+                    {couponError && <p className="text-destructive text-sm mt-2">{couponError}</p>}
                     {appliedCoupon && (
                       <p className="text-primary text-sm mt-2">
                         ✓ Cupom <strong>{appliedCoupon.code}</strong> aplicado —{" "}
@@ -212,7 +241,36 @@ export default function CheckoutPage() {
                   </CardContent>
                 </Card>
 
-                {/* Terms Agreement */}
+                {/* Métodos de pagamento aceitos */}
+                <Card className="bg-card border-border">
+                  <CardHeader>
+                    <CardTitle className="text-foreground text-lg flex items-center gap-2">
+                      <CreditCard className="h-4 w-4 text-primary" />
+                      Formas de Pagamento
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="flex flex-col items-center gap-1.5 p-3 rounded-lg bg-muted border border-border text-center">
+                        <CreditCard className="h-5 w-5 text-primary" />
+                        <span className="text-xs text-muted-foreground">Cartão de Crédito</span>
+                      </div>
+                      <div className="flex flex-col items-center gap-1.5 p-3 rounded-lg bg-muted border border-border text-center">
+                        <Banknote className="h-5 w-5 text-primary" />
+                        <span className="text-xs text-muted-foreground">PIX</span>
+                      </div>
+                      <div className="flex flex-col items-center gap-1.5 p-3 rounded-lg bg-muted border border-border text-center">
+                        <Smartphone className="h-5 w-5 text-primary" />
+                        <span className="text-xs text-muted-foreground">Boleto</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-3 text-center">
+                      Pagamento processado com segurança pelo Mercado Pago.
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {/* Termos */}
                 <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/50 border border-border">
                   <input
                     type="checkbox"
@@ -220,32 +278,43 @@ export default function CheckoutPage() {
                     checked={agreed}
                     onChange={(e) => setAgreed(e.target.checked)}
                     className="mt-0.5 h-4 w-4 accent-primary"
+                    disabled={isProcessing}
                   />
                   <Label htmlFor="terms" className="text-sm text-muted-foreground leading-relaxed cursor-pointer">
                     Eu li e concordo com os{" "}
                     <Link href="/termos" target="_blank" className="text-primary hover:underline font-medium">
                       Termos de Uso
                     </Link>
-                    {" "}da Warden Shop.
+                    .
                   </Label>
                 </div>
 
                 <Button
                   type="submit"
                   size="lg"
-                  className="w-full font-semibold"
-                  disabled={createOrder.isPending || !agreed}
-                  style={{ boxShadow: "0 0 20px oklch(0.65 0.22 145 / 0.3)" }}
+                  className="w-full font-semibold gap-2"
+                  disabled={isProcessing || !agreed}
                 >
-                  {createOrder.isPending ? (
-                    <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Processando...</>
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      {createOrder.isPending ? "Criando pedido..." : "Redirecionando para pagamento..."}
+                    </>
                   ) : (
-                    `Confirmar Pedido — ${formatPrice(total)}`
+                    <>
+                      <ShieldCheck className="h-4 w-4" />
+                      Pagar {formatPrice(total)} com Mercado Pago
+                    </>
                   )}
                 </Button>
+
+                <p className="text-xs text-muted-foreground text-center flex items-center justify-center gap-1">
+                  <ShieldCheck className="h-3 w-3" />
+                  Seus dados são protegidos pelo Mercado Pago. Não armazenamos dados de cartão.
+                </p>
               </div>
 
-              {/* Order summary */}
+              {/* Resumo */}
               <div>
                 <Card className="bg-card border-border sticky top-24">
                   <CardHeader>
@@ -253,9 +322,17 @@ export default function CheckoutPage() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex items-start gap-3">
-                      <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                        <span className="text-xl">📦</span>
-                      </div>
+                      {product.imageUrl ? (
+                        <img
+                          src={product.imageUrl}
+                          alt={product.name}
+                          className="h-12 w-12 rounded-lg object-cover shrink-0 border border-border"
+                        />
+                      ) : (
+                        <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                          <span className="text-xl">📦</span>
+                        </div>
+                      )}
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-foreground text-sm truncate">{product.name}</p>
                         <p className="text-xs text-muted-foreground">Qtd: 1</p>
@@ -285,28 +362,10 @@ export default function CheckoutPage() {
                       </div>
                     </div>
 
-                    {!loadingCustomization && customization?.pixKey && (
-                      <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs text-blue-400">
-                        <span className="font-mono">
-                          <strong>Chave PIX:</strong> {customization.pixKey}
-                          {customization.pixKeyType && (
-                            <span className="ml-2 text-blue-300">({customization.pixKeyType.toUpperCase()})</span>
-                          )}
-                        </span>
-                      </div>
-                    )}
-                    {loadingCustomization && (
-                      <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 border border-border text-xs text-muted-foreground">
-                        <Loader2 className="h-3 w-3 animate-spin mt-0.5" />
-                        <span>Carregando informações de pagamento...</span>
-                      </div>
-                    )}
-
-                    <div className="flex items-start gap-2 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-xs text-yellow-400">
-                      <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
-                      <span>
-                        Sem pagamento online. O pedido entra em fila e será confirmado pelo admin. Você receberá os itens no jogo após a confirmação.
-                      </span>
+                    {/* Badge de segurança */}
+                    <div className="flex items-center gap-2 p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-xs text-green-400">
+                      <ShieldCheck className="h-4 w-4 shrink-0" />
+                      <span>Pagamento 100% seguro via Mercado Pago</span>
                     </div>
                   </CardContent>
                 </Card>

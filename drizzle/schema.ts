@@ -14,6 +14,7 @@ import {
 export const roleEnum = pgEnum("role", ["user", "admin"]);
 export const discountTypeEnum = pgEnum("discount_type", ["fixed", "percent"]);
 export const orderStatusEnum = pgEnum("order_status", ["pending_approval", "game_pending", "delivered", "cancelled"]);
+export const paymentStatusEnum = pgEnum("payment_status", ["pending", "approved", "rejected", "cancelled", "refunded"]);
 export const pixKeyTypeEnum = pgEnum("pix_key_type", ["cpf", "email", "phone", "random"]);
 export const webhookTypeEnum = pgEnum("webhook_type", ["receipt", "notification"]);
 
@@ -94,6 +95,12 @@ export const orders = pgTable("orders", {
   discount: decimal("discount", { precision: 10, scale: 2 }).default("0").notNull(),
   total: decimal("total", { precision: 10, scale: 2 }).notNull(),
   status: orderStatusEnum("status").default("pending_approval").notNull(),
+  // Mercado Pago
+  paymentStatus: paymentStatusEnum("payment_status").default("pending"),
+  paymentStatusDetail: varchar("payment_status_detail", { length: 128 }),
+  mpPaymentId: varchar("mp_payment_id", { length: 64 }),
+  mpPreferenceId: varchar("mp_preference_id", { length: 128 }),
+  paidAt: timestamp("paidAt"),
   notes: text("notes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
@@ -121,7 +128,7 @@ export const apiKeys = pgTable("api_keys", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 128 }).notNull(),
   keyHash: varchar("keyHash", { length: 128 }).notNull().unique(),
-  keyPrefix: varchar("keyPrefix", { length: 16 }).notNull(),
+  keyPrefix: varchar("keyPrefix", { length: 32 }).notNull(),
   active: boolean("active").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });

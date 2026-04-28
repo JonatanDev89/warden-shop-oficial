@@ -14,8 +14,7 @@ import {
   storeCustomization,
   users,
   kitItems,
-} from "../drizzle/schema";
-import { ENV } from "./_core/env";
+} from "../drizzle/schema";import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -351,6 +350,7 @@ export async function createOrder(
     subtotal: string;
     discount: string;
     total: string;
+    notes?: string;
   },
   items: Array<{ productId: number; productName: string; quantity: number; unitPrice: string }>
 ) {
@@ -600,6 +600,63 @@ export async function deleteKitItem(id: number) {
   await db.delete(kitItems).where(eq(kitItems.id, id));
 }
 
+// ─── Payment helpers ───────────────────────────────────────────────────────────
+export async function setOrderMpPreference(orderNumber: string, preferenceId: string) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db
+    .update(orders)
+    .set({ mpPreferenceId: preferenceId, updatedAt: new Date() })
+    .where(eq(orders.orderNumber, orderNumber));
+}
+
+export async function markOrderPaid(
+  orderNumber: string,
+  mpPaymentId: string,
+) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db
+    .update(orders)
+    .set({
+      paymentStatus: "approved",
+      mpPaymentId,
+      paidAt: new Date(),
+      // Avança automaticamente para game_pending (aguardando entrega no jogo)
+      status: "game_pending",
+      updatedAt: new Date(),
+    })
+    .where(eq(orders.orderNumber, orderNumber));
+}
+
+export async function markOrderPaymentFailed(
+  orderNumber: string,
+  mpPaymentId: string,
+  reason: "rejected" | "cancelled",
+) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db
+    .update(orders)
+    .set({
+      paymentStatus: reason,
+      mpPaymentId,
+      updatedAt: new Date(),
+    })
+    .where(eq(orders.orderNumber, orderNumber));
+}
+
+export async function getOrderByMpPaymentId(mpPaymentId: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db
+    .select()
+    .from(orders)
+    .where(eq(orders.mpPaymentId, mpPaymentId))
+    .limit(1);
+  return result[0];
+}
+
 export async function runMigrations() {
   const db = await getDb();
   if (!db) return;
@@ -631,6 +688,30 @@ export async function runMigrations() {
     await db.execute(sql`
       ALTER TABLE "kit_items" ADD COLUMN IF NOT EXISTS "itemConfig" text
     `);
+
+    // Aumentar keyPrefix para suportar chaves maiores
+    await db.execute(sql`ALTER TABLE "api_keys" ALTER COLUMN "keyPrefix" TYPE varchar(32)`);
+
+    // ─── Mercado Pago — novas colunas na tabela orders ─────────────────────────
+    await db.execute(sql`
+      DO $$ BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'payment_status') THEN
+          CREATE TYPE payment_status AS ENUM ('pending', 'approved', 'rejected', 'cancelled', 'refunded');
+        END IF;
+      END $$
+    `);
+    await db.execute(sql`ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "payment_status" payment_status DEFAULT 'pending'`);
+    await db.execute(sql`ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "payment_status_detail" varchar(128)`);
+    await db.execute(sql`ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "mp_payment_id" varchar(64)`);
+    await db.execute(sql`ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "mp_preference_id" varchar(128)`);
+    await db.execute(sql`ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "paidAt" timestamp`);
+    // Índice único em mp_payment_id para garantir idempotência no banco
+    await db.execute(sql`
+      CREATE UNIQUE INDEX IF NOT EXISTS "orders_mp_payment_id_unique"
+      ON "orders" ("mp_payment_id")
+      WHERE "mp_payment_id" IS NOT NULL
+    `);
+
     console.log("[DB] Migrations applied.");
   } catch (e) {
     console.error("[DB] Migration error:", e);

@@ -9,4 +9,8 @@ export const ENV = {
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
   discordWebhookNotifications: process.env.DISCORD_WEBHOOK_NOTIFICATIONS ?? "",
   discordWebhookReceipts: process.env.DISCORD_WEBHOOK_RECEIPTS ?? "",
+  // Mercado Pago
+  mpAccessToken: process.env.MP_ACCESS_TOKEN ?? "",
+  mpWebhookSecret: process.env.MP_WEBHOOK_SECRET ?? "",
+  appBaseUrl: process.env.APP_BASE_URL ?? process.env.OAUTH_SERVER_URL ?? "",
 };

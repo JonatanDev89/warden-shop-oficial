@@ -24,6 +24,8 @@ export default function ShopLayout({ children }: ShopLayoutProps) {
   const announcementText = settings?.announcementText ?? "";
   const announcementCoupon = settings?.announcementCoupon ?? "";
   const logoUrl = settings?.logoUrl ?? "";
+  const fontFamily = (settings as Record<string, string> | undefined)?.fontFamily ?? "'Inter', sans-serif";
+  const isAdmin = user?.role === "admin";
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,7 +36,7 @@ export default function ShopLayout({ children }: ShopLayoutProps) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div className="min-h-screen flex flex-col" style={{ fontFamily }}>
       {/* Announcement Banner */}
       {announcementText && (
         <div className="bg-primary text-primary-foreground text-center text-sm py-2 px-4 font-medium">
@@ -215,9 +217,11 @@ export default function ShopLayout({ children }: ShopLayoutProps) {
               <Link href="/loja" className="text-primary hover:underline">
                 Loja
               </Link>
-              <Link href="/api-docs" className="text-primary hover:underline">
-                API Docs
-              </Link>
+              {isAdmin && (
+                <Link href="/api-docs" className="text-primary hover:underline">
+                  API Docs
+                </Link>
+              )}
               <Link href="/termos" className="text-primary hover:underline">
                 Termos de Uso
               </Link>
