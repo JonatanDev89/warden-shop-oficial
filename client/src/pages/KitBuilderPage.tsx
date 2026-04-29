@@ -4,7 +4,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Package, Search, X, ShoppingCart, Trash2, ChevronLeft } from "lucide-react";
+import { Package, Search, X, ShoppingCart, Trash2, ChevronLeft, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
 import {
@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { parseItemConfig, ALL_ENCHANTS, type ToolEnchantOption } from "@/lib/kitEnchants";
+import { useCart } from "@/contexts/CartContext";
 
 function itemTexture(minecraftId: string, imageUrl?: string | null) {
   if (imageUrl) return imageUrl;
@@ -49,18 +50,11 @@ type KitItem = NonNullable<ReturnType<typeof trpc.shop.getKitItems.useQuery>["da
 export default function KitBuilderPage() {
   const [, navigate] = useLocation();
   const { data: kitItems = [] } = trpc.shop.getKitItems.useQuery();
-  const createKitOrder = trpc.shop.createKitOrder.useMutation({
-    onSuccess: (order) => {
-      navigate(`/pedido-confirmado?orderNumber=${order?.orderNumber ?? ""}`);
-    },
-    onError: (e) => toast.error(e.message),
-  });
+  const { addItem } = useCart();
 
   const [slots, setSlots] = useState<(SlotItem | null)[]>(Array(TOTAL_SLOTS).fill(null));
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
   const [search, setSearch] = useState("");
-  const [nick, setNick] = useState("");
-  const [email, setEmail] = useState("");
   const [quantityInput, setQuantityInput] = useState("1");
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -219,23 +213,34 @@ export default function KitBuilderPage() {
     setPendingConfig(null);
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  function addKitToCart() {
+    if (filledSlots === 0) { toast.error("Adicione pelo menos um item ao kit."); return; }
     const filled = slots
-      .map((s, i) => (s ? { slot: i, ...s } : null))
-      .filter(Boolean) as {
-        slot: number;
-        minecraftId: string;
-        name: string;
-        quantity: number;
-        unitPrice: string;
-        configLabel?: string;
-      }[];
-    if (filled.length === 0) {
-      toast.error("Adicione pelo menos um item ao kit.");
-      return;
-    }
-    createKitOrder.mutate({ minecraftNickname: nick, email, slots: filled });
+      .map((s, i) => s ? { slot: i, minecraftId: s.minecraftId, name: s.name, quantity: s.quantity, unitPrice: s.unitPrice, configLabel: s.configLabel } : null)
+      .filter(Boolean) as { slot: number; minecraftId: string; name: string; quantity: number; unitPrice: string; configLabel?: string }[];
+    addItem({
+      productId: -1,
+      name: `Kit Personalizado (${filledSlots} item${filledSlots > 1 ? "s" : ""})`,
+      price: totalPrice,
+      imageUrl: undefined,
+      kitSlots: filled,
+    });
+    toast.success("Kit adicionado ao carrinho!");
+  }
+
+  function buyKitNow() {
+    if (filledSlots === 0) { toast.error("Adicione pelo menos um item ao kit."); return; }
+    const filled = slots
+      .map((s, i) => s ? { slot: i, minecraftId: s.minecraftId, name: s.name, quantity: s.quantity, unitPrice: s.unitPrice, configLabel: s.configLabel } : null)
+      .filter(Boolean) as { slot: number; minecraftId: string; name: string; quantity: number; unitPrice: string; configLabel?: string }[];
+    addItem({
+      productId: -1,
+      name: `Kit Personalizado (${filledSlots} item${filledSlots > 1 ? "s" : ""})`,
+      price: totalPrice,
+      imageUrl: undefined,
+      kitSlots: filled,
+    });
+    navigate("/checkout");
   }
 
   return (
@@ -741,60 +746,26 @@ export default function KitBuilderPage() {
               </div>
             </div>
 
-            {/* Checkout form */}
-            <form
-              onSubmit={handleSubmit}
-              className="border border-border rounded-xl bg-card p-4 space-y-3"
-            >
-              <h2 className="font-semibold text-foreground flex items-center gap-2">
-                <ShoppingCart className="h-4 w-4 text-primary" />
-                Finalizar Pedido
-              </h2>
-              <div>
-                <Label className="text-xs text-muted-foreground mb-1 block">
-                  Nick no Minecraft *
-                </Label>
-                <Input
-                  value={nick}
-                  onChange={(e) => setNick(e.target.value)}
-                  className="bg-muted border-border h-9 text-sm"
-                  placeholder="SeuNick"
-                  required
-                  autoComplete="on"
-                  name="minecraft-nickname"
-                  id="kit-nickname"
-                />
-                <div className="flex items-start gap-1.5 mt-1.5 p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
-                  <span className="text-yellow-400 text-xs shrink-0">⚠️</span>
-                  <p className="text-[11px] text-yellow-300 leading-relaxed">
-                    Digite <strong>exatamente</strong> como aparece no jogo, incluindo maiúsculas.
-                  </p>
-                </div>
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground mb-1 block">Email *</Label>
-                <Input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="bg-muted border-border h-9 text-sm"
-                  placeholder="seu@email.com"
-                  required
-                  autoComplete="email"
-                  name="email"
-                  id="kit-email"
-                />
-              </div>
+            {/* Botões de ação */}
+            <div className="border border-border rounded-xl bg-card p-4 space-y-2">
               <Button
-                type="submit"
-                className="w-full"
-                disabled={filledSlots === 0 || createKitOrder.isPending}
+                className="w-full font-bold rounded-xl gap-2"
+                disabled={filledSlots === 0}
+                onClick={buyKitNow}
               >
-                {createKitOrder.isPending
-                  ? "Enviando..."
-                  : `Pedir Kit — R$ ${totalPrice.toFixed(2).replace(".", ",")}`}
+                <ShoppingCart className="h-4 w-4" />
+                Comprar agora — R$ {totalPrice.toFixed(2).replace(".", ",")}
               </Button>
-            </form>
+              <Button
+                variant="outline"
+                className="w-full font-bold rounded-xl gap-2"
+                disabled={filledSlots === 0}
+                onClick={addKitToCart}
+              >
+                <Plus className="h-4 w-4" />
+                Adicionar ao carrinho
+              </Button>
+            </div>
           </div>
         </div>
       </div>

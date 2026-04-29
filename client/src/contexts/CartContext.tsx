@@ -1,11 +1,22 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 
+export interface KitSlot {
+  slot: number;
+  minecraftId: string;
+  name: string;
+  quantity: number;
+  unitPrice: string;
+  configLabel?: string;
+}
+
 export interface CartItem {
   productId: number;
   name: string;
   price: number;
   imageUrl?: string;
   quantity: number;
+  // Kit personalizado — slots salvos para criar o pedido depois
+  kitSlots?: KitSlot[];
 }
 
 interface CartContextType {

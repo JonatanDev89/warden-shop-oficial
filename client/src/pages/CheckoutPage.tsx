@@ -154,6 +154,8 @@ export default function CheckoutPage() {
   }, [singleProduct]);
 
   const items = cartItems;
+  const normalItems = cartItems.filter(i => i.productId !== -1);
+  const kitItems = cartItems.filter(i => i.productId === -1);
 
   const [nickname, setNickname] = useState("");
   const [email, setEmail] = useState("");
@@ -168,9 +170,10 @@ export default function CheckoutPage() {
 
   const utils = trpc.useUtils();
   const createOrder = trpc.shop.createOrder.useMutation({ onError: (err) => { toast.error(err.message ?? "Erro ao criar pedido."); setStep("form"); } });
+  const createKitOrder = trpc.shop.createKitOrder.useMutation({ onError: (err) => { toast.error(err.message ?? "Erro ao criar pedido de kit."); setStep("form"); } });
   const createPix = trpc.shop.createPixPayment.useMutation({ onError: (err) => { toast.error(err.message ?? "Erro ao gerar PIX."); setStep("form"); } });
 
-  const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
+  const subtotal = cartItems.reduce((s, i) => s + i.price * i.quantity, 0);
   const discount = !appliedCoupon ? 0 :
     appliedCoupon.discountType === "percent"
       ? subtotal * (parseFloat(appliedCoupon.discountValue) / 100)
@@ -193,16 +196,32 @@ export default function CheckoutPage() {
     if (!nickname.trim()) return toast.error("Informe seu nickname no Minecraft.");
     if (!email.trim()) return toast.error("Informe seu e-mail.");
     if (!agreed) return toast.error("Você precisa concordar com os termos.");
-    if (items.length === 0) return toast.error("Seu carrinho está vazio.");
+    if (cartItems.length === 0) return toast.error("Seu carrinho está vazio.");
     setStep("generating");
-    const order = await createOrder.mutateAsync({
-      minecraftNickname: nickname.trim(), email: email.trim(),
-      couponCode: appliedCoupon?.code,
-      items: items.map(i => ({ productId: i.productId, quantity: i.quantity })),
-    });
-    if (!order?.orderNumber) { setStep("form"); return; }
-    const pix = await createPix.mutateAsync({ orderNumber: order.orderNumber, payerEmail: email.trim(), payerName: nickname.trim() });
-    setPixData({ ...pix, orderNumber: order.orderNumber });
+
+    let orderNumber: string | undefined;
+
+    // Se tem kit personalizado, cria via createKitOrder
+    if (kitItems.length > 0 && kitItems[0].kitSlots) {
+      const kitOrder = await createKitOrder.mutateAsync({
+        minecraftNickname: nickname.trim(),
+        email: email.trim(),
+        slots: kitItems[0].kitSlots,
+      });
+      orderNumber = kitOrder?.orderNumber;
+    } else if (normalItems.length > 0) {
+      // Pedido normal
+      const order = await createOrder.mutateAsync({
+        minecraftNickname: nickname.trim(), email: email.trim(),
+        couponCode: appliedCoupon?.code,
+        items: normalItems.map(i => ({ productId: i.productId, quantity: i.quantity })),
+      });
+      orderNumber = order?.orderNumber;
+    }
+
+    if (!orderNumber) { setStep("form"); return; }
+    const pix = await createPix.mutateAsync({ orderNumber, payerEmail: email.trim(), payerName: nickname.trim() });
+    setPixData({ ...pix, orderNumber });
     setStep("pix");
   };
 
@@ -212,9 +231,9 @@ export default function CheckoutPage() {
     setTimeout(() => navigate(`/pedido-confirmado?orderNumber=${encodeURIComponent(pixData!.orderNumber)}&payment=success`), 1500);
   };
 
-  const isGenerating = step === "generating" || createOrder.isPending || createPix.isPending;
+  const isGenerating = step === "generating" || createOrder.isPending || createKitOrder.isPending || createPix.isPending;
 
-  if (items.length === 0 && step === "form") {
+  if (cartItems.length === 0 && step === "form") {
     return (
       <ShopLayout>
         <div className="container py-20 text-center">
@@ -242,7 +261,12 @@ export default function CheckoutPage() {
         {/* ── PIX / Confirmado ── */}
         {(step === "pix" || step === "confirmed") && (
           <div className="max-w-md mx-auto">
-            {step === "confirmed" ? (
+            {step === "generating" ? (
+              <div className="rounded-2xl bg-card border border-border p-8 text-center space-y-4">
+                <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
+                <p className="font-semibold text-foreground">Gerando PIX do kit...</p>
+              </div>
+            ) : step === "confirmed" ? (
               <div className="rounded-2xl bg-card border border-green-500/30 p-8 text-center space-y-4">
                 <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto">
                   <Check className="h-8 w-8 text-green-400" />
