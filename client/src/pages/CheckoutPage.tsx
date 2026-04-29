@@ -155,8 +155,8 @@ export default function CheckoutPage() {
 
   const items = cartItems;
 
-  const [nickname, setNickname] = useState(() => localStorage.getItem("warden_nickname") ?? "");
-  const [email, setEmail] = useState(() => localStorage.getItem("warden_email") ?? "");
+  const [nickname, setNickname] = useState("");
+  const [email, setEmail] = useState("");
   const [couponInput, setCouponInput] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountType: string; discountValue: string } | null>(null);
   const [couponError, setCouponError] = useState("");
@@ -296,13 +296,13 @@ export default function CheckoutPage() {
                   <h2 className="font-semibold text-foreground mb-4">Informações de contato</h2>
                   <div className="space-y-3">
                     <Input
-                      value={email} onChange={e => { setEmail(e.target.value); localStorage.setItem("warden_email", e.target.value); }}
+                      value={email} onChange={e => setEmail(e.target.value)}
                       placeholder="Email" type="email" required disabled={isGenerating}
                       className="bg-muted/50 border-border rounded-xl h-11"
                       autoComplete="email"
                     />
                     <Input
-                      value={nickname} onChange={e => { setNickname(e.target.value); localStorage.setItem("warden_nickname", e.target.value); }}
+                      value={nickname} onChange={e => setNickname(e.target.value)}
                       placeholder="Nickname (Minecraft)" required disabled={isGenerating}
                       className="bg-muted/50 border-border rounded-xl h-11"
                       autoComplete="username"
