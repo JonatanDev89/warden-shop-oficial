@@ -179,11 +179,8 @@ export async function createPreference(
   const body = {
     external_reference: input.orderNumber,
     items: mpItems,
-    payer: {
-      // Email do pagador — se for igual ao do vendedor o MP bloqueia em sandbox
-      // Em produção isso não é problema pois são contas diferentes
-      email: isSandbox ? "test_user_buyer@testuser.com" : input.payerEmail,
-    },
+    // Não enviamos payer.email — quando o email do pagador é igual ao do vendedor
+    // o MP desabilita o botão "Criar Pix". Sem email, o MP deixa qualquer um pagar.
     back_urls: {
       success: `${baseUrl}/pedido-confirmado?orderNumber=${encodeURIComponent(input.orderNumber)}&payment=success`,
       failure: `${baseUrl}/pedido-confirmado?orderNumber=${encodeURIComponent(input.orderNumber)}&payment=failure`,
