@@ -299,11 +299,13 @@ export default function CheckoutPage() {
                       value={email} onChange={e => { setEmail(e.target.value); localStorage.setItem("warden_email", e.target.value); }}
                       placeholder="Email" type="email" required disabled={isGenerating}
                       className="bg-muted/50 border-border rounded-xl h-11"
+                      autoComplete="email"
                     />
                     <Input
                       value={nickname} onChange={e => { setNickname(e.target.value); localStorage.setItem("warden_nickname", e.target.value); }}
                       placeholder="Nickname (Minecraft)" required disabled={isGenerating}
                       className="bg-muted/50 border-border rounded-xl h-11"
+                      autoComplete="username"
                     />
                     {/* Alerta de atenção ao nickname */}
                     <div className="flex items-start gap-2 p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
