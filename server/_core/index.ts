@@ -39,8 +39,52 @@ async function startServer() {
   registerStorageProxy(app);
   registerOAuthRoutes(app);
   await runMigrations();
-  
-  // REST API para Addon Minecraft (GET - melhor compatibilidade)
+
+  // ─── Redirect intermediário para evitar App Links do Android ──────────────
+  // O Android intercepta URLs do mercadopago.com e abre o app.
+  // Esta rota serve uma página HTML no nosso domínio com um link simples —
+  // o browser já está aberto, então o Android não consegue mais interceptar.
+  app.get('/ir', (req, res) => {
+    const url = req.query.url as string;
+    if (!url || !url.startsWith('https://')) {
+      return res.status(400).send('URL inválida');
+    }
+    const escaped = url.replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(`<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Redirecionando para o pagamento...</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: sans-serif; background: #1a1f2e; color: #e2e8f0; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
+    .card { background: #222840; border-radius: 12px; padding: 32px 24px; max-width: 400px; width: 100%; text-align: center; }
+    .logo { font-size: 2rem; margin-bottom: 16px; }
+    h1 { font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; }
+    p { font-size: 0.875rem; color: #94a3b8; margin-bottom: 24px; line-height: 1.5; }
+    a { display: block; background: #00c8c8; color: #0a0f1a; font-weight: 700; font-size: 1rem; padding: 14px 24px; border-radius: 8px; text-decoration: none; }
+    a:active { opacity: 0.85; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">💳</div>
+    <h1>Pagamento via Mercado Pago</h1>
+    <p>Clique no botão abaixo para prosseguir com o pagamento de forma segura.</p>
+    <a href="${escaped}" rel="noopener noreferrer">Ir para o pagamento</a>
+  </div>
+  <script>
+    // Tenta redirecionar automaticamente após 1s
+    // Se o Android interceptar, o usuário ainda tem o botão acima
+    setTimeout(function() {
+      window.location.replace("${escaped}");
+    }, 1000);
+  </script>
+</body>
+</html>`);
+  });
   app.get('/api/addon/pending-orders', async (req, res) => {
     try {
       const apiKey = (req.query.apiKey as string) || (req.headers['x-api-key'] as string);

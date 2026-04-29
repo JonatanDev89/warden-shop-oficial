@@ -57,9 +57,11 @@ export default function CheckoutPage() {
   // Passo 2: criar preferência MP e redirecionar
   const createPayment = trpc.shop.createMpPayment.useMutation({
     onSuccess: (data) => {
-      // Abre sempre no browser, nunca no app do Mercado Pago
-      window.open(data.checkoutUrl, "_blank", "noopener,noreferrer");
-      setStep("form");
+      // Redireciona via página intermediária no nosso domínio.
+      // O Android intercepta URLs do mercadopago.com e abre o app —
+      // passando pelo /ir o browser já está aberto e não há interceptação.
+      const redirectUrl = `/ir?url=${encodeURIComponent(data.checkoutUrl)}`;
+      window.location.href = redirectUrl;
     },
     onError: (err) => {
       toast.error(err.message ?? "Erro ao iniciar pagamento. Tente novamente.");
