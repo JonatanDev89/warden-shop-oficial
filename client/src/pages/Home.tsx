@@ -204,18 +204,18 @@ export default function Home() {
             {[
               {
                 icon: Package,
-                title: "Entrega no Jogo",
-                desc: "Itens entregues diretamente no seu personagem via addon.",
+                title: "Entrega Automática",
+                desc: "Use !resgatar no servidor e receba seus itens instantaneamente no inventário.",
               },
               {
                 icon: Shield,
                 title: "Compra Segura",
-                desc: "Seus dados são protegidos e o pedido é confirmado pelo admin.",
+                desc: "Pagamento via PIX processado pelo Mercado Pago. Rápido e seguro.",
               },
               {
                 icon: MessageCircle,
                 title: "Suporte Discord",
-                desc: "Equipe disponível no Discord para qualquer dúvida.",
+                desc: "Equipe disponível no Discord para qualquer dúvida ou problema.",
               },
             ].map(({ icon: Icon, title, desc }) => (
               <div
@@ -349,19 +349,27 @@ export default function Home() {
             {[
               {
                 q: "Como recebo meu item?",
-                a: "Após a confirmação do pedido pelo administrador, os comandos são executados no servidor e os itens são entregues diretamente no seu personagem.",
+                a: "Após o pagamento via PIX ser confirmado, seu pedido entra na fila de entrega automática. Quando você entrar no servidor, use o comando !resgatar no chat para receber seus itens diretamente no inventário.",
               },
               {
                 q: "Quanto tempo leva a entrega?",
-                a: "A entrega é realizada manualmente pelo administrador. Normalmente ocorre em até 24 horas após a confirmação do pedido.",
+                a: "A entrega é automática e instantânea assim que você usar !resgatar no servidor. O pedido fica disponível por tempo indeterminado — você pode resgatar quando quiser após a confirmação do pagamento.",
+              },
+              {
+                q: "Como uso o comando de resgate?",
+                a: "Entre no servidor Warden Craft e digite !resgatar no chat. O addon irá verificar seus pedidos pendentes e entregar os itens automaticamente no seu inventário.",
               },
               {
                 q: "Posso usar cupom de desconto?",
                 a: "Sim! Durante o checkout você pode inserir um código de cupom válido para obter desconto no seu pedido.",
               },
               {
-                q: "E se eu não receber meu item?",
-                a: "Entre em contato com nossa equipe pelo Discord. Guardaremos o registro do seu pedido e resolveremos o problema rapidamente.",
+                q: "E se eu não receber meu item após usar !resgatar?",
+                a: "Verifique se seu inventário tem espaço disponível. Se o problema persistir, entre em contato com nossa equipe pelo Discord com o número do seu pedido.",
+              },
+              {
+                q: "O pagamento é seguro?",
+                a: "Sim! O pagamento é processado via PIX pelo Mercado Pago, uma das plataformas de pagamento mais seguras do Brasil. Não armazenamos dados bancários.",
               },
             ].map((item, i) => (
               <AccordionItem
