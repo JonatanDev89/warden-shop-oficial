@@ -62,24 +62,30 @@ export default function CategoryPage() {
                 className="group border-border hover:border-primary/50 transition-all duration-200 hover:shadow-lg hover:shadow-primary/10 bg-card overflow-hidden"
               >
                 <CardContent className="p-3 sm:p-5">
-                  {/* Product image */}
-                  <div className="aspect-square w-full rounded-lg bg-muted flex items-center justify-center mb-4 group-hover:bg-primary/5 transition-colors overflow-hidden">
-                    {(() => {
-                      const { main } = parseProductImages(product.imageUrl);
-                      return main ? (
-                        <img src={main} alt={product.name} className="h-full w-full object-cover" />
-                      ) : (
-                        <Package className="h-10 w-10 text-muted-foreground" />
-                      );
-                    })()}
-                  </div>
+                  {/* Imagem clicável → detalhes */}
+                  <Link href={`/produto/${product.id}`}>
+                    <div className="aspect-square w-full rounded-lg bg-muted flex items-center justify-center mb-4 group-hover:bg-primary/5 transition-colors overflow-hidden cursor-pointer">
+                      {(() => {
+                        const { main } = parseProductImages(product.imageUrl);
+                        return main ? (
+                          <img src={main} alt={product.name} className="h-full w-full object-cover" />
+                        ) : (
+                          <Package className="h-10 w-10 text-muted-foreground" />
+                        );
+                      })()}
+                    </div>
+                  </Link>
 
-                  <h3
-                    className="font-bold text-foreground mb-1 truncate"
-                    style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-                  >
-                    {product.name}
-                  </h3>
+                  {/* Nome clicável → detalhes */}
+                  <Link href={`/produto/${product.id}`}>
+                    <h3
+                      className="font-bold text-foreground mb-1 truncate hover:text-primary transition-colors cursor-pointer"
+                      style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                    >
+                      {product.name}
+                    </h3>
+                  </Link>
+
                   <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
                     {product.description}
                   </p>
@@ -99,21 +105,15 @@ export default function CategoryPage() {
                     </Badge>
                   </div>
 
-                  <div className="text-xs text-muted-foreground mb-3">À vista</div>
+                  <div className="text-xs text-muted-foreground mb-3">À vista no Pix</div>
 
-                  <div className="flex flex-col gap-1.5 sm:flex-row sm:gap-2">
-                    <Link href={`/produto/${product.id}`} className="flex-1">
-                      <Button variant="outline" size="sm" className="w-full text-xs">
-                        Ver detalhes
-                      </Button>
-                    </Link>
-                    <Link href={`/checkout?productId=${product.id}`} className="flex-1">
-                      <Button size="sm" className="w-full gap-1 text-xs">
-                        <ShoppingCart className="h-3 w-3" />
-                        Comprar
-                      </Button>
-                    </Link>
-                  </div>
+                  {/* Botão único → detalhes */}
+                  <Link href={`/produto/${product.id}`} className="block">
+                    <Button size="sm" className="w-full gap-2 font-semibold">
+                      <ShoppingCart className="h-3.5 w-3.5" />
+                      Comprar agora
+                    </Button>
+                  </Link>
                 </CardContent>
               </Card>
             ))}
