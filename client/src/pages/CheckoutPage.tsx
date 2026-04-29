@@ -305,6 +305,13 @@ export default function CheckoutPage() {
                       placeholder="Nickname (Minecraft)" required disabled={isGenerating}
                       className="bg-muted/50 border-border rounded-xl h-11"
                     />
+                    {/* Alerta de atenção ao nickname */}
+                    <div className="flex items-start gap-2 p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
+                      <span className="text-yellow-400 text-base shrink-0">⚠️</span>
+                      <p className="text-xs text-yellow-300 leading-relaxed">
+                        <strong>Atenção:</strong> Digite o nickname <strong>exatamente</strong> como aparece no jogo, incluindo letras maiúsculas e minúsculas. Um nick errado impedirá a entrega dos itens.
+                      </p>
+                    </div>
                   </div>
                 </div>
 
