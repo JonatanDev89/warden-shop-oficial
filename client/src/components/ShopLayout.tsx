@@ -293,7 +293,7 @@ export default function ShopLayout({ children }: ShopLayoutProps) {
               <h4 className="font-semibold text-foreground mb-3">Suporte</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li>Entre em contato pelo Discord</li>
-                <li>Entrega manual pelo admin</li>
+                <li>Entrega automática via <span className="font-mono text-primary">!resgatar</span> no jogo</li>
               </ul>
             </div>
           </div>
