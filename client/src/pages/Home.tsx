@@ -28,12 +28,19 @@ export default function Home() {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
 
-  const heroTitle = settings?.heroTitle ?? "A Loja Oficial do Warden Craft";
+  const s = settings as Record<string, string> | undefined;
+  const heroTitle = s?.heroTitle ?? "A Loja Oficial do Warden Craft";
   const heroSubtitle =
-    settings?.heroSubtitle ??
+    s?.heroSubtitle ??
     "Adquira kits, ranks e itens exclusivos para o servidor. Entrega automática direto no seu jogo!";
-  const heroBgUrl = settings?.heroBgUrl ?? "";
-  const wardenGifUrl = settings?.wardenGifUrl ?? "https://d2xsxph8kpxj0f.cloudfront.net/310519663566472418/WbWtksiE3ubnfkNsEuG3YS/minecraft-warden_7265c060.gif";
+  const heroBgUrl = s?.heroBgUrl ?? "";
+  const wardenGifUrl = s?.wardenGifUrl ?? "https://d2xsxph8kpxj0f.cloudfront.net/310519663566472418/WbWtksiE3ubnfkNsEuG3YS/minecraft-warden_7265c060.gif";
+
+  // Feature flags
+  const flag = (key: string) => (s?.[key] ?? "true") !== "false";
+  const featureTopBuyers   = flag("featureTopBuyers");
+  const featureFaq         = flag("featureFaq");
+  const featureHighlights  = flag("featureHighlights");
 
   return (
     <ShopLayout>
@@ -190,6 +197,7 @@ export default function Home() {
       </section>
 
       {/* ── Features ── */}
+      {featureHighlights && (
       <section className="py-12 border-b border-border">
         <div className="container">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -226,9 +234,10 @@ export default function Home() {
           </div>
         </div>
       </section>
+      )}
 
       {/* ── Top Buyers ── */}
-      {topBuyers && topBuyers.length > 0 && (
+      {featureTopBuyers && topBuyers && topBuyers.length > 0 && (
         <section className="py-16 bg-card/50 border-y border-border">
           <div className="container">
             <div className="text-center mb-10">
@@ -322,6 +331,7 @@ export default function Home() {
       )}
 
       {/* ── FAQ ── */}
+      {featureFaq && (
       <section className="py-16">
         <div className="container max-w-2xl">
           <div className="text-center mb-10">
@@ -368,6 +378,7 @@ export default function Home() {
           </Accordion>
         </div>
       </section>
+      )}
     </ShopLayout>
   );
 }

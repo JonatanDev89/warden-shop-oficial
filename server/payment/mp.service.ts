@@ -237,7 +237,7 @@ export async function createPreference(
 
   const checkoutUrl = isSandbox
     ? (result.sandbox_init_point ?? result.init_point)
-    : result.init_point;
+    : `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${result.id}`;
 
   log.info("mp.preference.created", {
     orderNumber: input.orderNumber,

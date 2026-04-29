@@ -20,12 +20,20 @@ export default function ShopLayout({ children }: ShopLayoutProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [, navigate] = useLocation();
 
-  const storeName = settings?.storeName ?? "Warden Shop";
-  const announcementText = settings?.announcementText ?? "";
-  const announcementCoupon = settings?.announcementCoupon ?? "";
-  const logoUrl = settings?.logoUrl ?? "";
-  const fontFamily = (settings as Record<string, string> | undefined)?.fontFamily ?? "'Inter', sans-serif";
+  const s = settings as Record<string, string> | undefined;
+  const storeName = s?.storeName ?? "Warden Shop";
+  const announcementText = s?.announcementText ?? "";
+  const announcementCoupon = s?.announcementCoupon ?? "";
+  const logoUrl = s?.logoUrl ?? "";
+  const fontFamily = s?.fontFamily ?? "'Inter', sans-serif";
   const isAdmin = user?.role === "admin";
+
+  // Feature flags
+  const flag = (key: string) => (s?.[key] ?? "true") !== "false";
+  const featureSearch       = flag("featureSearch");
+  const featureAnnouncement = flag("featureAnnouncement");
+  const featureKitBuilder   = flag("featureKitBuilder");
+  const featureMonthlyGoal  = flag("featureMonthlyGoal");
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +46,7 @@ export default function ShopLayout({ children }: ShopLayoutProps) {
   return (
     <div className="min-h-screen flex flex-col" style={{ fontFamily }}>
       {/* Announcement Banner */}
-      {announcementText && (
+      {featureAnnouncement && announcementText && (
         <div className="bg-primary text-primary-foreground text-center text-sm py-2 px-4 font-medium">
           {announcementText}
           {announcementCoupon && (
@@ -81,15 +89,18 @@ export default function ShopLayout({ children }: ShopLayoutProps) {
               <Link href="/loja">
                 <Button variant="ghost" size="sm">Loja</Button>
               </Link>
-              <Link href="/monte-seu-kit">
-                <Button variant="ghost" size="sm">Monte seu Kit</Button>
-              </Link>
+              {featureKitBuilder && (
+                <Link href="/monte-seu-kit">
+                  <Button variant="ghost" size="sm">Monte seu Kit</Button>
+                </Link>
+              )}
               <a href="https://discord.gg" target="_blank" rel="noopener noreferrer">
                 <Button variant="ghost" size="sm">Discord</Button>
               </a>
             </nav>
 
             {/* Search */}
+            {featureSearch && (
             <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-xs">
               <div className="relative w-full">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -101,6 +112,7 @@ export default function ShopLayout({ children }: ShopLayoutProps) {
                 />
               </div>
             </form>
+            )}
 
             {/* Auth */}
             <div className="flex items-center gap-2">
@@ -142,6 +154,7 @@ export default function ShopLayout({ children }: ShopLayoutProps) {
           {/* Mobile menu */}
           {mobileOpen && (
             <div className="md:hidden border-t border-border py-3 space-y-1">
+              {featureSearch && (
               <form onSubmit={handleSearch} className="pb-2">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -153,15 +166,18 @@ export default function ShopLayout({ children }: ShopLayoutProps) {
                   />
                 </div>
               </form>
+              )}
               <Link href="/" onClick={() => setMobileOpen(false)}>
                 <Button variant="ghost" size="sm" className="w-full justify-start">Início</Button>
               </Link>
               <Link href="/loja" onClick={() => setMobileOpen(false)}>
                 <Button variant="ghost" size="sm" className="w-full justify-start">Loja</Button>
               </Link>
-              <Link href="/monte-seu-kit" onClick={() => setMobileOpen(false)}>
-                <Button variant="ghost" size="sm" className="w-full justify-start">Monte seu Kit</Button>
-              </Link>
+              {featureKitBuilder && (
+                <Link href="/monte-seu-kit" onClick={() => setMobileOpen(false)}>
+                  <Button variant="ghost" size="sm" className="w-full justify-start">Monte seu Kit</Button>
+                </Link>
+              )}
               <a href="https://discord.gg" target="_blank" rel="noopener noreferrer">
                 <Button variant="ghost" size="sm" className="w-full justify-start">Discord</Button>
               </a>
@@ -174,7 +190,7 @@ export default function ShopLayout({ children }: ShopLayoutProps) {
       <main className="flex-1">{children}</main>
 
       {/* Monthly Goal */}
-      <MonthlyGoal />
+      {featureMonthlyGoal && <MonthlyGoal />}
 
       {/* Footer */}
       <footer className="bg-card border-t border-border">

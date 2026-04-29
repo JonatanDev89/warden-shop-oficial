@@ -17,6 +17,12 @@ import {
 } from "../drizzle/schema";import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
+let _pool: Pool | null = null;
+
+export async function getPool(): Promise<Pool | null> {
+  await getDb(); // ensures _pool is initialized
+  return _pool;
+}
 
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
@@ -31,6 +37,7 @@ export async function getDb() {
       pool.on("error", (err) => console.error("[Database] Pool error:", err.message));
       await pool.query("SELECT 1");
       console.log("[Database] Connected successfully");
+      _pool = pool;
       _db = drizzle(pool);
     } catch (error) {
       console.error("[Database] Failed to connect:", error);
@@ -506,17 +513,49 @@ export async function getSiteSettings(): Promise<Record<string, string>> {
 }
 
 export async function setSiteSetting(key: string, value: string) {
-  const db = await getDb();
-  if (!db) throw new Error("DB unavailable");
-  await db
-    .insert(siteSettings)
-    .values({ key, value })
-    .onConflictDoUpdate({ target: siteSettings.key, set: { value } });
+  const pool = await getPool();
+  if (!pool) throw new Error("DB unavailable");
+  // Use UPDATE + INSERT pattern (no ON CONFLICT needed — works without unique constraint)
+  const updated = await pool.query(
+    `UPDATE "site_settings" SET "value" = $2, "updatedAt" = now() WHERE "key" = $1`,
+    [key, value]
+  );
+  if (updated.rowCount === 0) {
+    await pool.query(
+      `INSERT INTO "site_settings" ("key", "value") VALUES ($1, $2)`,
+      [key, value]
+    );
+  }
 }
 
 export async function setSiteSettings(settings: Record<string, string>) {
-  for (const [key, value] of Object.entries(settings)) {
-    await setSiteSetting(key, value);
+  const pool = await getPool();
+  if (!pool) throw new Error("DB unavailable");
+
+  const entries = Object.entries(settings);
+  if (entries.length === 0) return;
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    for (const [key, value] of entries) {
+      const updated = await client.query(
+        `UPDATE "site_settings" SET "value" = $2, "updatedAt" = now() WHERE "key" = $1`,
+        [key, value]
+      );
+      if (updated.rowCount === 0) {
+        await client.query(
+          `INSERT INTO "site_settings" ("key", "value") VALUES ($1, $2)`,
+          [key, value]
+        );
+      }
+    }
+    await client.query("COMMIT");
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
   }
 }
 
@@ -710,6 +749,45 @@ export async function runMigrations() {
       CREATE UNIQUE INDEX IF NOT EXISTS "orders_mp_payment_id_unique"
       ON "orders" ("mp_payment_id")
       WHERE "mp_payment_id" IS NOT NULL
+    `);
+
+    // ─── site_settings ────────────────────────────────────────────────────────
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS "site_settings" (
+        "id" serial PRIMARY KEY NOT NULL,
+        "key" varchar(128) NOT NULL,
+        "value" text,
+        "updatedAt" timestamp NOT NULL DEFAULT now(),
+        CONSTRAINT "site_settings_key_unique" UNIQUE("key")
+      )
+    `);
+    // Add unique constraint if table already existed without it
+    await db.execute(sql`
+      DO $$ BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint
+          WHERE conname = 'site_settings_key_unique'
+        ) THEN
+          ALTER TABLE "site_settings" ADD CONSTRAINT "site_settings_key_unique" UNIQUE ("key");
+        END IF;
+      END $$
+    `);
+
+    // ─── store_customization ───────────────────────────────────────────────────
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS "store_customization" (
+        "id" serial PRIMARY KEY NOT NULL,
+        "pixKey" varchar(256),
+        "pixKeyType" varchar(32),
+        "storeName" varchar(256),
+        "storeDescription" text,
+        "bannerText" text,
+        "bannerColor" varchar(7),
+        "primaryColor" varchar(7),
+        "secondaryColor" varchar(7),
+        "logoUrl" text,
+        "updatedAt" timestamp NOT NULL DEFAULT now()
+      )
     `);
 
     console.log("[DB] Migrations applied.");

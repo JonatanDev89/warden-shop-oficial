@@ -28,6 +28,9 @@ export default function CheckoutPage() {
     { id: productId },
     { enabled: productId > 0 }
   );
+  const { data: settings } = trpc.shop.getSettings.useQuery();
+  const s = settings as Record<string, string> | undefined;
+  const featureCoupons = (s?.featureCoupons ?? "true") !== "false";
 
   const [nickname, setNickname] = useState("");
   const [email, setEmail] = useState("");
@@ -54,8 +57,9 @@ export default function CheckoutPage() {
   // Passo 2: criar preferência MP e redirecionar
   const createPayment = trpc.shop.createMpPayment.useMutation({
     onSuccess: (data) => {
-      // Redireciona para o checkout hospedado pelo Mercado Pago
-      window.location.href = data.checkoutUrl;
+      // Abre sempre no browser, nunca no app do Mercado Pago
+      window.open(data.checkoutUrl, "_blank", "noopener,noreferrer");
+      setStep("form");
     },
     onError: (err) => {
       toast.error(err.message ?? "Erro ao iniciar pagamento. Tente novamente.");
@@ -198,6 +202,7 @@ export default function CheckoutPage() {
                 </Card>
 
                 {/* Cupom */}
+                {featureCoupons && (
                 <Card className="bg-card border-border">
                   <CardHeader>
                     <CardTitle className="text-foreground text-lg flex items-center gap-2">
@@ -240,6 +245,7 @@ export default function CheckoutPage() {
                     )}
                   </CardContent>
                 </Card>
+                )}
 
                 {/* Métodos de pagamento aceitos */}
                 <Card className="bg-card border-border">
