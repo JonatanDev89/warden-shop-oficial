@@ -760,7 +760,16 @@ export default function KitBuilderPage() {
                   className="bg-muted border-border h-9 text-sm"
                   placeholder="SeuNick"
                   required
+                  autoComplete="on"
+                  name="minecraft-nickname"
+                  id="kit-nickname"
                 />
+                <div className="flex items-start gap-1.5 mt-1.5 p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+                  <span className="text-yellow-400 text-xs shrink-0">⚠️</span>
+                  <p className="text-[11px] text-yellow-300 leading-relaxed">
+                    Digite <strong>exatamente</strong> como aparece no jogo, incluindo maiúsculas.
+                  </p>
+                </div>
               </div>
               <div>
                 <Label className="text-xs text-muted-foreground mb-1 block">Email *</Label>
@@ -771,6 +780,9 @@ export default function KitBuilderPage() {
                   className="bg-muted border-border h-9 text-sm"
                   placeholder="seu@email.com"
                   required
+                  autoComplete="email"
+                  name="email"
+                  id="kit-email"
                 />
               </div>
               <Button
