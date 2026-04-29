@@ -1,11 +1,18 @@
 import { trpc } from "@/lib/trpc";
 import { Link, useParams } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import ShopLayout from "@/components/ShopLayout";
-import { ChevronRight, Package, ShoppingCart, Infinity } from "lucide-react";
+import { ChevronRight, Package, ShoppingCart } from "lucide-react";
 import { parseProductImages } from "@/lib/productImages";
+
+function PixIcon() {
+  return (
+    <svg className="w-4 h-4 text-primary" viewBox="0 0 512 512" fill="currentColor">
+      <path d="M242.4 292.5C247.8 287.1 257.1 287.1 262.5 292.5L339.5 369.5C353.7 383.7 372.6 391.5 392.6 391.5H407.7L310.6 488.6C280.3 518.1 231.1 518.1 200.8 488.6L103.3 391.2H118.4C138.4 391.2 157.3 383.4 171.5 369.2L242.4 292.5zM262.5 219.5C257.1 224.9 247.8 224.9 242.4 219.5L171.5 142.5C157.3 128.3 138.4 120.5 118.4 120.5H103.3L200.7 23.4C231 -6.1 280.2 -6.1 310.5 23.4L407.6 120.5H392.5C372.5 120.5 353.6 128.3 339.4 142.5L262.5 219.5zM112 144.6C128 144.6 143.3 151.1 154.5 162.4L231.5 239.4C243.1 251 260.8 251 272.4 239.4L349.4 162.4C360.7 151.1 376 144.6 392 144.6H426.6L488.6 206.6C518.1 236.9 518.1 286.1 488.6 316.4L426.6 378.4H392C376 378.4 360.7 371.9 349.4 360.6L272.4 283.6C266.6 277.8 258.9 274.9 251.2 274.9C243.5 274.9 235.8 277.8 230 283.6L153 360.6C141.7 371.9 126.4 378.4 110.4 378.4H76.6L14.6 316.4C-14.9 286.1 -14.9 236.9 14.6 206.6L76.6 144.6H112z"/>
+    </svg>
+  );
+}
 
 export default function CategoryPage() {
   const params = useParams<{ id: string }>();
@@ -94,15 +101,9 @@ export default function CategoryPage() {
                     <span className="text-base sm:text-xl font-bold text-primary whitespace-nowrap">
                       {formatPrice(product.price)}
                     </span>
-                    <Badge variant="outline" className="text-[10px] sm:text-xs border-border text-muted-foreground shrink-0 px-1.5 py-0.5">
-                      {product.stock === -1 ? (
-                        <span className="flex items-center gap-0.5">
-                          <Infinity className="h-2.5 w-2.5" /> estoque
-                        </span>
-                      ) : (
-                        `${product.stock} estoque`
-                      )}
-                    </Badge>
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                      <PixIcon />
+                    </div>
                   </div>
 
                   <div className="text-xs text-muted-foreground mb-3">À vista no Pix</div>
