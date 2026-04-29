@@ -253,7 +253,7 @@ export default function TermsPage() {
             <Button variant="outline" onClick={() => navigate("/")}>
               Voltar para Loja
             </Button>
-            <Button onClick={() => window.history.back()}>
+            <Button onClick={() => window.close()}>
               Entendi os Termos
             </Button>
           </div>
