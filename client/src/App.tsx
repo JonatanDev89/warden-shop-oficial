@@ -4,6 +4,7 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { CartProvider } from "./contexts/CartContext";
 import ThemeInjector from "./components/ThemeInjector";
 
 // Public pages
@@ -13,6 +14,7 @@ import CategoryPage from "./pages/CategoryPage";
 import ProductPage from "./pages/ProductPage";
 import SearchPage from "./pages/SearchPage";
 import CheckoutPage from "./pages/CheckoutPage";
+import CartPage from "./pages/CartPage";
 import OrderConfirmedPage from "./pages/OrderConfirmedPage";
 import ApiDocsPage from "./pages/ApiDocsPage";
 import TermsPage from "./pages/TermsPage";
@@ -41,6 +43,7 @@ function Router() {
       <Route path="/produto/:id" component={ProductPage} />
       <Route path="/busca" component={SearchPage} />
       <Route path="/checkout" component={CheckoutPage} />
+      <Route path="/carrinho" component={CartPage} />
       <Route path="/pedido-confirmado" component={OrderConfirmedPage} />
       <Route path="/api-docs" component={ApiDocsPage} />
       <Route path="/termos" component={TermsPage} />
@@ -70,11 +73,13 @@ function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="dark">
-        <ThemeInjector />
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
+        <CartProvider>
+          <ThemeInjector />
+          <TooltipProvider>
+            <Toaster />
+            <Router />
+          </TooltipProvider>
+        </CartProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

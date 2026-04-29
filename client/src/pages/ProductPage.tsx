@@ -1,20 +1,52 @@
 import { trpc } from "@/lib/trpc";
-import { Link, useParams } from "wouter";
+import { Link, useParams, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import ShopLayout from "@/components/ShopLayout";
-import { ChevronRight, Package, Shield, Truck, CreditCard, Check, Infinity } from "lucide-react";
+import { ChevronRight, Package, Shield, Truck, CreditCard, Check, Infinity, ShoppingCart, Plus } from "lucide-react";
 import { useState } from "react";
 import { parseProductImages } from "@/lib/productImages";
+import { useCart } from "@/contexts/CartContext";
+import { toast } from "sonner";
 
 export default function ProductPage() {
   const params = useParams<{ id: string }>();
   const productId = parseInt(params.id ?? "0");
+  const [, navigate] = useLocation();
+  const { addItem } = useCart();
+  const [qty, setQty] = useState(1);
+  const [added, setAdded] = useState(false);
 
   const { data: product, isLoading } = trpc.shop.getProduct.useQuery({ id: productId });
   const { data: categories } = trpc.shop.getCategories.useQuery();
 
   const category = categories?.find((c) => c.id === product?.categoryId);
+
+  const handleAddToCart = () => {
+    if (!product) return;
+    const { main } = parseProductImages(product.imageUrl);
+    addItem({
+      productId: product.id,
+      name: product.name,
+      price: parseFloat(String(product.price)),
+      imageUrl: main ?? undefined,
+    }, qty);
+    toast.success(`${product.name} adicionado ao carrinho!`);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1500);
+  };
+
+  const handleBuyNow = () => {
+    if (!product) return;
+    const { main } = parseProductImages(product.imageUrl);
+    addItem({
+      productId: product.id,
+      name: product.name,
+      price: parseFloat(String(product.price)),
+      imageUrl: main ?? undefined,
+    }, qty);
+    navigate("/checkout");
+  };
 
   const formatPrice = (price: string | number) =>
     `R$ ${parseFloat(String(price)).toFixed(2).replace(".", ",")}`;
@@ -126,15 +158,29 @@ export default function ProductPage() {
               </Badge>
             </div>
 
-            <Link href={`/checkout?productId=${product.id}`}>
-              <Button
-                size="lg"
-                className="w-full mt-4 font-semibold text-base"
-                style={{ boxShadow: "0 0 20px oklch(0.65 0.22 145 / 0.3)" }}
-              >
-                Comprar Agora
+            {/* Quantidade + botões */}
+            <div className="flex items-center gap-3 mt-4">
+              <div className="flex items-center gap-2 border border-border rounded-lg bg-muted px-2 py-1">
+                <button onClick={() => setQty(q => Math.max(1, q - 1))} className="h-7 w-7 flex items-center justify-center hover:text-primary transition-colors">
+                  <span className="text-lg font-bold leading-none">−</span>
+                </button>
+                <span className="w-8 text-center font-semibold text-foreground">{qty}</span>
+                <button onClick={() => setQty(q => q + 1)} className="h-7 w-7 flex items-center justify-center hover:text-primary transition-colors">
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
+              <Button variant="outline" size="lg" className="flex-1 gap-2" onClick={handleAddToCart}>
+                {added ? <><Check className="h-4 w-4 text-green-400" /> Adicionado!</> : <><ShoppingCart className="h-4 w-4" /> Adicionar ao Carrinho</>}
               </Button>
-            </Link>
+            </div>
+            <Button
+              size="lg"
+              className="w-full mt-2 font-semibold text-base"
+              style={{ boxShadow: "0 0 20px oklch(0.65 0.22 145 / 0.3)" }}
+              onClick={handleBuyNow}
+            >
+              Comprar Agora
+            </Button>
 
             {/* Trust badges */}
             <div className="grid grid-cols-3 gap-3 mt-5">

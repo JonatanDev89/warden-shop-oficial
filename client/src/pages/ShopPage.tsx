@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import ShopLayout from "@/components/ShopLayout";
-import { Package, ShoppingCart, Infinity } from "lucide-react";
+import { Package, ShoppingCart, Infinity, Plus, Check } from "lucide-react";
 import { useState } from "react";
 import { parseProductImages } from "@/lib/productImages";
+import { useCart } from "@/contexts/CartContext";
+import { toast } from "sonner";
 
 export default function ShopPage() {
   const [selectedCategory, setSelectedCategory] = useState<number | undefined>(undefined);
@@ -14,10 +16,24 @@ export default function ShopPage() {
   const { data: products, isLoading } = trpc.shop.getProducts.useQuery({
     categoryId: selectedCategory,
   });
+  const { addItem, items } = useCart();
+  const [addedIds, setAddedIds] = useState<Set<number>>(new Set());
 
   const formatPrice = (price: string | number) =>
     `R$ ${parseFloat(String(price)).toFixed(2).replace(".", ",")}`;
 
+  const handleAddToCart = (product: { id: number; name: string; price: string | number; imageUrl?: string | null }) => {
+    const { main } = parseProductImages(product.imageUrl);
+    addItem({
+      productId: product.id,
+      name: product.name,
+      price: parseFloat(String(product.price)),
+      imageUrl: main ?? undefined,
+    });
+    toast.success(`${product.name} adicionado ao carrinho!`);
+    setAddedIds((prev) => new Set(prev).add(product.id));
+    setTimeout(() => setAddedIds((prev) => { const s = new Set(prev); s.delete(product.id); return s; }), 1500);
+  };
   return (
     <ShopLayout>
       <div className="container py-8">
@@ -111,12 +127,17 @@ export default function ShopPage() {
                         Ver detalhes
                       </Button>
                     </Link>
-                    <Link href={`/checkout?productId=${product.id}`} className="flex-1">
-                      <Button size="sm" className="w-full gap-1 text-xs">
-                        <ShoppingCart className="h-3 w-3" />
-                        Comprar
-                      </Button>
-                    </Link>
+                    <Button
+                      size="sm"
+                      className="flex-1 gap-1 text-xs"
+                      onClick={() => handleAddToCart(product)}
+                    >
+                      {addedIds.has(product.id) ? (
+                        <><Check className="h-3 w-3" /> Adicionado!</>
+                      ) : (
+                        <><Plus className="h-3 w-3" /> Carrinho</>
+                      )}
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

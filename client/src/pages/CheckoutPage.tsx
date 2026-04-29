@@ -8,10 +8,11 @@ import { Separator } from "@/components/ui/separator";
 import ShopLayout from "@/components/ShopLayout";
 import {
   ChevronRight, Tag, Loader2, ShieldCheck, Copy, Check,
-  Zap, RefreshCw, Clock,
+  Zap, RefreshCw, Clock, ShoppingCart,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
+import { useCart } from "@/contexts/CartContext";
 
 // ─── PIX QR Code inline ───────────────────────────────────────────────────────
 function PixPanel({
@@ -180,14 +181,32 @@ export default function CheckoutPage() {
   const params = new URLSearchParams(searchString);
   const productId = parseInt(params.get("productId") ?? "0");
   const [, navigate] = useLocation();
+  const { items: cartItems, clearCart, totalPrice, addItem } = useCart();
 
-  const { data: product, isLoading: loadingProduct } = trpc.shop.getProduct.useQuery(
-    { id: productId },
-    { enabled: productId > 0 }
-  );
   const { data: settings } = trpc.shop.getSettings.useQuery();
   const s = settings as Record<string, string> | undefined;
   const featureCoupons = (s?.featureCoupons ?? "true") !== "false";
+
+  // Se veio com ?productId, carrega o produto e adiciona ao carrinho automaticamente
+  const { data: singleProduct } = trpc.shop.getProduct.useQuery(
+    { id: productId },
+    { enabled: productId > 0 }
+  );
+  useEffect(() => {
+    if (!singleProduct) return;
+    // Só adiciona se o carrinho estiver vazio ou não tiver esse produto
+    if (!cartItems.find(i => i.productId === singleProduct.id)) {
+      addItem({
+        productId: singleProduct.id,
+        name: singleProduct.name,
+        price: parseFloat(String(singleProduct.price)),
+        imageUrl: singleProduct.imageUrl ?? undefined,
+      });
+    }
+  }, [singleProduct]);
+
+  // Usa os itens do carrinho
+  const items = cartItems;
 
   const [nickname, setNickname] = useState("");
   const [email, setEmail] = useState("");
@@ -215,12 +234,12 @@ export default function CheckoutPage() {
     onError: (err) => { toast.error(err.message ?? "Erro ao gerar PIX."); setStep("form"); },
   });
 
-  const productPrice = product ? parseFloat(String(product.price)) : 0;
+  const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
   const discount = !appliedCoupon ? 0 :
     appliedCoupon.discountType === "percent"
-      ? productPrice * (parseFloat(appliedCoupon.discountValue) / 100)
-      : Math.min(parseFloat(appliedCoupon.discountValue), productPrice);
-  const total = Math.max(0, productPrice - discount);
+      ? subtotal * (parseFloat(appliedCoupon.discountValue) / 100)
+      : Math.min(parseFloat(appliedCoupon.discountValue), subtotal);
+  const total = Math.max(0, subtotal - discount);
   const fmt = (v: number) => `R$ ${v.toFixed(2).replace(".", ",")}`;
 
   const handleApplyCoupon = async () => {
@@ -241,7 +260,7 @@ export default function CheckoutPage() {
     if (!nickname.trim()) return toast.error("Informe seu nickname no Minecraft.");
     if (!email.trim()) return toast.error("Informe seu e-mail.");
     if (!agreed) return toast.error("Você precisa concordar com os termos.");
-    if (!product) return;
+    if (items.length === 0) return toast.error("Seu carrinho está vazio.");
 
     setStep("generating");
 
@@ -249,7 +268,7 @@ export default function CheckoutPage() {
       minecraftNickname: nickname.trim(),
       email: email.trim(),
       couponCode: appliedCoupon?.code,
-      items: [{ productId: product.id, quantity: 1 }],
+      items: items.map(i => ({ productId: i.productId, quantity: i.quantity })),
     });
 
     if (!order?.orderNumber) { setStep("form"); return; }
@@ -266,6 +285,7 @@ export default function CheckoutPage() {
 
   const handlePixConfirmed = () => {
     setStep("confirmed");
+    clearCart();
     setTimeout(() => {
       navigate(`/pedido-confirmado?orderNumber=${encodeURIComponent(pixData!.orderNumber)}&payment=success`);
     }, 1500);
@@ -286,12 +306,11 @@ export default function CheckoutPage() {
           Finalizar Pedido
         </h1>
 
-        {loadingProduct ? (
-          <div className="h-64 rounded-lg bg-card animate-pulse" />
-        ) : !product ? (
+        {items.length === 0 && step === "form" ? (
           <div className="text-center py-20">
-            <p className="text-muted-foreground">Produto não encontrado.</p>
-            <Link href="/loja"><Button className="mt-4">Voltar à Loja</Button></Link>
+            <ShoppingCart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground mb-4">Seu carrinho está vazio.</p>
+            <Link href="/loja"><Button>Ver Produtos</Button></Link>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -427,24 +446,31 @@ export default function CheckoutPage() {
                   <CardTitle className="text-foreground text-lg">Resumo do Pedido</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-start gap-3">
-                    {product.imageUrl ? (
-                      <img src={product.imageUrl} alt={product.name} className="h-12 w-12 rounded-lg object-cover shrink-0 border border-border" />
-                    ) : (
-                      <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0"><span className="text-xl">📦</span></div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-foreground text-sm truncate">{product.name}</p>
-                      <p className="text-xs text-muted-foreground">Qtd: 1</p>
-                    </div>
-                    <span className="text-sm font-medium text-foreground">{fmt(productPrice)}</span>
+                  {/* Itens */}
+                  <div className="space-y-3">
+                    {items.map((item) => (
+                      <div key={item.productId} className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-muted border border-border flex items-center justify-center shrink-0 overflow-hidden">
+                          {item.imageUrl
+                            ? <img src={item.imageUrl} alt={item.name} className="h-full w-full object-cover" />
+                            : <span className="text-base">📦</span>}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">{item.name}</p>
+                          <p className="text-xs text-muted-foreground">Qtd: {item.quantity}</p>
+                        </div>
+                        <span className="text-sm font-medium text-foreground shrink-0">
+                          {fmt(item.price * item.quantity)}
+                        </span>
+                      </div>
+                    ))}
                   </div>
 
                   <Separator className="bg-border" />
 
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between text-muted-foreground">
-                      <span>Subtotal</span><span>{fmt(productPrice)}</span>
+                      <span>Subtotal</span><span>{fmt(subtotal)}</span>
                     </div>
                     {discount > 0 && (
                       <div className="flex justify-between text-primary">
@@ -461,6 +487,12 @@ export default function CheckoutPage() {
                     <ShieldCheck className="h-4 w-4 shrink-0" />
                     <span>Pagamento 100% seguro via Mercado Pago</span>
                   </div>
+
+                  <Link href="/carrinho">
+                    <Button variant="ghost" size="sm" className="w-full text-muted-foreground">
+                      Editar carrinho
+                    </Button>
+                  </Link>
                 </CardContent>
               </Card>
             </div>

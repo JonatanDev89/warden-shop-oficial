@@ -1,12 +1,12 @@
 import { trpc } from "@/lib/trpc";
-import { Search, ShoppingBag, Sword, Menu, X, BadgeCheck } from "lucide-react";
+import { Search, ShoppingBag, Sword, Menu, X, BadgeCheck, ShoppingCart } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
-
+import { useCart } from "@/contexts/CartContext";
 import MonthlyGoal from "@/components/MonthlyGoal";
 
 interface ShopLayoutProps {
@@ -27,6 +27,7 @@ export default function ShopLayout({ children }: ShopLayoutProps) {
   const logoUrl = s?.logoUrl ?? "";
   const fontFamily = s?.fontFamily ?? "'Inter', sans-serif";
   const isAdmin = user?.role === "admin";
+  const { totalItems } = useCart();
 
   // Feature flags
   const flag = (key: string) => (s?.[key] ?? "true") !== "false";
@@ -116,6 +117,18 @@ export default function ShopLayout({ children }: ShopLayoutProps) {
 
             {/* Auth */}
             <div className="flex items-center gap-2">
+              {/* Carrinho */}
+              <Link href="/carrinho">
+                <Button variant="outline" size="sm" className="relative gap-1.5">
+                  <ShoppingCart className="h-4 w-4" />
+                  <span className="hidden sm:inline">Carrinho</span>
+                  {totalItems > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
+                      {totalItems > 9 ? "9+" : totalItems}
+                    </span>
+                  )}
+                </Button>
+              </Link>
               {isAuthenticated ? (
                 <div className="flex items-center gap-2">
                   <div className="hidden sm:flex items-center gap-2">
