@@ -3,11 +3,19 @@ import { Link, useParams, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import ShopLayout from "@/components/ShopLayout";
-import { ChevronRight, Package, Shield, Truck, CreditCard, Check, Infinity, ShoppingCart, Plus } from "lucide-react";
+import { ChevronRight, Package, Shield, Truck, Zap, Check, Infinity, Plus } from "lucide-react";
 import { useState } from "react";
 import { parseProductImages } from "@/lib/productImages";
 import { useCart } from "@/contexts/CartContext";
-import { toast } from "sonner";
+
+// Ícone SVG do PIX
+function PixIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+      <path d="M11.9999 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 11.9999 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 11.9999 2ZM8.58787 8.58787C9.36892 7.80682 10.6311 7.80682 11.4121 8.58787L12 9.17578L12.5879 8.58787C13.3689 7.80682 14.6311 7.80682 15.4121 8.58787C16.1932 9.36892 16.1932 10.6311 15.4121 11.4121L14.8242 12L15.4121 12.5879C16.1932 13.3689 16.1932 14.6311 15.4121 15.4121C14.6311 16.1932 13.3689 16.1932 12.5879 15.4121L12 14.8242L11.4121 15.4121C10.6311 16.1932 9.36892 16.1932 8.58787 15.4121C7.80682 14.6311 7.80682 13.3689 8.58787 12.5879L9.17578 12L8.58787 11.4121C7.80682 10.6311 7.80682 9.36892 8.58787 8.58787Z"/>
+    </svg>
+  );
+}
 
 export default function ProductPage() {
   const params = useParams<{ id: string }>();
@@ -15,26 +23,11 @@ export default function ProductPage() {
   const [, navigate] = useLocation();
   const { addItem } = useCart();
   const [qty, setQty] = useState(1);
-  const [added, setAdded] = useState(false);
 
   const { data: product, isLoading } = trpc.shop.getProduct.useQuery({ id: productId });
   const { data: categories } = trpc.shop.getCategories.useQuery();
 
   const category = categories?.find((c) => c.id === product?.categoryId);
-
-  const handleAddToCart = () => {
-    if (!product) return;
-    const { main } = parseProductImages(product.imageUrl);
-    addItem({
-      productId: product.id,
-      name: product.name,
-      price: parseFloat(String(product.price)),
-      imageUrl: main ?? undefined,
-    }, qty);
-    toast.success(`${product.name} adicionado ao carrinho!`);
-    setAdded(true);
-    setTimeout(() => setAdded(false), 1500);
-  };
 
   const handleBuyNow = () => {
     if (!product) return;
@@ -139,12 +132,18 @@ export default function ProductPage() {
               {product.name}
             </h1>
 
-            <div className="mb-2">
-              <span className="text-4xl font-bold text-primary">{formatPrice(product.price)}</span>
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <div>
+                <span className="text-4xl font-bold text-primary">{formatPrice(product.price)}</span>
+                <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1.5">
+                  À vista no Pix
+                </p>
+              </div>
+              {/* Ícone PIX */}
+              <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                <PixIcon className="w-6 h-6 text-primary" />
+              </div>
             </div>
-            <p className="text-sm text-muted-foreground mb-4">
-              À vista — entrega manual pelo admin
-            </p>
 
             <div className="mb-2 flex items-center gap-2">
               <Badge variant="outline" className="text-xs border-border text-muted-foreground">
@@ -158,9 +157,9 @@ export default function ProductPage() {
               </Badge>
             </div>
 
-            {/* Quantidade + botões */}
+            {/* Quantidade + botão único */}
             <div className="flex items-center gap-3 mt-4">
-              <div className="flex items-center gap-2 border border-border rounded-lg bg-muted px-2 py-1">
+              <div className="flex items-center gap-2 border border-border rounded-lg bg-muted px-2 py-1 shrink-0">
                 <button onClick={() => setQty(q => Math.max(1, q - 1))} className="h-7 w-7 flex items-center justify-center hover:text-primary transition-colors">
                   <span className="text-lg font-bold leading-none">−</span>
                 </button>
@@ -169,30 +168,24 @@ export default function ProductPage() {
                   <Plus className="h-4 w-4" />
                 </button>
               </div>
-              <Button variant="outline" size="lg" className="flex-1 gap-2" onClick={handleAddToCart}>
-                {added ? <><Check className="h-4 w-4 text-green-400" /> Adicionado!</> : <><ShoppingCart className="h-4 w-4" /> Adicionar ao Carrinho</>}
+              <Button
+                size="lg"
+                className="flex-1 font-bold text-base gap-2"
+                onClick={handleBuyNow}
+              >
+                <PixIcon className="w-5 h-5" />
+                Comprar agora
               </Button>
             </div>
-            <Button
-              size="lg"
-              className="w-full mt-2 font-semibold text-base"
-              style={{ boxShadow: "0 0 20px oklch(0.65 0.22 145 / 0.3)" }}
-              onClick={handleBuyNow}
-            >
-              Comprar Agora
-            </Button>
 
             {/* Trust badges */}
             <div className="grid grid-cols-3 gap-3 mt-5">
               {[
-                { icon: Truck, label: "Entrega no Jogo" },
+                { icon: Zap, label: "Entrega no Jogo" },
                 { icon: Shield, label: "Compra Segura" },
-                { icon: CreditCard, label: "Sem Pagamento Online" },
+                { icon: Truck, label: "Pix Instantâneo" },
               ].map(({ icon: Icon, label }) => (
-                <div
-                  key={label}
-                  className="flex flex-col items-center gap-1 p-3 rounded-lg bg-muted text-center"
-                >
+                <div key={label} className="flex flex-col items-center gap-1 p-3 rounded-lg bg-muted text-center">
                   <Icon className="h-5 w-5 text-primary" />
                   <span className="text-xs text-muted-foreground leading-tight">{label}</span>
                 </div>
