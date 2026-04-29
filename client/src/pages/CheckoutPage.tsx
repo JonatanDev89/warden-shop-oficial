@@ -201,8 +201,8 @@ export default function CheckoutPage() {
 
     let orderNumber: string | undefined;
 
-    // Se tem kit personalizado, cria via createKitOrder
     if (kitItems.length > 0 && kitItems[0].kitSlots) {
+      // Pedido de kit personalizado
       const kitOrder = await createKitOrder.mutateAsync({
         minecraftNickname: nickname.trim(),
         email: email.trim(),
@@ -210,7 +210,7 @@ export default function CheckoutPage() {
       });
       orderNumber = kitOrder?.orderNumber;
     } else if (normalItems.length > 0) {
-      // Pedido normal
+      // Pedido normal com produtos do catálogo
       const order = await createOrder.mutateAsync({
         minecraftNickname: nickname.trim(), email: email.trim(),
         couponCode: appliedCoupon?.code,

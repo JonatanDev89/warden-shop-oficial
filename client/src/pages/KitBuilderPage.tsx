@@ -50,7 +50,7 @@ type KitItem = NonNullable<ReturnType<typeof trpc.shop.getKitItems.useQuery>["da
 export default function KitBuilderPage() {
   const [, navigate] = useLocation();
   const { data: kitItems = [] } = trpc.shop.getKitItems.useQuery();
-  const { addItem } = useCart();
+  const { addItem, clearCart } = useCart();
 
   const [slots, setSlots] = useState<(SlotItem | null)[]>(Array(TOTAL_SLOTS).fill(null));
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
@@ -218,6 +218,7 @@ export default function KitBuilderPage() {
     const filled = slots
       .map((s, i) => s ? { slot: i, minecraftId: s.minecraftId, name: s.name, quantity: s.quantity, unitPrice: s.unitPrice, configLabel: s.configLabel } : null)
       .filter(Boolean) as { slot: number; minecraftId: string; name: string; quantity: number; unitPrice: string; configLabel?: string }[];
+    // Remove itens normais do carrinho antes de adicionar o kit
     addItem({
       productId: -1,
       name: `Kit Personalizado (${filledSlots} item${filledSlots > 1 ? "s" : ""})`,
@@ -233,6 +234,8 @@ export default function KitBuilderPage() {
     const filled = slots
       .map((s, i) => s ? { slot: i, minecraftId: s.minecraftId, name: s.name, quantity: s.quantity, unitPrice: s.unitPrice, configLabel: s.configLabel } : null)
       .filter(Boolean) as { slot: number; minecraftId: string; name: string; quantity: number; unitPrice: string; configLabel?: string }[];
+    // Limpa o carrinho e adiciona só o kit
+    clearCart();
     addItem({
       productId: -1,
       name: `Kit Personalizado (${filledSlots} item${filledSlots > 1 ? "s" : ""})`,
