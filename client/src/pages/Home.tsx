@@ -348,28 +348,28 @@ export default function Home() {
           <Accordion type="single" collapsible className="space-y-2">
             {[
               {
-                q: "Como recebo meu item?",
-                a: "Após o pagamento via PIX ser confirmado, seu pedido entra na fila de entrega automática. Quando você entrar no servidor, use o comando !resgatar no chat para receber seus itens diretamente no inventário.",
+                q: "Como recebo meu item após o pagamento?",
+                a: "Após o PIX ser confirmado, entre no servidor Warden Craft e use o comando !resgatar no chat. Uma janela vai abrir mostrando seus pedidos pendentes — selecione o pedido e clique em Resgatar para receber os itens.",
               },
               {
-                q: "Quanto tempo leva a entrega?",
-                a: "A entrega é automática e instantânea assim que você usar !resgatar no servidor. O pedido fica disponível por tempo indeterminado — você pode resgatar quando quiser após a confirmação do pagamento.",
+                q: "O que acontece ao usar !resgatar?",
+                a: "O addon abre uma interface no jogo com todos os seus pedidos pendentes. Você escolhe qual pedido resgatar, confirma, e os itens são entregues automaticamente no seu inventário (pedidos normais) ou em uma shulker box roxa ao seu lado (kits personalizados).",
               },
               {
-                q: "Como uso o comando de resgate?",
-                a: "Entre no servidor Warden Craft e digite !resgatar no chat. O addon irá verificar seus pedidos pendentes e entregar os itens automaticamente no seu inventário.",
+                q: "Por que o !resgatar está bloqueado?",
+                a: "Se você estiver em uma Zona Segura (tag pvp_off), o resgate é bloqueado por segurança para evitar que seus itens sejam roubados. Saia da zona segura e tente novamente.",
               },
               {
                 q: "Posso usar cupom de desconto?",
                 a: "Sim! Durante o checkout você pode inserir um código de cupom válido para obter desconto no seu pedido.",
               },
               {
-                q: "E se eu não receber meu item após usar !resgatar?",
-                a: "Verifique se seu inventário tem espaço disponível. Se o problema persistir, entre em contato com nossa equipe pelo Discord com o número do seu pedido.",
+                q: "E se meu pedido não aparecer no !resgatar?",
+                a: "Verifique se o nickname informado na compra é exatamente igual ao do jogo (diferencia maiúsculas). Se o pedido foi feito há pouco tempo, aguarde alguns instantes e tente novamente. Persistindo, abra um ticket no Discord.",
               },
               {
                 q: "O pagamento é seguro?",
-                a: "Sim! O pagamento é processado via PIX pelo Mercado Pago, uma das plataformas de pagamento mais seguras do Brasil. Não armazenamos dados bancários.",
+                a: "Sim! O pagamento é processado via PIX pelo Mercado Pago. Aprovação imediata e sem redirecionamento para apps externos.",
               },
             ].map((item, i) => (
               <AccordionItem
