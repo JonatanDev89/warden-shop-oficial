@@ -300,13 +300,16 @@ export default function CheckoutPage() {
                       placeholder="Email" type="email" required disabled={isGenerating}
                       className="bg-muted/50 border-border rounded-xl h-11"
                       autoComplete="email"
+                      name="email"
+                      id="checkout-email"
                     />
                     <Input
                       value={nickname} onChange={e => setNickname(e.target.value)}
                       placeholder="Nickname (Minecraft)" required disabled={isGenerating}
                       className="bg-muted/50 border-border rounded-xl h-11"
-                      autoComplete="off"
+                      autoComplete="nickname"
                       name="minecraft-nickname"
+                      id="checkout-nickname"
                     />
                     {/* Alerta de atenção ao nickname */}
                     <div className="flex items-start gap-2 p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
