@@ -3,10 +3,11 @@ import { Link, useParams, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import ShopLayout from "@/components/ShopLayout";
-import { ChevronRight, Package, Shield, Truck, Zap, Check, Infinity, Plus } from "lucide-react";
+import { ChevronRight, Package, Shield, Truck, Zap, Check, Infinity, Plus, ShoppingCart } from "lucide-react";
 import { useState } from "react";
 import { parseProductImages } from "@/lib/productImages";
 import { useCart } from "@/contexts/CartContext";
+import { toast } from "sonner";
 
 // Ícone SVG do PIX
 function PixIcon({ className }: { className?: string }) {
@@ -23,11 +24,26 @@ export default function ProductPage() {
   const [, navigate] = useLocation();
   const { addItem } = useCart();
   const [qty, setQty] = useState(1);
+  const [added, setAdded] = useState(false);
 
   const { data: product, isLoading } = trpc.shop.getProduct.useQuery({ id: productId });
   const { data: categories } = trpc.shop.getCategories.useQuery();
 
   const category = categories?.find((c) => c.id === product?.categoryId);
+
+  const handleAddToCart = () => {
+    if (!product) return;
+    const { main } = parseProductImages(product.imageUrl);
+    addItem({
+      productId: product.id,
+      name: product.name,
+      price: parseFloat(String(product.price)),
+      imageUrl: main ?? undefined,
+    }, qty);
+    toast.success(`${product.name} adicionado ao carrinho!`);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1500);
+  };
 
   const handleBuyNow = () => {
     if (!product) return;
@@ -157,24 +173,38 @@ export default function ProductPage() {
               </Badge>
             </div>
 
-            {/* Quantidade + botão único */}
-            <div className="flex items-center gap-3 mt-4">
-              <div className="flex items-center gap-2 border border-border rounded-lg bg-muted px-2 py-1 shrink-0">
-                <button onClick={() => setQty(q => Math.max(1, q - 1))} className="h-7 w-7 flex items-center justify-center hover:text-primary transition-colors">
-                  <span className="text-lg font-bold leading-none">−</span>
-                </button>
-                <span className="w-8 text-center font-semibold text-foreground">{qty}</span>
-                <button onClick={() => setQty(q => q + 1)} className="h-7 w-7 flex items-center justify-center hover:text-primary transition-colors">
-                  <Plus className="h-4 w-4" />
-                </button>
+            {/* Quantidade + botões */}
+            <div className="mt-4 space-y-2">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 border border-border rounded-lg bg-muted px-2 py-1 shrink-0">
+                  <button onClick={() => setQty(q => Math.max(1, q - 1))} className="h-7 w-7 flex items-center justify-center hover:text-primary transition-colors">
+                    <span className="text-lg font-bold leading-none">−</span>
+                  </button>
+                  <span className="w-8 text-center font-semibold text-foreground">{qty}</span>
+                  <button onClick={() => setQty(q => q + 1)} className="h-7 w-7 flex items-center justify-center hover:text-primary transition-colors">
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </div>
+                {/* Comprar agora — vai direto pro checkout */}
+                <Button
+                  size="lg"
+                  className="flex-1 font-bold text-base gap-2 rounded-full"
+                  onClick={handleBuyNow}
+                >
+                  <ShoppingCart className="w-5 h-5" />
+                  Comprar agora
+                </Button>
               </div>
+
+              {/* Adicionar ao carrinho */}
               <Button
                 size="lg"
-                className="flex-1 font-bold text-base gap-2"
-                onClick={handleBuyNow}
+                variant="outline"
+                className="w-full font-bold text-base gap-2 rounded-full border-border"
+                onClick={handleAddToCart}
               >
-                <PixIcon className="w-5 h-5" />
-                Comprar agora
+                <Plus className="w-5 h-5" />
+                {added ? "Adicionado!" : "Adicionar ao carrinho"}
               </Button>
             </div>
 
