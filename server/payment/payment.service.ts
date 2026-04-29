@@ -26,8 +26,16 @@ import {
   type OrderPaymentRow,
 } from "./payment.repository";
 import { getOrderWithItemsByNumber } from "../db";
-import { logger } from "./logger";
-import { ENV } from "../_core/env";
+
+// Logger inline — evita problema de resolução de módulo
+const log = {
+  info: (event: string, data?: Record<string, unknown>) =>
+    console.log(JSON.stringify({ ts: new Date().toISOString(), level: "INFO", event, ...data })),
+  warn: (event: string, data?: Record<string, unknown>) =>
+    console.warn(JSON.stringify({ ts: new Date().toISOString(), level: "WARN", event, ...data })),
+  error: (event: string, data?: Record<string, unknown>) =>
+    console.error(JSON.stringify({ ts: new Date().toISOString(), level: "ERROR", event, ...data })),
+};
 
 // ─── Tolerância de valor para anti-fraude (R$ 0,01) ──────────────────────────
 const AMOUNT_TOLERANCE = 0.01;
@@ -78,7 +86,7 @@ export async function initiatePayment(orderNumber: string): Promise<{
 
   await savePreferenceId(orderNumber, result.preferenceId);
 
-  logger.info("payment.initiated", {
+  log.info("payment.initiated", {
     orderNumber,
     preferenceId: result.preferenceId,
     expectedTotal,
@@ -102,7 +110,7 @@ export async function processPaymentUpdate(
   try {
     verified = await verifyPayment(mpPaymentId);
   } catch (err) {
-    logger.error("payment.verify.failed", { mpPaymentId, error: String(err) });
+    log.error("payment.verify.failed", { mpPaymentId, error: String(err) });
     throw err; // Propaga para o webhook responder 500 e o MP retentar
   }
 
@@ -118,7 +126,7 @@ export async function processPaymentUpdate(
   if (existingByPaymentId) {
     const currentStatus = existingByPaymentId.paymentStatus as PaymentStatus | null;
     if (!canTransitionTo(currentStatus, status)) {
-      logger.info("payment.idempotent_skip", {
+      log.info("payment.idempotent_skip", {
         mpPaymentId,
         orderNumber,
         currentStatus,
@@ -131,14 +139,14 @@ export async function processPaymentUpdate(
   // 3. Buscar pedido pelo orderNumber
   const order = await findOrderByNumber(orderNumber);
   if (!order) {
-    logger.warn("payment.order_not_found", { mpPaymentId, orderNumber });
+    log.warn("payment.order_not_found", { mpPaymentId, orderNumber });
     return { action: "skipped", orderNumber, reason: "Pedido não encontrado" };
   }
 
   // 4. Verificar hierarquia de status do pedido atual
   const currentPaymentStatus = order.paymentStatus as PaymentStatus | null;
   if (!canTransitionTo(currentPaymentStatus, status)) {
-    logger.info("payment.status_regression_blocked", {
+    log.info("payment.status_regression_blocked", {
       orderNumber,
       currentPaymentStatus,
       incomingStatus: status,
@@ -156,7 +164,7 @@ export async function processPaymentUpdate(
     const diff = Math.abs(paidAmount - expectedTotal);
 
     if (diff > AMOUNT_TOLERANCE) {
-      logger.error("payment.fraud_detected", {
+      log.error("payment.fraud_detected", {
         orderNumber,
         mpPaymentId,
         expectedTotal,
@@ -189,7 +197,7 @@ export async function processPaymentUpdate(
       advanceOrderStatus: true, // → game_pending
     });
 
-    logger.info("payment.approved", {
+    log.info("payment.approved", {
       orderNumber,
       mpPaymentId,
       paidAmount,
@@ -207,7 +215,7 @@ export async function processPaymentUpdate(
       paymentStatusDetail: statusDetail,
     });
 
-    logger.info("payment.failed", { orderNumber, mpPaymentId, status, statusDetail });
+    log.info("payment.failed", { orderNumber, mpPaymentId, status, statusDetail });
     return { action: "failed", orderNumber };
   }
 
@@ -219,7 +227,7 @@ export async function processPaymentUpdate(
       paymentStatusDetail: statusDetail,
     });
 
-    logger.info("payment.refunded", { orderNumber, mpPaymentId, status });
+    log.info("payment.refunded", { orderNumber, mpPaymentId, status });
     return { action: "failed", orderNumber };
   }
 
@@ -231,6 +239,6 @@ export async function processPaymentUpdate(
     paymentStatusDetail: statusDetail,
   });
 
-  logger.info("payment.pending", { orderNumber, mpPaymentId, status, statusDetail });
+  log.info("payment.pending", { orderNumber, mpPaymentId, status, statusDetail });
   return { action: "pending", orderNumber };
 }
