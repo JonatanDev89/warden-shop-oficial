@@ -315,7 +315,7 @@ export default function CheckoutPage() {
                       className="mt-0.5 h-4 w-4 accent-primary" disabled={isGenerating} />
                     <span className="text-sm text-muted-foreground">
                       Eu aceito os{" "}
-                      <Link href="/termos" target="_blank" className="text-foreground font-semibold hover:underline">termos e condições</Link>
+                      <a href="/termos" target="_blank" rel="noopener noreferrer" className="text-foreground font-semibold hover:underline">termos e condições</a>
                       {" "}desta compra.
                     </span>
                   </label>
