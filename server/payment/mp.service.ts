@@ -12,7 +12,7 @@
 import crypto from "crypto";
 import { MercadoPagoConfig, Preference, Payment } from "mercadopago";
 import { ENV } from "../_core/env";
-import { logger } from "./logger";
+import { logger } from "./logger.js";
 
 // ─── Hierarquia de status de pagamento ────────────────────────────────────────
 // Garante que nunca regredimos um status (ex: approved → pending)
@@ -58,7 +58,7 @@ function getMpClient(): MercadoPagoConfig {
     }
     _mpClient = new MercadoPagoConfig({
       accessToken: ENV.mpAccessToken,
-      options: { timeout: 12_000, retries: 2 },
+      options: { timeout: 12_000 },
     });
   }
   return _mpClient;
@@ -152,9 +152,9 @@ export async function createPreference(
     throw new Error("Resposta inválida do Mercado Pago ao criar preferência.");
   }
 
-  const checkoutUrl = ENV.isProduction
-    ? result.init_point
-    : (result.sandbox_init_point ?? result.init_point);
+  const checkoutUrl = ENV.mpAccessToken.startsWith("TEST-")
+    ? (result.sandbox_init_point ?? result.init_point)
+    : result.init_point;
 
   logger.info("mp.preference.created", {
     orderNumber: input.orderNumber,
