@@ -345,7 +345,8 @@ const adminRouter = router({
     .mutation(async ({ input }) => {
       const result = await updateOrderStatus(input.id, "game_pending");
       const order = await getOrderWithItems(input.id);
-      if (order) {
+      // Só notifica se o pagamento NÃO foi pelo MP — evita duplicar com o webhook
+      if (order && order.paymentStatus !== "approved") {
         await notifyOrderAccepted({
           ...order,
           total: parseFloat(String(order.total)),
