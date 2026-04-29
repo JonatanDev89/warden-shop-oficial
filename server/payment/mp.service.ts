@@ -248,7 +248,91 @@ export async function createPreference(
   return { preferenceId: result.id, checkoutUrl };
 }
 
-// ─── Verificar pagamento na API do MP ─────────────────────────────────────────
+// ─── Criar pagamento PIX direto (sem redirect) ───────────────────────────────
+export interface CreatePixPaymentInput {
+  orderNumber: string;
+  expectedTotal: number;
+  payerEmail: string;
+  payerFirstName: string;
+  payerLastName?: string;
+  payerCpf?: string;
+}
+
+export interface PixPaymentResult {
+  paymentId: string;
+  qrCode: string;
+  qrCodeBase64: string;
+  expiresAt: string;
+}
+
+export async function createPixPayment(
+  input: CreatePixPaymentInput
+): Promise<PixPaymentResult> {
+  const client = getMpClient();
+  const paymentApi = new Payment(client);
+  const baseUrl = ENV.appBaseUrl.replace(/\/$/, "");
+
+  if (input.expectedTotal < 0.01) {
+    throw new Error(`Valor inválido: R$ ${input.expectedTotal}. Mínimo é R$ 0,01.`);
+  }
+
+  const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 min
+
+  const body: any = {
+    transaction_amount: Math.round(input.expectedTotal * 100) / 100,
+    description: `Pedido ${input.orderNumber} - Warden Shop`,
+    payment_method_id: "pix",
+    external_reference: input.orderNumber,
+    notification_url: `${baseUrl}/api/mp/webhook`,
+    date_of_expiration: expiresAt.toISOString(),
+    payer: {
+      email: input.payerEmail,
+      first_name: input.payerFirstName || "Cliente",
+      last_name: input.payerLastName || "Warden",
+      identification: input.payerCpf
+        ? { type: "CPF", number: input.payerCpf.replace(/\D/g, "") }
+        : undefined,
+    },
+  };
+
+  log.info("mp.pix.request", {
+    orderNumber: input.orderNumber,
+    amount: input.expectedTotal,
+  });
+
+  let result: any;
+  try {
+    result = await paymentApi.create({ body });
+  } catch (err: any) {
+    const mpError = err?.cause ?? err?.response ?? err;
+    log.error("mp.pix.api_error", {
+      orderNumber: input.orderNumber,
+      status: mpError?.status ?? "unknown",
+      message: mpError?.message ?? String(err),
+      detail: JSON.stringify(mpError?.data ?? mpError?.body ?? mpError).slice(0, 500),
+    });
+    throw new Error(`Erro ao gerar PIX: ${mpError?.message ?? String(err)}`);
+  }
+
+  const qrCode = result?.point_of_interaction?.transaction_data?.qr_code;
+  const qrCodeBase64 = result?.point_of_interaction?.transaction_data?.qr_code_base64;
+
+  if (!qrCode) {
+    throw new Error("Mercado Pago não retornou QR code PIX.");
+  }
+
+  log.info("mp.pix.created", {
+    orderNumber: input.orderNumber,
+    paymentId: String(result.id),
+  });
+
+  return {
+    paymentId: String(result.id),
+    qrCode,
+    qrCodeBase64: qrCodeBase64 ?? "",
+    expiresAt: expiresAt.toISOString(),
+  };
+}
 export async function verifyPayment(paymentId: string): Promise<VerifiedPayment> {
   const client = getMpClient();
   const paymentApi = new Payment(client);

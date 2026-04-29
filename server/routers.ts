@@ -54,7 +54,7 @@ import {
   upsertKitItem,
   deleteKitItem,
 } from "./db";
-import { initiatePayment } from "./payment/payment.service";
+import { initiatePayment, initiatePixPayment } from "./payment/payment.service";
 import { getPendingOrdersForAddon } from "./addon-helpers";
 import {
   notifyPendingOrder,
@@ -188,6 +188,24 @@ const shopRouter = router({
         if (msg.includes("não encontrado")) throw new TRPCError({ code: "NOT_FOUND", message: msg });
         if (msg.includes("já foi pago")) throw new TRPCError({ code: "BAD_REQUEST", message: msg });
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Erro ao iniciar pagamento. Tente novamente." });
+      }
+    }),
+
+  // Cria pagamento PIX inline (sem redirect) — retorna QR code
+  createPixPayment: publicProcedure
+    .input(z.object({
+      orderNumber: z.string().min(1).max(32),
+      payerEmail: z.string().email(),
+      payerName: z.string().min(1),
+    }))
+    .mutation(async ({ input }) => {
+      try {
+        return await initiatePixPayment(input.orderNumber, input.payerEmail, input.payerName);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Erro ao gerar PIX.";
+        if (msg.includes("não encontrado")) throw new TRPCError({ code: "NOT_FOUND", message: msg });
+        if (msg.includes("já foi pago")) throw new TRPCError({ code: "BAD_REQUEST", message: msg });
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: msg });
       }
     }),
 

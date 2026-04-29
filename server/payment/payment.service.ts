@@ -13,6 +13,7 @@
 
 import {
   createPreference,
+  createPixPayment,
   verifyPayment,
   canTransitionTo,
   type PaymentStatus,
@@ -92,6 +93,35 @@ export async function initiatePayment(orderNumber: string): Promise<{
     expectedTotal,
   });
 
+  return result;
+}
+
+// ─── Criar pagamento PIX inline ───────────────────────────────────────────────
+export async function initiatePixPayment(
+  orderNumber: string,
+  payerEmail: string,
+  payerName: string,
+): Promise<{ paymentId: string; qrCode: string; qrCodeBase64: string; expiresAt: string }> {
+  const order = await getOrderWithItemsByNumber(orderNumber);
+  if (!order) throw new Error(`Pedido ${orderNumber} não encontrado.`);
+  if (order.paymentStatus === "approved") throw new Error("Este pedido já foi pago.");
+
+  const expectedTotal = parseFloat(String(order.total));
+  const nameParts = payerName.trim().split(" ");
+  const firstName = nameParts[0] ?? "Cliente";
+  const lastName = nameParts.slice(1).join(" ") || "Warden";
+
+  const result = await createPixPayment({
+    orderNumber,
+    expectedTotal,
+    payerEmail,
+    payerFirstName: firstName,
+    payerLastName: lastName,
+  });
+
+  await savePreferenceId(orderNumber, result.paymentId);
+
+  log.info("pix.initiated", { orderNumber, paymentId: result.paymentId, expectedTotal });
   return result;
 }
 
