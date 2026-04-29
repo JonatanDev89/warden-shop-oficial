@@ -307,7 +307,7 @@ export default function CheckoutPage() {
                       value={nickname} onChange={e => setNickname(e.target.value)}
                       placeholder="Nickname (Minecraft)" required disabled={isGenerating}
                       className="bg-muted/50 border-border rounded-xl h-11"
-                      autoComplete="nickname"
+                      autoComplete="on"
                       name="minecraft-nickname"
                       id="checkout-nickname"
                     />
