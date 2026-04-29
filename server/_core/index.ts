@@ -11,12 +11,6 @@ import { serveStatic, setupVite } from "./vite";
 import { runMigrations } from "../db";
 import { handleMpWebhook } from "../payment/webhook.controller";
 
-// Log de diagnóstico de variáveis de ambiente no startup
-const mpToken = process.env.MP_ACCESS_TOKEN;
-console.log("[ENV Check] MP_ACCESS_TOKEN:", mpToken ? `SET (${mpToken.slice(0, 10)}...)` : "NOT SET");
-console.log("[ENV Check] APP_BASE_URL:", process.env.APP_BASE_URL ?? "NOT SET");
-console.log("[ENV Check] NODE_ENV:", process.env.NODE_ENV ?? "NOT SET");
-
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
     const server = net.createServer();

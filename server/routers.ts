@@ -184,11 +184,10 @@ const shopRouter = router({
       try {
         return await initiatePayment(input.orderNumber);
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        console.error("[createMpPayment] ERRO:", msg);
+        const msg = err instanceof Error ? err.message : "Erro ao iniciar pagamento.";
         if (msg.includes("não encontrado")) throw new TRPCError({ code: "NOT_FOUND", message: msg });
         if (msg.includes("já foi pago")) throw new TRPCError({ code: "BAD_REQUEST", message: msg });
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: `Erro MP: ${msg}` });
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Erro ao iniciar pagamento. Tente novamente." });
       }
     }),
 
