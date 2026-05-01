@@ -29,6 +29,8 @@ export default function ShopLayout({ children }: ShopLayoutProps) {
   const isAdmin = user?.role === "admin";
   const { items, totalItems, totalPrice, updateQty, removeItem } = useCart();
 
+  const discordUrl = s?.discordUrl ?? "";
+
   const flag = (key: string) => (s?.[key] ?? "true") !== "false";
   const featureSearch       = flag("featureSearch");
   const featureAnnouncement = flag("featureAnnouncement");
@@ -90,9 +92,11 @@ export default function ShopLayout({ children }: ShopLayoutProps) {
               {featureKitBuilder && (
                 <Link href="/monte-seu-kit"><Button variant="ghost" size="sm">Monte seu Kit</Button></Link>
               )}
-              <a href="https://discord.gg" target="_blank" rel="noopener noreferrer">
-                <Button variant="ghost" size="sm">Discord</Button>
-              </a>
+              {discordUrl && (
+                <a href={discordUrl} target="_blank" rel="noopener noreferrer">
+                  <Button variant="ghost" size="sm">Discord</Button>
+                </a>
+              )}
             </nav>
 
             {/* Search */}
@@ -168,9 +172,11 @@ export default function ShopLayout({ children }: ShopLayoutProps) {
                   <Button variant="ghost" size="sm" className="w-full justify-start">Monte seu Kit</Button>
                 </Link>
               )}
-              <a href="https://discord.gg" target="_blank" rel="noopener noreferrer">
-                <Button variant="ghost" size="sm" className="w-full justify-start">Discord</Button>
-              </a>
+              {discordUrl && (
+                <a href={discordUrl} target="_blank" rel="noopener noreferrer">
+                  <Button variant="ghost" size="sm" className="w-full justify-start">Discord</Button>
+                </a>
+              )}
             </div>
           )}
         </div>
@@ -286,7 +292,7 @@ export default function ShopLayout({ children }: ShopLayoutProps) {
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li><Link href="/" className="hover:text-primary transition-colors">Início</Link></li>
                 <li><Link href="/loja" className="hover:text-primary transition-colors">Loja</Link></li>
-                <li><a href="https://discord.gg" className="hover:text-primary transition-colors">Discord</a></li>
+                <li><a href={discordUrl || "#"} className="hover:text-primary transition-colors">Discord</a></li>
               </ul>
             </div>
             <div>

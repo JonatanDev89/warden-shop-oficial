@@ -287,6 +287,7 @@ export default function AdminCustomization() {
   // Anúncio
   const [announcementText, setAnnouncementText] = useState("");
   const [announcementCoupon, setAnnouncementCoupon] = useState("");
+  const [discordUrl, setDiscordUrl] = useState("");
   const [discordTicketsUrl, setDiscordTicketsUrl] = useState("");
 
   // Tema
@@ -331,6 +332,7 @@ export default function AdminCustomization() {
     setGlowIntensity(settings.glowIntensity ?? "0.4");
     setBorderRadius(settings.borderRadius ?? "0.5rem");
     setFontFamily(settings.fontFamily ?? "'Inter', sans-serif");
+    setDiscordUrl(settings.discordUrl ?? "");
     setDiscordTicketsUrl(settings.discordTicketsUrl ?? "");
     setMonthlyGoalTarget(settings.monthlyGoalTarget ?? "");
     setMonthlyGoalLabel(settings.monthlyGoalLabel ?? "Meta do mês");
@@ -362,7 +364,7 @@ export default function AdminCustomization() {
       announcementText, announcementCoupon,
       primaryColor, backgroundColor, cardColor, glowColor,
       glowIntensity, borderRadius, fontFamily,
-      discordTicketsUrl, monthlyGoalTarget, monthlyGoalLabel,
+      discordUrl, discordTicketsUrl, monthlyGoalTarget, monthlyGoalLabel,
       // Feature flags
       featureSearch: String(featureSearch),
       featureAnnouncement: String(featureAnnouncement),
@@ -715,16 +717,22 @@ export default function AdminCustomization() {
             </CardContent>
           </Card>
 
-          {/* Suporte */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <MessageSquare className="h-4 w-4 text-primary" /> Suporte
               </CardTitle>
-              <CardDescription>Link exibido na página de confirmação de pedido.</CardDescription>
+              <CardDescription>Links do Discord exibidos na loja.</CardDescription>
             </CardHeader>
-            <CardContent>
-              <FieldGroup label="Link do Discord (tickets)" hint="Canal ou categoria de tickets do seu servidor.">
+            <CardContent className="space-y-4">
+              <FieldGroup label="Link do Discord (navbar)" hint="Botão Discord no cabeçalho e rodapé da loja.">
+                <div className="flex gap-2 items-center">
+                  <Link2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <Input value={discordUrl} onChange={e=>setDiscordUrl(e.target.value)}
+                    placeholder="https://discord.gg/..." />
+                </div>
+              </FieldGroup>
+              <FieldGroup label="Link do Discord (tickets)" hint="Canal ou categoria de tickets — exibido na página de confirmação de pedido.">
                 <div className="flex gap-2 items-center">
                   <Link2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                   <Input value={discordTicketsUrl} onChange={e=>setDiscordTicketsUrl(e.target.value)}
