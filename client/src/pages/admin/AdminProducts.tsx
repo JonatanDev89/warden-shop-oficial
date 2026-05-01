@@ -194,6 +194,7 @@ export default function AdminProducts() {
       setLocalOrder(null);
       toast.success("Produto removido.");
     },
+    onError: (e) => toast.error(e.message),
   });
 
   const openCreate = () => {

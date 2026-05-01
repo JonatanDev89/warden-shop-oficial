@@ -239,7 +239,7 @@ export async function updateProduct(
 export async function deleteProduct(id: number) {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
-  await db.update(products).set({ active: false }).where(eq(products.id, id));
+  await db.delete(products).where(eq(products.id, id));
 }
 
 export async function reorderProducts(orderedIds: number[]) {
