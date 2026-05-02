@@ -54,18 +54,20 @@ class WardenShop {
         } catch (_) {}
     }
 
-    /* ── Buscar pedidos normais (game_pending, não kit) ── */
-    async fetchPendingOrders() {
+    /* ── Buscar items pendentes (um por um, não pedidos completos) ── */
+    async fetchPendingItems() {
         try {
-            const url = `${WARDEN_API_BASE}/pending-orders?apiKey=${encodeURIComponent(API_KEY)}`;
-            const request = new HttpRequest(url);
-            request.method = HttpRequestMethod.Get;
+            const request = new HttpRequest(`${WARDEN_API_BASE}/addon.getPendingItems`);
+            request.method = HttpRequestMethod.Post;
+            request.headers = [
+                new HttpHeader('Content-Type', 'application/json'),
+                new HttpHeader('Authorization', `Bearer ${API_KEY}`)
+            ];
+            request.body = JSON.stringify({ apiKey: API_KEY });
             const response = await http.request(request);
             if (response.status === 200 && response.body) {
                 const data = JSON.parse(response.body);
-                const orders = Array.isArray(data) ? data : (data.orders ?? []);
-                // Excluir kits personalizados (tratados separado)
-                return orders.filter(o => !o.orderNumber?.startsWith('#KIT'));
+                return data.result?.data?.items ?? [];
             }
             return [];
         } catch (_) { return []; }
@@ -97,32 +99,32 @@ class WardenShop {
             return;
         }
 
-        player.sendMessage('§7[Warden Shop] Buscando pedidos...');
+        player.sendMessage('§7[Warden Shop] Buscando itens...');
 
-        const [normalOrders, kitOrders] = await Promise.all([
-            this.fetchPendingOrders(),
+        const [normalItems, kitOrders] = await Promise.all([
+            this.fetchPendingItems(),
             this.fetchKitOrders(),
         ]);
 
-        const playerNormal = normalOrders.filter(o =>
-            o.minecraftNickname?.toLowerCase() === player.name.toLowerCase()
+        const playerItems = normalItems.filter(item =>
+            item.minecraftNickname?.toLowerCase() === player.name.toLowerCase()
         );
         const playerKits = kitOrders.filter(o =>
             o.nickname?.toLowerCase() === player.name.toLowerCase()
         );
 
-        // Unificar lista marcando kits
-        const allOrders = [
-            ...playerNormal.map(o => ({ ...o, isKit: false })),
-            ...playerKits.map(o => ({ ...o, isKit: true, minecraftNickname: o.nickname })),
+        // Unificar lista: items normais + kits
+        const allItems = [
+            ...playerItems.map(item => ({ ...item, isKit: false, isItem: true })),
+            ...playerKits.map(o => ({ ...o, isKit: true, isItem: false, minecraftNickname: o.nickname })),
         ];
 
-        if (allOrders.length === 0) {
+        if (allItems.length === 0) {
             await this.showNoOrdersScreen(player);
             return;
         }
 
-        await this.showOrderListScreen(player, allOrders);
+        await this.showItemListScreen(player, allItems);
     }
 
     async showSafeZoneWarning(player) {
@@ -147,76 +149,115 @@ class WardenShop {
         await form.show(player).catch(() => {});
     }
 
-    async showOrderListScreen(player, orders) {
+    async showItemListScreen(player, items) {
         const form = new ActionFormData()
-            .title('§6§lWarden Shop §r§l- Pedidos Pendentes')
+            .title('§6§lWarden Shop §r§l- Itens Pendentes')
             .body(
-                `§l§aVocê tem ${orders.length} pedido(s) pendente(s).\n` +
-                `§r§lSelecione um pedido para resgatar.`
+                `§l§aVocê tem ${items.length} item(ns) para resgatar.\n` +
+                `§r§lSelecione um item para resgatar.`
             );
 
-        for (const order of orders) {
-            const total = order.total || order.totalPrice || '0.00';
-            const date = order.createdAt ? new Date(order.createdAt).toLocaleDateString('pt-BR') : 'N/A';
-            const kitTag = order.isKit ? '§d[KIT] ' : '';
-            form.button(`${kitTag}§l§e${order.orderNumber ?? `#${order.id}`} §r§l- §aR$ ${total}\n§r§8Data: ${date}`);
+        for (const item of items) {
+            if (item.isKit) {
+                // Kit personalizado
+                const total = item.total || item.totalPrice || '0.00';
+                const date = item.createdAt ? new Date(item.createdAt).toLocaleDateString('pt-BR') : 'N/A';
+                form.button(`§d[KIT] §l§e${item.orderNumber ?? `#${item.id}`} §r§l- §aR$ ${total}\n§r§8Data: ${date}`);
+            } else {
+                // Item normal
+                const date = item.createdAt ? new Date(item.createdAt).toLocaleDateString('pt-BR') : 'N/A';
+                const qty = item.quantity > 1 ? `${item.quantity}x ` : '';
+                form.button(`§l§e${qty}${item.productName}\n§r§8Pedido: ${item.orderNumber} • ${date}`);
+            }
         }
 
         let response;
         try { response = await form.show(player); } catch (_) { return; }
         if (response.canceled) return;
 
-        await this.showOrderDetailScreen(player, orders[response.selection], orders);
+        await this.showItemDetailScreen(player, items[response.selection], items);
     }
 
-    async showOrderDetailScreen(player, order, allOrders) {
-        const total = order.total || order.totalPrice || '0.00';
-        const date = order.createdAt ? new Date(order.createdAt).toLocaleDateString('pt-BR') : 'N/A';
+    async showItemDetailScreen(player, item, allItems) {
+        if (item.isKit) {
+            // Kit personalizado - mostra detalhes do kit
+            const total = item.total || item.totalPrice || '0.00';
+            const date = item.createdAt ? new Date(item.createdAt).toLocaleDateString('pt-BR') : 'N/A';
+            let itemsText = '';
+            if (item.kitSlots?.length > 0) {
+                itemsText = '\n§l§7Itens do Kit:\n' +
+                    item.kitSlots.map(s => `  §r§l§f• ${s.quantity}x ${s.name}`).join('\n');
+            }
 
-        let itemsText = '';
-        if (order.isKit && order.kitSlots?.length > 0) {
-            itemsText = '\n§l§7Itens do Kit:\n' +
-                order.kitSlots.map(s => `  §r§l§f• ${s.quantity}x ${s.name}`).join('\n');
-        } else if (order.items && Array.isArray(order.items) && order.items.length > 0) {
-            itemsText = '\n§l§7Itens:\n' + order.items.map(i => `  §r§l§f• ${i.name || i.item || i}`).join('\n');
+            const form = new MessageFormData()
+                .title(`§l§6Kit §e${item.orderNumber ?? `#${item.id}`}`)
+                .body(
+                    `§l§7ID: §f${item.orderNumber ?? `#${item.id}`}\n` +
+                    `§l§7Valor: §aR$ ${total}\n` +
+                    `§l§7Data: §f${date}` +
+                    itemsText +
+                    '\n\n§l§eDeseja resgatar este kit agora?'
+                )
+                .button1('§l§a✔ Resgatar')
+                .button2('§l§7← Voltar');
+
+            let response;
+            try { response = await form.show(player); } catch (_) { return; }
+            if (response.canceled || response.selection === 1) {
+                await this.showItemListScreen(player, allItems);
+                return;
+            }
+
+            await this.deliverSingleKit(player, item, allItems);
+        } else {
+            // Item normal
+            const date = item.createdAt ? new Date(item.createdAt).toLocaleDateString('pt-BR') : 'N/A';
+            const qty = item.quantity > 1 ? `${item.quantity}x ` : '';
+            const price = parseFloat(item.unitPrice) * item.quantity;
+
+            const form = new MessageFormData()
+                .title(`§l§6${item.productName}`)
+                .body(
+                    `§l§7Produto: §f${qty}${item.productName}\n` +
+                    `§l§7Pedido: §f${item.orderNumber}\n` +
+                    `§l§7Valor: §aR$ ${price.toFixed(2)}\n` +
+                    `§l§7Data: §f${date}\n` +
+                    '\n§l§eDeseja resgatar este item agora?'
+                )
+                .button1('§l§a✔ Resgatar')
+                .button2('§l§7← Voltar');
+
+            let response;
+            try { response = await form.show(player); } catch (_) { return; }
+            if (response.canceled || response.selection === 1) {
+                await this.showItemListScreen(player, allItems);
+                return;
+            }
+
+            await this.deliverSingleItem(player, item, allItems);
         }
-
-        const form = new MessageFormData()
-            .title(`§l§6Pedido §e${order.orderNumber ?? `#${order.id}`}`)
-            .body(
-                `§l§7ID: §f${order.orderNumber ?? `#${order.id}`}\n` +
-                `§l§7Valor: §aR$ ${total}\n` +
-                `§l§7Data: §f${date}` +
-                itemsText +
-                '\n\n§l§eDeseja resgatar este pedido agora?'
-            )
-            .button1('§l§a✔ Resgatar')
-            .button2('§l§7← Voltar');
-
-        let response;
-        try { response = await form.show(player); } catch (_) { return; }
-        if (response.canceled || response.selection === 1) {
-            await this.showOrderListScreen(player, allOrders);
-            return;
-        }
-
-        await this.deliverSingleOrder(player, order, allOrders);
     }
 
-    async deliverSingleOrder(player, order, allOrders) {
+    async deliverSingleItem(player, item, allItems) {
         if (this.processingPlayers.has(player.name)) return;
         this.processingPlayers.add(player.name);
 
         try {
-            let success = false;
+            const success = await this.deliverItem(player, item);
+            if (success) await this.markItemAsDelivered(item.itemId);
+            await this.showDeliveryResultScreen(player, success ? 1 : 0, success ? 0 : 1);
+        } finally {
+            this.processingPlayers.delete(player.name);
+        }
+    }
 
-            if (order.isKit) {
-                success = await this.deliverKitOrder(player, order);
-            } else {
-                success = await this.deliverOrder(player, order);
-            }
+    async deliverSingleKit(player, kit, allItems) {
+        if (this.processingPlayers.has(player.name)) return;
+        this.processingPlayers.add(player.name);
 
-            if (success) await this.markOrderAsDelivered(order.id);
+        try {
+            const success = await this.deliverKitOrder(player, kit);
+            if (success) await this.markOrderAsDelivered(kit.id);
             await this.showDeliveryResultScreen(player, success ? 1 : 0, success ? 0 : 1);
         } finally {
             this.processingPlayers.delete(player.name);
@@ -303,18 +344,10 @@ class WardenShop {
         });
     }
 
-    /* ── Pedido normal: executa comandos ── */
-    async deliverOrder(player, order) {
+    /* ── Item normal: executa comandos do produto ── */
+    async deliverItem(player, item) {
         try {
-            let commands = [];
-            if (order.commands) {
-                if (typeof order.commands === 'string') {
-                    try { commands = JSON.parse(order.commands); }
-                    catch (_) { if (order.commands.trim()) commands = [order.commands]; }
-                } else if (Array.isArray(order.commands)) {
-                    commands = order.commands;
-                }
-            }
+            const commands = item.commands ?? [];
             if (commands.length === 0) return false;
 
             let executed = 0;
@@ -328,11 +361,27 @@ class WardenShop {
         } catch (_) { return false; }
     }
 
+    async markItemAsDelivered(itemId) {
+        try {
+            const request = new HttpRequest(`${WARDEN_API_BASE}/addon.markItemDelivered`);
+            request.method = HttpRequestMethod.Post;
+            request.headers = [
+                new HttpHeader('Content-Type', 'application/json'),
+                new HttpHeader('Authorization', `Bearer ${API_KEY}`)
+            ];
+            request.body = JSON.stringify({ apiKey: API_KEY, itemId });
+            await http.request(request);
+        } catch (_) {}
+    }
+
     async markOrderAsDelivered(orderId) {
         try {
-            const request = new HttpRequest(`${WARDEN_API_BASE}/mark-delivered`);
+            const request = new HttpRequest(`${WARDEN_API_BASE}/addon.markDelivered`);
             request.method = HttpRequestMethod.Post;
-            request.headers = [new HttpHeader('Content-Type', 'application/json')];
+            request.headers = [
+                new HttpHeader('Content-Type', 'application/json'),
+                new HttpHeader('Authorization', `Bearer ${API_KEY}`)
+            ];
             request.body = JSON.stringify({ apiKey: API_KEY, orderId });
             await http.request(request);
         } catch (_) {}
@@ -344,10 +393,9 @@ class WardenShop {
             .title(success ? '§a§l✔ Resgate Concluído' : '§c§l✘ Falha no Resgate')
             .body(
                 success
-                    ? `§l§a${delivered} pedido(s) entregue(s) com sucesso!\n` +
-                      (failed > 0 ? `§l§c${failed} pedido(s) falharam.\n` : '') +
+                    ? `§l§aItem entregue com sucesso!\n` +
                       '\n§r§lObrigado por comprar na §6§lWarden Craft Store§r§l!'
-                    : '§l§cNão foi possível entregar os pedidos.\n\n§r§lTente novamente em instantes ou contate o suporte.'
+                    : '§l§cNão foi possível entregar o item.\n\n§r§lTente novamente em instantes ou contate o suporte.'
             )
             .button1('§l§aFechar')
             .button2('§l§7Ok');

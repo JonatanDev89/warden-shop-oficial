@@ -117,6 +117,7 @@ export const orderItems = pgTable("order_items", {
   productName: varchar("productName", { length: 256 }).notNull(),
   quantity: integer("quantity").default(1).notNull(),
   unitPrice: decimal("unitPrice", { precision: 10, scale: 2 }).notNull(),
+  delivered: boolean("delivered").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 

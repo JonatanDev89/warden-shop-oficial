@@ -66,7 +66,67 @@ export const addonRouter = router({
   }),
 
   /**
-   * Listar pedidos pendentes
+   * Listar items de pedidos pendentes (entrega individual)
+   * POST /api/trpc/addon.getPendingItems
+   * Body: {"apiKey": "warden_..."}
+   * Retorna cada item de cada pedido separadamente para resgate individual
+   */
+  getPendingItems: publicProcedure
+    .input(
+      z.object({
+        apiKey: z.string().min(1),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const isValid = await validateAddonApiKey(input.apiKey);
+      if (!isValid) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "API Key inválida ou revogada",
+        });
+      }
+
+      try {
+        const { getPendingOrderItems, getProductCommands } = await import("./db");
+        const pendingItems = await getPendingOrderItems();
+
+        // Buscar comandos de cada produto
+        const itemsWithCommands = await Promise.all(
+          pendingItems.map(async (item) => {
+            const commands = await getProductCommands(item.productId);
+            return {
+              itemId: item.itemId,
+              orderId: item.orderId,
+              productId: item.productId,
+              productName: item.productName,
+              quantity: item.quantity,
+              unitPrice: parseFloat(item.unitPrice.toString()),
+              orderNumber: item.orderNumber,
+              minecraftNickname: item.minecraftNickname,
+              email: item.email,
+              total: parseFloat(item.total.toString()),
+              commands,
+              createdAt: item.createdAt.toISOString(),
+            };
+          })
+        );
+
+        return {
+          success: true,
+          items: itemsWithCommands,
+          count: itemsWithCommands.length,
+        };
+      } catch (error) {
+        console.error("[Addon] Erro ao listar items:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Erro ao listar items",
+        });
+      }
+    }),
+
+  /**
+   * Listar pedidos pendentes (DEPRECATED - use getPendingItems para entrega individual)
    * POST /api/trpc/addon.getPendingOrders
    * Body: {"apiKey": "warden_..."}
    */
@@ -122,7 +182,45 @@ export const addonRouter = router({
     }),
 
   /**
-   * Marcar pedido como entregue
+   * Marcar item individual como entregue
+   * POST /api/trpc/addon.markItemDelivered
+   */
+  markItemDelivered: publicProcedure
+    .input(
+      z.object({
+        apiKey: z.string().min(1),
+        itemId: z.number().int().positive(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const isValid = await validateAddonApiKey(input.apiKey);
+      if (!isValid) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "API Key inválida ou revogada",
+        });
+      }
+
+      try {
+        const { markOrderItemDelivered } = await import("./db");
+        await markOrderItemDelivered(input.itemId);
+
+        return {
+          success: true,
+          itemId: input.itemId,
+          message: `Item #${input.itemId} marcado como entregue`,
+        };
+      } catch (error) {
+        console.error("[Addon] Erro ao marcar item entregue:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Erro ao processar item",
+        });
+      }
+    }),
+
+  /**
+   * Marcar pedido como entregue (DEPRECATED - use markItemDelivered)
    * POST /api/trpc/addon.markDelivered
    * Requer: Authorization: Bearer {API_KEY}
    */

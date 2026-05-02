@@ -790,8 +790,102 @@ export async function runMigrations() {
       )
     `);
 
+    // ─── order_items.delivered ────────────────────────────────────────────────
+    await db.execute(sql`ALTER TABLE "order_items" ADD COLUMN IF NOT EXISTS "delivered" boolean NOT NULL DEFAULT false`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS "order_items_delivered_idx" ON "order_items" ("delivered")`);
+
     console.log("[DB] Migrations applied.");
   } catch (e) {
     console.error("[DB] Migration error:", e);
+  }
+}
+
+// ─── Order Items (individual delivery) ────────────────────────────────────────
+export async function getPendingOrderItems() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  // Busca todos os items de pedidos game_pending que ainda não foram entregues
+  const result = await db
+    .select({
+      itemId: orderItems.id,
+      orderId: orderItems.orderId,
+      productId: orderItems.productId,
+      productName: orderItems.productName,
+      quantity: orderItems.quantity,
+      unitPrice: orderItems.unitPrice,
+      orderNumber: orders.orderNumber,
+      minecraftNickname: orders.minecraftNickname,
+      email: orders.email,
+      total: orders.total,
+      createdAt: orders.createdAt,
+    })
+    .from(orderItems)
+    .innerJoin(orders, eq(orderItems.orderId, orders.id))
+    .where(
+      and(
+        eq(orders.status, "game_pending"),
+        eq(orderItems.delivered, false)
+      )
+    )
+    .orderBy(desc(orders.createdAt));
+  
+  return result;
+}
+
+export async function markOrderItemDelivered(itemId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  
+  await db
+    .update(orderItems)
+    .set({ delivered: true })
+    .where(eq(orderItems.id, itemId));
+  
+  // Verifica se todos os items do pedido foram entregues
+  const item = await db
+    .select({ orderId: orderItems.orderId })
+    .from(orderItems)
+    .where(eq(orderItems.id, itemId))
+    .limit(1);
+  
+  if (item[0]) {
+    const pendingItems = await db
+      .select({ id: orderItems.id })
+      .from(orderItems)
+      .where(
+        and(
+          eq(orderItems.orderId, item[0].orderId),
+          eq(orderItems.delivered, false)
+        )
+      );
+    
+    // Se não há mais items pendentes, marca o pedido como delivered
+    if (pendingItems.length === 0) {
+      await db
+        .update(orders)
+        .set({ status: "delivered" })
+        .where(eq(orders.id, item[0].orderId));
+    }
+  }
+}
+
+export async function getProductCommands(productId: number): Promise<string[]> {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const product = await db
+    .select({ commands: products.commands })
+    .from(products)
+    .where(eq(products.id, productId))
+    .limit(1);
+  
+  if (!product[0]?.commands) return [];
+  
+  try {
+    const parsed = JSON.parse(product[0].commands);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return product[0].commands.trim() ? [product[0].commands] : [];
   }
 }
