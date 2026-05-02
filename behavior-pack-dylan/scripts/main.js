@@ -57,19 +57,14 @@ class WardenShop {
     /* ── Buscar items pendentes (um por um, não pedidos completos) ── */
     async fetchPendingItems() {
         try {
-            const request = new HttpRequest(`${WARDEN_API_BASE}/addon.getPendingItems`);
-            request.method = HttpRequestMethod.Post;
-            request.headers = [
-                new HttpHeader('Content-Type', 'application/json'),
-                new HttpHeader('Authorization', `Bearer ${API_KEY}`)
-            ];
-            request.body = JSON.stringify({ apiKey: API_KEY });
+            const url = `${WARDEN_API_BASE}/pending-items?apiKey=${encodeURIComponent(API_KEY)}`;
+            const request = new HttpRequest(url);
+            request.method = HttpRequestMethod.Get;
             const response = await http.request(request);
             if (response.status === 200 && response.body) {
                 const data = JSON.parse(response.body);
                 console.warn('[WardenShop] fetchPendingItems response:', JSON.stringify(data));
-                // tRPC retorna: { result: { data: { success, items, count } } }
-                const items = data.result?.data?.items ?? data.items ?? [];
+                const items = data.items ?? [];
                 console.warn('[WardenShop] Parsed items:', items.length);
                 return items;
             }
@@ -370,12 +365,9 @@ class WardenShop {
 
     async markItemAsDelivered(itemId) {
         try {
-            const request = new HttpRequest(`${WARDEN_API_BASE}/addon.markItemDelivered`);
+            const request = new HttpRequest(`${WARDEN_API_BASE}/mark-item-delivered`);
             request.method = HttpRequestMethod.Post;
-            request.headers = [
-                new HttpHeader('Content-Type', 'application/json'),
-                new HttpHeader('Authorization', `Bearer ${API_KEY}`)
-            ];
+            request.headers = [new HttpHeader('Content-Type', 'application/json')];
             request.body = JSON.stringify({ apiKey: API_KEY, itemId });
             await http.request(request);
         } catch (_) {}
@@ -383,12 +375,9 @@ class WardenShop {
 
     async markOrderAsDelivered(orderId) {
         try {
-            const request = new HttpRequest(`${WARDEN_API_BASE}/addon.markDelivered`);
+            const request = new HttpRequest(`${WARDEN_API_BASE}/mark-delivered`);
             request.method = HttpRequestMethod.Post;
-            request.headers = [
-                new HttpHeader('Content-Type', 'application/json'),
-                new HttpHeader('Authorization', `Bearer ${API_KEY}`)
-            ];
+            request.headers = [new HttpHeader('Content-Type', 'application/json')];
             request.body = JSON.stringify({ apiKey: API_KEY, orderId });
             await http.request(request);
         } catch (_) {}

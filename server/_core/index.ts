@@ -263,6 +263,101 @@ async function startServer() {
       return res.status(500).json({ error: error instanceof Error ? error.message : 'Internal server error' });
     }
   });
+
+  // Buscar items pendentes (entrega individual)
+  app.get('/api/addon/pending-items', async (req, res) => {
+    try {
+      const apiKey = (req.query.apiKey as string) || (req.headers['x-api-key'] as string);
+      if (!apiKey) {
+        return res.status(400).json({ error: 'API Key required' });
+      }
+      
+      // Validar API Key
+      const crypto = await import('crypto');
+      const { getDb } = await import('../db');
+      const { apiKeys } = await import('../../drizzle/schema');
+      const { eq } = await import('drizzle-orm');
+      
+      const db = await getDb();
+      if (!db) {
+        return res.status(500).json({ error: 'Database unavailable' });
+      }
+      
+      const keyHash = crypto.default.createHash('sha256').update(apiKey).digest('hex');
+      const result = await db.select().from(apiKeys).where(eq(apiKeys.keyHash, keyHash)).limit(1);
+      
+      if (result.length === 0 || !result[0].active) {
+        return res.status(401).json({ error: 'Invalid or revoked API Key' });
+      }
+      
+      // Buscar items pendentes
+      const { getPendingOrderItems, getProductCommands } = await import('../db');
+      const pendingItems = await getPendingOrderItems();
+      
+      // Buscar comandos de cada produto
+      const itemsWithCommands = await Promise.all(
+        pendingItems.map(async (item) => {
+          const commands = await getProductCommands(item.productId);
+          return {
+            itemId: item.itemId,
+            orderId: item.orderId,
+            productId: item.productId,
+            productName: item.productName,
+            quantity: item.quantity,
+            unitPrice: parseFloat(item.unitPrice.toString()),
+            orderNumber: item.orderNumber,
+            minecraftNickname: item.minecraftNickname,
+            email: item.email,
+            total: parseFloat(item.total.toString()),
+            commands,
+            createdAt: item.createdAt.toISOString(),
+          };
+        })
+      );
+      
+      return res.json({ success: true, items: itemsWithCommands, count: itemsWithCommands.length });
+    } catch (error) {
+      console.error('[Addon API] Pending Items Error:', error);
+      return res.status(500).json({ error: error instanceof Error ? error.message : 'Internal server error' });
+    }
+  });
+
+  // Marcar item individual como entregue
+  app.post('/api/addon/mark-item-delivered', async (req, res) => {
+    try {
+      const { apiKey, itemId } = req.body;
+      if (!apiKey || !itemId) {
+        return res.status(400).json({ error: 'API Key and itemId required' });
+      }
+      
+      // Validar API Key
+      const crypto = await import('crypto');
+      const { getDb } = await import('../db');
+      const { apiKeys } = await import('../../drizzle/schema');
+      const { eq } = await import('drizzle-orm');
+      
+      const db = await getDb();
+      if (!db) {
+        return res.status(500).json({ error: 'Database unavailable' });
+      }
+      
+      const keyHash = crypto.default.createHash('sha256').update(apiKey).digest('hex');
+      const result = await db.select().from(apiKeys).where(eq(apiKeys.keyHash, keyHash)).limit(1);
+      
+      if (result.length === 0 || !result[0].active) {
+        return res.status(401).json({ error: 'Invalid or revoked API Key' });
+      }
+      
+      // Marcar item como entregue
+      const { markOrderItemDelivered } = await import('../db');
+      await markOrderItemDelivered(itemId);
+      
+      return res.json({ success: true, message: 'Item marked as delivered' });
+    } catch (error) {
+      console.error('[Addon API] Mark Item Delivered Error:', error);
+      return res.status(500).json({ error: error instanceof Error ? error.message : 'Internal server error' });
+    }
+  });
   
   // Ping endpoint para manter o servidor acordado
   app.get("/ping", (_req, res) => {
