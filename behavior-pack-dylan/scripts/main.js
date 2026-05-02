@@ -3,7 +3,7 @@ import { http, HttpRequest, HttpRequestMethod, HttpHeader } from '@minecraft/ser
 import { ActionFormData, MessageFormData } from '@minecraft/server-ui';
 
 const WARDEN_API_BASE = 'https://warden-shop-oficial.onrender.com/api/addon';
-const API_KEY = 'warden_qPpXWoLRQvPVbKJ0';
+const API_KEY = 'wsk_b08777ccc4637a0ee6ebfdcc269f56b4ffc2c69377dc02a28ab028c480db4575119cb4add260eb50c14b8b580ba01253';
 
 class WardenShop {
     constructor() {
@@ -67,10 +67,17 @@ class WardenShop {
             const response = await http.request(request);
             if (response.status === 200 && response.body) {
                 const data = JSON.parse(response.body);
-                return data.result?.data?.items ?? [];
+                console.warn('[WardenShop] fetchPendingItems response:', JSON.stringify(data));
+                // tRPC retorna: { result: { data: { success, items, count } } }
+                const items = data.result?.data?.items ?? data.items ?? [];
+                console.warn('[WardenShop] Parsed items:', items.length);
+                return items;
             }
             return [];
-        } catch (_) { return []; }
+        } catch (e) { 
+            console.warn('[WardenShop] fetchPendingItems error:', e);
+            return []; 
+        }
     }
 
     /* ── Buscar pedidos de kit personalizado ── */

@@ -90,6 +90,8 @@ export const addonRouter = router({
         const { getPendingOrderItems, getProductCommands } = await import("./db");
         const pendingItems = await getPendingOrderItems();
 
+        console.log(`[Addon] getPendingItems: found ${pendingItems.length} items`);
+
         // Buscar comandos de cada produto
         const itemsWithCommands = await Promise.all(
           pendingItems.map(async (item) => {
@@ -110,6 +112,8 @@ export const addonRouter = router({
             };
           })
         );
+
+        console.log(`[Addon] Returning ${itemsWithCommands.length} items with commands`);
 
         return {
           success: true,

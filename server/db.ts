@@ -793,6 +793,8 @@ export async function runMigrations() {
     // ─── order_items.delivered ────────────────────────────────────────────────
     await db.execute(sql`ALTER TABLE "order_items" ADD COLUMN IF NOT EXISTS "delivered" boolean NOT NULL DEFAULT false`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS "order_items_delivered_idx" ON "order_items" ("delivered")`);
+    // Garantir que registros antigos tenham delivered = false
+    await db.execute(sql`UPDATE "order_items" SET "delivered" = false WHERE "delivered" IS NULL`);
 
     console.log("[DB] Migrations applied.");
   } catch (e) {
@@ -830,6 +832,7 @@ export async function getPendingOrderItems() {
     )
     .orderBy(desc(orders.createdAt));
   
+  console.log(`[DB] getPendingOrderItems: found ${result.length} items`);
   return result;
 }
 
