@@ -227,7 +227,10 @@ export default function CheckoutPage() {
 
   const handlePixConfirmed = () => {
     setStep("confirmed");
+    // Limpa o carrinho imediatamente
     clearCart();
+    // Força a limpeza do localStorage diretamente para garantir
+    localStorage.removeItem("warden_cart");
     setTimeout(() => navigate(`/pedido-confirmado?orderNumber=${encodeURIComponent(pixData!.orderNumber)}&payment=success`), 1500);
   };
 

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useEffect, useRef, useState } from "react";
+import { useCart } from "@/contexts/CartContext";
 
 // ─── Polling config ────────────────────────────────────────────────────────────
 const POLL_INTERVAL_MS = 4_000;   // verifica a cada 4s
@@ -30,6 +31,15 @@ export default function OrderConfirmedPage() {
   const [pollCount, setPollCount] = useState(0);
   const [shouldPoll, setShouldPoll] = useState(true);
   const pollRef = useRef(0);
+  const { clearCart } = useCart();
+
+  // Limpa o carrinho quando chega na página de confirmação
+  useEffect(() => {
+    if (orderNumber) {
+      clearCart();
+      localStorage.removeItem("warden_cart");
+    }
+  }, [orderNumber]);
 
   // Endpoint dedicado de status — não expõe dados internos desnecessários
   const { data: orderStatus, isLoading, refetch } = trpc.shop.getOrderStatus.useQuery(
