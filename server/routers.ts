@@ -352,37 +352,50 @@ const adminRouter = router({
   updateOrderStatus: adminProcedure
     .input(z.object({ id: z.number(), status: z.enum(["pending_approval", "game_pending", "delivered", "cancelled"]) }))
     .mutation(async ({ input }) => {
-      console.log('[Router] updateOrderStatus chamado:', input);
+      console.log('[Router] ===== updateOrderStatus CHAMADO =====');
+      console.log('[Router] Input:', JSON.stringify(input));
+      
       const result = await updateOrderStatus(input.id, input.status);
       
       // Se o status for "delivered", enviar notificações
       if (input.status === "delivered") {
-        console.log('[Router] Status é "delivered", buscando pedido...');
+        console.log('[Router] ===== STATUS É DELIVERED =====');
+        console.log('[Router] Buscando pedido com ID:', input.id);
+        
         const order = await getOrderWithItems(input.id);
+        
         if (order) {
-          console.log('[Router] Pedido encontrado:', {
+          console.log('[Router] ===== PEDIDO ENCONTRADO =====');
+          console.log('[Router] Order:', JSON.stringify({
             orderNumber: order.orderNumber,
             status: order.status,
             id: order.id
-          });
-          console.log('[Router] Enviando notificações...');
+          }));
           
+          console.log('[Router] ===== IMPORTANDO FUNÇÕES DE WEBHOOK =====');
           const { notifyOrderDelivered, sendDeliveryReceipt } = await import("./discord-webhooks");
           
+          console.log('[Router] ===== PREPARANDO OBJETO DO PEDIDO =====');
           // Garantir que o status está correto no objeto
           const orderWithStatus = {
             ...order,
-            status: 'delivered', // Forçar o status correto
+            status: 'delivered' as const, // Forçar o status correto
             total: parseFloat(String(order.total)),
           };
           
+          console.log('[Router] ===== CHAMANDO notifyOrderDelivered =====');
           await notifyOrderDelivered(orderWithStatus);
+          
+          console.log('[Router] ===== CHAMANDO sendDeliveryReceipt =====');
           await sendDeliveryReceipt(orderWithStatus);
           
-          console.log('[Router] Notificações enviadas com sucesso');
+          console.log('[Router] ===== NOTIFICAÇÕES ENVIADAS COM SUCESSO =====');
         } else {
-          console.log('[Router] Pedido não encontrado!');
+          console.log('[Router] ===== PEDIDO NÃO ENCONTRADO =====');
         }
+      } else {
+        console.log('[Router] Status não é delivered, é:', input.status);
+      }
       }
       
       return result;
