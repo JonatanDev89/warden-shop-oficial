@@ -645,6 +645,8 @@ export async function upsertKitItem(data: {
     active: data.active ?? true 
   };
   
+  console.log('[DB upsertKitItem] insertData:', JSON.stringify(insertData));
+  
   await db
     .insert(kitItems)
     .values(insertData)

@@ -593,17 +593,21 @@ const adminRouter = router({
       minPerSlot: z.number().optional(),
       maxPerSlot: z.number().optional(),
       pricePerUnit: z.boolean().optional(),
-      imageUrl: z.string().optional(),
-      itemConfig: z.string().optional(),
+      imageUrl: z.string().optional().nullable(),
+      itemConfig: z.string().optional().nullable(),
       active: z.boolean().optional(),
     }))
     .mutation(({ input }) => {
-      // Converter undefined para null para campos opcionais
+      console.log('[upsertKitItem] Input recebido:', JSON.stringify(input));
+      
+      // Converter undefined e strings vazias para null
       const data = {
         ...input,
-        imageUrl: input.imageUrl || null,
-        itemConfig: input.itemConfig || null,
+        imageUrl: input.imageUrl && input.imageUrl.trim() !== '' ? input.imageUrl : null,
+        itemConfig: input.itemConfig && input.itemConfig.trim() !== '' ? input.itemConfig : null,
       };
+      
+      console.log('[upsertKitItem] Data processado:', JSON.stringify(data));
       return upsertKitItem(data);
     }),
   deleteKitItem: adminProcedure
