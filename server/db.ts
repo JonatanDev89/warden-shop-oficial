@@ -633,36 +633,52 @@ export async function upsertKitItem(data: {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
   
-  const insertData = {
+  // Construir insertData apenas com campos que têm valores
+  const insertData: any = {
     minecraftId: data.minecraftId,
     name: data.name,
     price: data.price,
     minPerSlot: data.minPerSlot ?? 1, 
     maxPerSlot: data.maxPerSlot ?? 64, 
     pricePerUnit: data.pricePerUnit ?? false, 
-    imageUrl: data.imageUrl ?? null,
-    itemConfig: data.itemConfig ?? null,
     active: data.active ?? true 
   };
   
+  // Adicionar imageUrl e itemConfig apenas se tiverem valor
+  if (data.imageUrl !== null && data.imageUrl !== undefined) {
+    insertData.imageUrl = data.imageUrl;
+  }
+  if (data.itemConfig !== null && data.itemConfig !== undefined) {
+    insertData.itemConfig = data.itemConfig;
+  }
+  
   console.log('[DB upsertKitItem] insertData:', JSON.stringify(insertData));
+  
+  // Construir updateData
+  const updateData: any = {
+    name: data.name,
+    price: data.price,
+    minPerSlot: data.minPerSlot ?? 1,
+    maxPerSlot: data.maxPerSlot ?? 64,
+    pricePerUnit: data.pricePerUnit ?? false,
+    active: data.active ?? true,
+    updatedAt: new Date(),
+  };
+  
+  // Adicionar imageUrl e itemConfig no update apenas se tiverem valor
+  if (data.imageUrl !== null && data.imageUrl !== undefined) {
+    updateData.imageUrl = data.imageUrl;
+  }
+  if (data.itemConfig !== null && data.itemConfig !== undefined) {
+    updateData.itemConfig = data.itemConfig;
+  }
   
   await db
     .insert(kitItems)
     .values(insertData)
     .onConflictDoUpdate({
       target: kitItems.minecraftId,
-      set: {
-        name: data.name,
-        price: data.price,
-        minPerSlot: data.minPerSlot ?? 1,
-        maxPerSlot: data.maxPerSlot ?? 64,
-        pricePerUnit: data.pricePerUnit ?? false,
-        imageUrl: data.imageUrl ?? null,
-        itemConfig: data.itemConfig ?? null,
-        active: data.active ?? true,
-        updatedAt: new Date(),
-      },
+      set: updateData,
     });
 }
 
