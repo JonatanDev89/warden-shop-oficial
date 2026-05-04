@@ -7,11 +7,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Webhook, Send, Trash2, Plus, Pencil, Eye, HelpCircle, CheckCircle2, Copy, ChevronDown, Sparkles, TestTube } from "lucide-react";
+import { Loader2, Webhook, Send, Trash2, Plus, Pencil, HelpCircle, ChevronDown, Sparkles, TestTube } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
@@ -173,8 +172,6 @@ function WebhookForm({ webhook, onClose }: { webhook?: any; onClose: () => void 
     msgEntregue: webhook?.msgEntregue ?? "",
     msgDeletado: webhook?.msgDeletado ?? "",
   });
-  const [activeEvent, setActiveEvent] = useState("msgPendente");
-  const [showPreview, setShowPreview] = useState(false);
   const [testing, setTesting] = useState(false);
 
   const create = trpc.admin.createWebhook.useMutation({
@@ -247,6 +244,17 @@ function WebhookForm({ webhook, onClose }: { webhook?: any; onClose: () => void 
     }
   };
 
+  const applyAllTemplates = () => {
+    setMessages({
+      msgPendente: MESSAGE_TEMPLATES.msgPendente,
+      msgAceito: MESSAGE_TEMPLATES.msgAceito,
+      msgRecusado: MESSAGE_TEMPLATES.msgRecusado,
+      msgEntregue: MESSAGE_TEMPLATES.msgEntregue,
+      msgDeletado: MESSAGE_TEMPLATES.msgDeletado,
+    });
+    toast.success("Todos os templates aplicados!");
+  };
+
   return (
     <div className="space-y-4">
       {!isEdit && <SetupGuide />}
@@ -302,58 +310,164 @@ function WebhookForm({ webhook, onClose }: { webhook?: any; onClose: () => void 
       )}
 
       <div>
-        <div className="flex items-center justify-between mb-2">
-          <Label>Mensagens por evento</Label>
-          <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => setShowPreview(!showPreview)}>
-            <Eye className="h-3 w-3" /> {showPreview ? "Ocultar" : "Preview"}
+        <div className="flex items-center justify-between mb-3">
+          <Label className="text-base">Mensagens Personalizadas</Label>
+          <Button 
+            type="button" 
+            size="sm" 
+            variant="outline" 
+            className="gap-1.5 text-xs"
+            onClick={applyAllTemplates}
+          >
+            <Sparkles className="h-3 w-3" /> Usar todos os templates
           </Button>
         </div>
+        
+        <p className="text-xs text-muted-foreground mb-4">
+          Personalize as mensagens ou deixe vazio para usar o padrão. Use as variáveis abaixo para inserir dados dinâmicos.
+        </p>
 
-        <Tabs value={activeEvent} onValueChange={setActiveEvent}>
-          <TabsList className="flex flex-wrap h-auto gap-1 bg-muted p-1 mb-3">
-            {EVENTS.map((e) => (
-              <TabsTrigger key={e.key} value={e.key} className="text-xs">{e.label}</TabsTrigger>
+        <div className="space-y-4">
+          {/* Variáveis disponíveis */}
+          <div className="flex flex-wrap gap-1.5 p-3 rounded-lg bg-muted/50 border border-border">
+            <span className="text-xs text-muted-foreground mr-2">Variáveis:</span>
+            {VARIABLES.map((v) => (
+              <Badge 
+                key={v.var} 
+                variant="outline" 
+                className="cursor-help font-mono text-xs"
+                title={v.desc}
+              >
+                {v.var}
+              </Badge>
             ))}
-          </TabsList>
+          </div>
 
-          {EVENTS.map((e) => (
-            <TabsContent key={e.key} value={e.key} className="space-y-3 mt-0">
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-muted-foreground">Personalize a mensagem ou deixe vazio para usar o padrão</p>
-                <Button 
-                  type="button" 
-                  size="sm" 
-                  variant="ghost" 
-                  className="gap-1 text-xs h-7"
-                  onClick={() => applyTemplate(e.key)}
-                >
-                  <Sparkles className="h-3 w-3" /> Usar template
-                </Button>
-              </div>
-              <Textarea
-                value={messages[e.key as keyof WebhookMessages]}
-                onChange={(ev) => setMessages((prev) => ({ ...prev, [e.key]: ev.target.value }))}
-                placeholder={`Deixe vazio para usar a mensagem padrão.\nEx: Olá {nick}! Seu pedido {pedido} foi processado. Total: {total}`}
-                className="bg-muted border-border text-sm min-h-[80px]"
-              />
-              <div className="flex flex-wrap gap-1.5">
-                {VARIABLES.map((v) => (
-                  <button key={v.var} type="button" title={v.desc}
-                    onClick={() => setMessages((prev) => ({ ...prev, [e.key]: prev[e.key as keyof WebhookMessages] + v.var }))}
-                  >
-                    <Badge variant="outline" className="cursor-pointer hover:bg-primary/20 hover:border-primary font-mono text-xs">{v.var}</Badge>
-                  </button>
-                ))}
-              </div>
-              {showPreview && (
-                <div>
-                  <p className="text-xs text-muted-foreground mb-2">Preview:</p>
-                  <DiscordPreview message={messages[e.key as keyof WebhookMessages]} eventKey={e.key} />
-                </div>
-              )}
-            </TabsContent>
-          ))}
-        </Tabs>
+          {/* Mensagem Pendente */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="flex items-center gap-2">
+                <span className="text-lg">📋</span>
+                <span>Pendente</span>
+              </Label>
+              <Button 
+                type="button" 
+                size="sm" 
+                variant="ghost" 
+                className="gap-1 text-xs h-7"
+                onClick={() => applyTemplate("msgPendente")}
+              >
+                <Sparkles className="h-3 w-3" /> Template
+              </Button>
+            </div>
+            <Textarea
+              value={messages.msgPendente}
+              onChange={(e) => setMessages((prev) => ({ ...prev, msgPendente: e.target.value }))}
+              placeholder="Deixe vazio para usar a mensagem padrão"
+              className="bg-muted border-border text-sm min-h-[70px] font-mono"
+            />
+          </div>
+
+          {/* Mensagem Aceito */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="flex items-center gap-2">
+                <span className="text-lg">✅</span>
+                <span>Aceito</span>
+              </Label>
+              <Button 
+                type="button" 
+                size="sm" 
+                variant="ghost" 
+                className="gap-1 text-xs h-7"
+                onClick={() => applyTemplate("msgAceito")}
+              >
+                <Sparkles className="h-3 w-3" /> Template
+              </Button>
+            </div>
+            <Textarea
+              value={messages.msgAceito}
+              onChange={(e) => setMessages((prev) => ({ ...prev, msgAceito: e.target.value }))}
+              placeholder="Deixe vazio para usar a mensagem padrão"
+              className="bg-muted border-border text-sm min-h-[70px] font-mono"
+            />
+          </div>
+
+          {/* Mensagem Recusado */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="flex items-center gap-2">
+                <span className="text-lg">❌</span>
+                <span>Recusado</span>
+              </Label>
+              <Button 
+                type="button" 
+                size="sm" 
+                variant="ghost" 
+                className="gap-1 text-xs h-7"
+                onClick={() => applyTemplate("msgRecusado")}
+              >
+                <Sparkles className="h-3 w-3" /> Template
+              </Button>
+            </div>
+            <Textarea
+              value={messages.msgRecusado}
+              onChange={(e) => setMessages((prev) => ({ ...prev, msgRecusado: e.target.value }))}
+              placeholder="Deixe vazio para usar a mensagem padrão"
+              className="bg-muted border-border text-sm min-h-[70px] font-mono"
+            />
+          </div>
+
+          {/* Mensagem Entregue */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="flex items-center gap-2">
+                <span className="text-lg">🎁</span>
+                <span>Entregue</span>
+              </Label>
+              <Button 
+                type="button" 
+                size="sm" 
+                variant="ghost" 
+                className="gap-1 text-xs h-7"
+                onClick={() => applyTemplate("msgEntregue")}
+              >
+                <Sparkles className="h-3 w-3" /> Template
+              </Button>
+            </div>
+            <Textarea
+              value={messages.msgEntregue}
+              onChange={(e) => setMessages((prev) => ({ ...prev, msgEntregue: e.target.value }))}
+              placeholder="Deixe vazio para usar a mensagem padrão"
+              className="bg-muted border-border text-sm min-h-[70px] font-mono"
+            />
+          </div>
+
+          {/* Mensagem Deletado */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="flex items-center gap-2">
+                <span className="text-lg">🗑️</span>
+                <span>Deletado</span>
+              </Label>
+              <Button 
+                type="button" 
+                size="sm" 
+                variant="ghost" 
+                className="gap-1 text-xs h-7"
+                onClick={() => applyTemplate("msgDeletado")}
+              >
+                <Sparkles className="h-3 w-3" /> Template
+              </Button>
+            </div>
+            <Textarea
+              value={messages.msgDeletado}
+              onChange={(e) => setMessages((prev) => ({ ...prev, msgDeletado: e.target.value }))}
+              placeholder="Deixe vazio para usar a mensagem padrão"
+              className="bg-muted border-border text-sm min-h-[70px] font-mono"
+            />
+          </div>
+        </div>
       </div>
 
       <div className="flex gap-2 pt-2">
