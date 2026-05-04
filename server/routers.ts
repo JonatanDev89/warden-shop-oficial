@@ -597,7 +597,15 @@ const adminRouter = router({
       itemConfig: z.string().optional(),
       active: z.boolean().optional(),
     }))
-    .mutation(({ input }) => upsertKitItem(input)),
+    .mutation(({ input }) => {
+      // Converter undefined para null para campos opcionais
+      const data = {
+        ...input,
+        imageUrl: input.imageUrl || null,
+        itemConfig: input.itemConfig || null,
+      };
+      return upsertKitItem(data);
+    }),
   deleteKitItem: adminProcedure
     .input(z.object({ id: z.number() }))
     .mutation(({ input }) => deleteKitItem(input.id)),

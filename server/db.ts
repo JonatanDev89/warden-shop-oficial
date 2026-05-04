@@ -626,25 +626,28 @@ export async function upsertKitItem(data: {
   minPerSlot?: number;
   maxPerSlot?: number;
   pricePerUnit?: boolean;
-  imageUrl?: string;
-  itemConfig?: string;
+  imageUrl?: string | null;
+  itemConfig?: string | null;
   active?: boolean;
 }) {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
+  
+  const insertData = {
+    minecraftId: data.minecraftId,
+    name: data.name,
+    price: data.price,
+    minPerSlot: data.minPerSlot ?? 1, 
+    maxPerSlot: data.maxPerSlot ?? 64, 
+    pricePerUnit: data.pricePerUnit ?? false, 
+    imageUrl: data.imageUrl ?? null,
+    itemConfig: data.itemConfig ?? null,
+    active: data.active ?? true 
+  };
+  
   await db
     .insert(kitItems)
-    .values({ 
-      minecraftId: data.minecraftId,
-      name: data.name,
-      price: data.price,
-      minPerSlot: data.minPerSlot ?? 1, 
-      maxPerSlot: data.maxPerSlot ?? 64, 
-      pricePerUnit: data.pricePerUnit ?? false, 
-      imageUrl: data.imageUrl ?? null,
-      itemConfig: data.itemConfig ?? null,
-      active: data.active ?? true 
-    })
+    .values(insertData)
     .onConflictDoUpdate({
       target: kitItems.minecraftId,
       set: {
