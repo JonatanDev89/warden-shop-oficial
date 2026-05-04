@@ -360,7 +360,7 @@ const adminRouter = router({
         const order = await getOrderWithItems(input.id);
         if (order) {
           console.log('[Router] Pedido marcado como entregue, enviando notificações');
-          const { notifyOrderDelivered, sendDeliveryReceipt } = await import("../discord-webhooks");
+          const { notifyOrderDelivered, sendDeliveryReceipt } = await import("./discord-webhooks");
           await notifyOrderDelivered({
             ...order,
             total: parseFloat(String(order.total)),
