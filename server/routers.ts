@@ -357,18 +357,31 @@ const adminRouter = router({
       
       // Se o status for "delivered", enviar notificações
       if (input.status === "delivered") {
+        console.log('[Router] Status é "delivered", buscando pedido...');
         const order = await getOrderWithItems(input.id);
         if (order) {
-          console.log('[Router] Pedido marcado como entregue, enviando notificações');
+          console.log('[Router] Pedido encontrado:', {
+            orderNumber: order.orderNumber,
+            status: order.status,
+            id: order.id
+          });
+          console.log('[Router] Enviando notificações...');
+          
           const { notifyOrderDelivered, sendDeliveryReceipt } = await import("./discord-webhooks");
-          await notifyOrderDelivered({
+          
+          // Garantir que o status está correto no objeto
+          const orderWithStatus = {
             ...order,
+            status: 'delivered', // Forçar o status correto
             total: parseFloat(String(order.total)),
-          });
-          await sendDeliveryReceipt({
-            ...order,
-            total: parseFloat(String(order.total)),
-          });
+          };
+          
+          await notifyOrderDelivered(orderWithStatus);
+          await sendDeliveryReceipt(orderWithStatus);
+          
+          console.log('[Router] Notificações enviadas com sucesso');
+        } else {
+          console.log('[Router] Pedido não encontrado!');
         }
       }
       

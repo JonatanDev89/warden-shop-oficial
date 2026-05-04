@@ -108,9 +108,23 @@ export async function notifyOrderRejected(order: any) {
 }
 
 export async function notifyOrderDelivered(order: any) {
+  console.log('[Webhook] notifyOrderDelivered chamado:', {
+    orderNumber: order.orderNumber,
+    status: order.status,
+    hasOrder: !!order
+  });
+
   const webhooks = await getActiveWebhooksByType('notification');
-  if (!webhooks?.length) return;
+  console.log('[Webhook] Webhooks de notificação encontrados:', webhooks?.length ?? 0);
+
+  if (!webhooks?.length) {
+    console.log('[Webhook] Nenhum webhook de notificação ativo encontrado');
+    return;
+  }
+
   for (const webhook of webhooks) {
+    console.log('[Webhook] Enviando notificação de entrega para:', webhook.url.substring(0, 50) + '...');
+    
     const customMsg = webhook.msgEntregue ? applyVariables(webhook.msgEntregue, order) : null;
     const embed: DiscordEmbed = {
       title: '🎁 Pedido Entregue',
@@ -124,7 +138,9 @@ export async function notifyOrderDelivered(order: any) {
       ],
       timestamp: new Date().toISOString(),
     };
-    await sendWebhook(webhook.url, { embeds: [embed] });
+    
+    const success = await sendWebhook(webhook.url, { embeds: [embed] });
+    console.log('[Webhook] Notificação de entrega enviada:', success ? 'sucesso' : 'falhou');
   }
 }
 
