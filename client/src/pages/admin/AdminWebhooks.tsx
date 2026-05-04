@@ -63,7 +63,12 @@ function applyPreview(template: string): string {
     .replace(/\{total\}/g, "R$ 29,90")
     .replace(/\{email\}/g, "jogador@email.com")
     .replace(/\{data\}/g, new Date().toLocaleString("pt-BR"))
-    .replace(/\{status\}/g, "pendente");
+    .replace(/\{status\}/g, "pendente")
+    .replace(/\{itens\}/g, "2x Diamond Sword, 1x Iron Armor")
+    .replace(/\{quantidade\}/g, "3")
+    .replace(/\{cupom\}/g, "PROMO10")
+    .replace(/\{desconto\}/g, "R$ 5,00")
+    .replace(/\{subtotal\}/g, "R$ 34,90");
 }
 
 function SetupGuide() {
@@ -371,6 +376,12 @@ function WebhookForm({ webhook, onClose }: { webhook?: any; onClose: () => void 
               placeholder="Deixe vazio para usar a mensagem padrão"
               className="bg-muted border-border text-sm min-h-[70px] font-mono"
             />
+            {messages.msgPendente && (
+              <div className="mt-2">
+                <p className="text-xs text-muted-foreground mb-2">Preview:</p>
+                <DiscordPreview message={messages.msgPendente} eventKey="msgPendente" />
+              </div>
+            )}
           </div>
 
           {/* Mensagem Aceito */}
@@ -396,6 +407,12 @@ function WebhookForm({ webhook, onClose }: { webhook?: any; onClose: () => void 
               placeholder="Deixe vazio para usar a mensagem padrão"
               className="bg-muted border-border text-sm min-h-[70px] font-mono"
             />
+            {messages.msgAceito && (
+              <div className="mt-2">
+                <p className="text-xs text-muted-foreground mb-2">Preview:</p>
+                <DiscordPreview message={messages.msgAceito} eventKey="msgAceito" />
+              </div>
+            )}
           </div>
 
           {/* Mensagem Recusado */}
@@ -421,6 +438,12 @@ function WebhookForm({ webhook, onClose }: { webhook?: any; onClose: () => void 
               placeholder="Deixe vazio para usar a mensagem padrão"
               className="bg-muted border-border text-sm min-h-[70px] font-mono"
             />
+            {messages.msgRecusado && (
+              <div className="mt-2">
+                <p className="text-xs text-muted-foreground mb-2">Preview:</p>
+                <DiscordPreview message={messages.msgRecusado} eventKey="msgRecusado" />
+              </div>
+            )}
           </div>
 
           {/* Mensagem Entregue */}
@@ -446,6 +469,12 @@ function WebhookForm({ webhook, onClose }: { webhook?: any; onClose: () => void 
               placeholder="Deixe vazio para usar a mensagem padrão"
               className="bg-muted border-border text-sm min-h-[70px] font-mono"
             />
+            {messages.msgEntregue && (
+              <div className="mt-2">
+                <p className="text-xs text-muted-foreground mb-2">Preview:</p>
+                <DiscordPreview message={messages.msgEntregue} eventKey="msgEntregue" />
+              </div>
+            )}
           </div>
 
           {/* Mensagem Deletado */}
@@ -471,6 +500,12 @@ function WebhookForm({ webhook, onClose }: { webhook?: any; onClose: () => void 
               placeholder="Deixe vazio para usar a mensagem padrão"
               className="bg-muted border-border text-sm min-h-[70px] font-mono"
             />
+            {messages.msgDeletado && (
+              <div className="mt-2">
+                <p className="text-xs text-muted-foreground mb-2">Preview:</p>
+                <DiscordPreview message={messages.msgDeletado} eventKey="msgDeletado" />
+              </div>
+            )}
           </div>
         </div>
       </div>
