@@ -883,10 +883,29 @@ export async function markOrderItemDelivered(itemId: number) {
     
     // Se não há mais items pendentes, marca o pedido como delivered
     if (pendingItems.length === 0) {
+      console.log(`[DB] Todos os itens do pedido ${item[0].orderId} foram entregues, marcando como delivered`);
+      
       await db
         .update(orders)
-        .set({ status: "delivered" })
+        .set({ status: "delivered", updatedAt: new Date() })
         .where(eq(orders.id, item[0].orderId));
+      
+      // Enviar webhooks de entrega
+      console.log(`[DB] Enviando webhooks de entrega para pedido ${item[0].orderId}`);
+      const { notifyOrderDelivered, sendDeliveryReceipt } = await import("./discord-webhooks");
+      const order = await db.select().from(orders).where(eq(orders.id, item[0].orderId)).limit(1);
+      
+      if (order[0]) {
+        const orderWithStatus = {
+          ...order[0],
+          status: 'delivered' as const,
+          total: parseFloat(String(order[0].total)),
+        };
+        
+        await notifyOrderDelivered(orderWithStatus);
+        await sendDeliveryReceipt(orderWithStatus);
+        console.log(`[DB] Webhooks de entrega enviados com sucesso para pedido ${item[0].orderId}`);
+      }
     }
   }
 }
