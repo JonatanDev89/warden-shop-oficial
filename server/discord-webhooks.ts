@@ -35,13 +35,37 @@ async function sendWebhook(webhookUrl: string, message: DiscordMessage): Promise
 }
 
 function applyVariables(template: string, order: any): string {
+  // Calcular valores
+  const total = parseFloat(String(order.total || 0));
+  const subtotal = parseFloat(String(order.subtotal || total));
+  const desconto = subtotal - total;
+  
+  // Formatar lista de itens
+  let itemsList = '';
+  if (order.items && Array.isArray(order.items)) {
+    itemsList = order.items
+      .map((item: any) => `${item.quantity}x ${item.productName || item.name}`)
+      .join(', ');
+  }
+  
+  // Quantidade total de itens
+  let totalQuantity = 0;
+  if (order.items && Array.isArray(order.items)) {
+    totalQuantity = order.items.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
+  }
+  
   return template
     .replace(/\{nick\}/g, order.minecraftNickname ?? '')
     .replace(/\{pedido\}/g, order.orderNumber ?? '')
-    .replace(/\{total\}/g, `R$ ${parseFloat(String(order.total)).toFixed(2)}`)
+    .replace(/\{total\}/g, `R$ ${total.toFixed(2).replace('.', ',')}`)
     .replace(/\{email\}/g, order.email ?? '')
     .replace(/\{data\}/g, new Date().toLocaleString('pt-BR'))
-    .replace(/\{status\}/g, order.status ?? '');
+    .replace(/\{status\}/g, order.status ?? '')
+    .replace(/\{itens\}/g, itemsList || 'Nenhum item')
+    .replace(/\{quantidade\}/g, String(totalQuantity))
+    .replace(/\{cupom\}/g, order.couponCode ?? 'Nenhum')
+    .replace(/\{desconto\}/g, desconto > 0 ? `R$ ${desconto.toFixed(2).replace('.', ',')}` : 'R$ 0,00')
+    .replace(/\{subtotal\}/g, `R$ ${subtotal.toFixed(2).replace('.', ',')}`);
 }
 
 export async function notifyPendingOrder(order: any) {

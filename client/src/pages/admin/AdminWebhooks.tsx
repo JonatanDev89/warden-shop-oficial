@@ -21,14 +21,19 @@ const VARIABLES = [
   { var: "{email}", desc: "Email do comprador" },
   { var: "{data}", desc: "Data e hora" },
   { var: "{status}", desc: "Status do pedido" },
+  { var: "{itens}", desc: "Lista de itens do pedido" },
+  { var: "{quantidade}", desc: "Quantidade total de itens" },
+  { var: "{cupom}", desc: "Cupom usado (se houver)" },
+  { var: "{desconto}", desc: "Valor do desconto" },
+  { var: "{subtotal}", desc: "Subtotal antes do desconto" },
 ];
 
 const MESSAGE_TEMPLATES = {
-  msgPendente: "🔔 Novo pedido {pedido} de {nick}\nValor: {total}\nAguardando aprovação!",
-  msgAceito: "✅ Pedido {pedido} aprovado!\nJogador: {nick}\nValor: {total}\nPronto para entrega no jogo.",
-  msgRecusado: "❌ Pedido {pedido} foi recusado\nJogador: {nick}\nMotivo: Verificar com o administrador",
-  msgEntregue: "🎁 Pedido {pedido} entregue com sucesso!\nJogador: {nick}\nValor: {total}\nItens já estão disponíveis no jogo!",
-  msgDeletado: "🗑️ Pedido {pedido} foi removido\nJogador: {nick}\nData: {data}",
+  msgPendente: "🔔 Novo pedido {pedido} de {nick}\n💰 Valor: {total}\n📦 Itens: {quantidade}\n⏳ Aguardando aprovação!",
+  msgAceito: "✅ Pedido {pedido} aprovado!\n👤 Jogador: {nick}\n💰 Valor: {total}\n📦 {itens}\n🎮 Pronto para entrega no jogo.",
+  msgRecusado: "❌ Pedido {pedido} foi recusado\n👤 Jogador: {nick}\n💰 Valor: {total}\n📧 Entre em contato: {email}",
+  msgEntregue: "🎁 Pedido {pedido} entregue com sucesso!\n👤 Jogador: {nick}\n💰 Valor: {total}\n📦 {itens}\n✨ Itens já estão disponíveis no jogo!",
+  msgDeletado: "🗑️ Pedido {pedido} foi removido\n👤 Jogador: {nick}\n📅 Data: {data}",
 };
 
 const EVENTS = [
