@@ -634,7 +634,17 @@ export async function upsertKitItem(data: {
   if (!db) throw new Error("DB unavailable");
   await db
     .insert(kitItems)
-    .values({ ...data, minPerSlot: data.minPerSlot ?? 1, maxPerSlot: data.maxPerSlot ?? 64, pricePerUnit: data.pricePerUnit ?? false, active: data.active ?? true })
+    .values({ 
+      minecraftId: data.minecraftId,
+      name: data.name,
+      price: data.price,
+      minPerSlot: data.minPerSlot ?? 1, 
+      maxPerSlot: data.maxPerSlot ?? 64, 
+      pricePerUnit: data.pricePerUnit ?? false, 
+      imageUrl: data.imageUrl ?? null,
+      itemConfig: data.itemConfig ?? null,
+      active: data.active ?? true 
+    })
     .onConflictDoUpdate({
       target: kitItems.minecraftId,
       set: {
