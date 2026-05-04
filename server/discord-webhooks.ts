@@ -15,14 +15,21 @@ interface DiscordMessage {
 
 async function sendWebhook(webhookUrl: string, message: DiscordMessage): Promise<boolean> {
   try {
+    console.log('[Webhook] Enviando para:', webhookUrl.substring(0, 50) + '...');
     const response = await fetch(webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(message),
     });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[Webhook] Erro na resposta:', response.status, errorText);
+    }
+    
     return response.ok;
   } catch (error) {
-    console.error('Erro ao enviar webhook Discord:', error);
+    console.error('[Webhook] Erro ao enviar webhook Discord:', error);
     return false;
   }
 }
@@ -142,10 +149,28 @@ export async function notifyOrderDeleted(order: any) {
 }
 
 export async function sendDeliveryReceipt(order: any) {
-  if (order.status !== 'delivered') return;
+  console.log('[Webhook] sendDeliveryReceipt chamado:', {
+    orderNumber: order.orderNumber,
+    status: order.status,
+    hasOrder: !!order
+  });
+
+  if (order.status !== 'delivered') {
+    console.log('[Webhook] Comprovante não enviado - status não é "delivered":', order.status);
+    return;
+  }
+
   const webhooks = await getActiveWebhooksByType('receipt');
-  if (!webhooks?.length) return;
+  console.log('[Webhook] Webhooks de comprovante encontrados:', webhooks?.length ?? 0);
+
+  if (!webhooks?.length) {
+    console.log('[Webhook] Nenhum webhook de comprovante ativo encontrado');
+    return;
+  }
+
   for (const webhook of webhooks) {
+    console.log('[Webhook] Enviando comprovante para:', webhook.url.substring(0, 50) + '...');
+    
     const customMsg = webhook.msgEntregue ? applyVariables(webhook.msgEntregue, order) : null;
     const embed: DiscordEmbed = {
       title: '🎁 Comprovante de Entrega',
@@ -159,6 +184,8 @@ export async function sendDeliveryReceipt(order: any) {
       ],
       timestamp: new Date().toISOString(),
     };
-    await sendWebhook(webhook.url, { embeds: [embed] });
+    
+    const success = await sendWebhook(webhook.url, { embeds: [embed] });
+    console.log('[Webhook] Comprovante enviado:', success ? 'sucesso' : 'falhou');
   }
 }

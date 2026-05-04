@@ -497,11 +497,19 @@ export async function deleteWebhook(id: number) {
 
 export async function getActiveWebhooksByType(type: "receipt" | "notification") {
   const db = await getDb();
-  if (!db) return [];
-  return db
+  if (!db) {
+    console.log('[DB] getActiveWebhooksByType - DB não disponível');
+    return [];
+  }
+  
+  const webhooks = await db
     .select()
     .from(discordWebhooks)
     .where(and(eq(discordWebhooks.type, type), eq(discordWebhooks.active, true)));
+  
+  console.log(`[DB] getActiveWebhooksByType(${type}) - encontrados: ${webhooks.length}`);
+  
+  return webhooks;
 }
 
 // ─── Site Settings ─────────────────────────────────────────────────────────────
