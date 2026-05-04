@@ -396,7 +396,6 @@ const adminRouter = router({
       } else {
         console.log('[Router] Status não é delivered, é:', input.status);
       }
-      }
       
       return result;
     }),
