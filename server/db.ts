@@ -376,9 +376,19 @@ export async function createOrder(
 }
 
 export async function updateOrderStatus(id: number, status: "pending_approval" | "game_pending" | "delivered" | "cancelled") {
+  console.log(`[DB] updateOrderStatus - ID: ${id}, Status: ${status}`);
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
-  await db.update(orders).set({ status }).where(eq(orders.id, id));
+  
+  await db.update(orders).set({ status, updatedAt: new Date() }).where(eq(orders.id, id));
+  
+  console.log(`[DB] updateOrderStatus - Status atualizado com sucesso`);
+  
+  // Verificar se realmente foi atualizado
+  const updated = await db.select().from(orders).where(eq(orders.id, id)).limit(1);
+  if (updated.length > 0) {
+    console.log(`[DB] updateOrderStatus - Status verificado: ${updated[0].status}`);
+  }
 }
 
 export async function updateOrderNotes(id: number, notes: string) {

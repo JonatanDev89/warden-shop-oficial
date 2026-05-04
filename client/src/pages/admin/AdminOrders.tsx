@@ -46,9 +46,16 @@ export default function AdminOrders() {
 
   const updateStatus = trpc.admin.updateOrderStatus.useMutation({
     onSuccess: () => {
+      console.log('[AdminOrders] Status atualizado com sucesso');
       utils.admin.getOrders.invalidate();
-      utils.admin.getOrder.invalidate({ id: selectedOrderId! });
+      if (selectedOrderId) {
+        utils.admin.getOrder.invalidate({ id: selectedOrderId });
+      }
       toast.success("Status atualizado!");
+    },
+    onError: (error) => {
+      console.error('[AdminOrders] Erro ao atualizar status:', error);
+      toast.error("Erro ao atualizar status: " + error.message);
     },
   });
 

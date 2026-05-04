@@ -351,7 +351,29 @@ const adminRouter = router({
     .query(({ input }) => getOrderWithItems(input.id)),
   updateOrderStatus: adminProcedure
     .input(z.object({ id: z.number(), status: z.enum(["pending_approval", "game_pending", "delivered", "cancelled"]) }))
-    .mutation(({ input }) => updateOrderStatus(input.id, input.status)),
+    .mutation(async ({ input }) => {
+      console.log('[Router] updateOrderStatus chamado:', input);
+      const result = await updateOrderStatus(input.id, input.status);
+      
+      // Se o status for "delivered", enviar notificações
+      if (input.status === "delivered") {
+        const order = await getOrderWithItems(input.id);
+        if (order) {
+          console.log('[Router] Pedido marcado como entregue, enviando notificações');
+          const { notifyOrderDelivered, sendDeliveryReceipt } = await import("../discord-webhooks");
+          await notifyOrderDelivered({
+            ...order,
+            total: parseFloat(String(order.total)),
+          });
+          await sendDeliveryReceipt({
+            ...order,
+            total: parseFloat(String(order.total)),
+          });
+        }
+      }
+      
+      return result;
+    }),
   updateOrderNotes: adminProcedure
     .input(z.object({ id: z.number(), notes: z.string() }))
     .mutation(({ input }) => updateOrderNotes(input.id, input.notes)),
