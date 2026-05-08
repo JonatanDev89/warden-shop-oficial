@@ -54,12 +54,17 @@ function applyVariables(template: string, order: any): string {
     totalQuantity = order.items.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
   }
   
+  // Formatar data no horário de Brasília
+  const orderDate = order.createdAt ? new Date(order.createdAt) : new Date();
+  const brasiliaDate = new Date(orderDate.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+  const formattedDate = brasiliaDate.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+  
   return template
     .replace(/\{nick\}/g, order.minecraftNickname ?? '')
     .replace(/\{pedido\}/g, order.orderNumber ?? '')
     .replace(/\{total\}/g, `R$ ${total.toFixed(2).replace('.', ',')}`)
     .replace(/\{email\}/g, order.email ?? '')
-    .replace(/\{data\}/g, new Date().toLocaleString('pt-BR'))
+    .replace(/\{data\}/g, formattedDate)
     .replace(/\{status\}/g, order.status ?? '')
     .replace(/\{itens\}/g, itemsList || 'Nenhum item')
     .replace(/\{quantidade\}/g, String(totalQuantity))
@@ -71,6 +76,11 @@ function applyVariables(template: string, order: any): string {
 export async function notifyPendingOrder(order: any) {
   const webhooks = await getActiveWebhooksByType('notification');
   if (!webhooks?.length) return;
+  
+  // Formatar data no horário de Brasília
+  const orderDate = order.createdAt ? new Date(order.createdAt) : new Date();
+  const formattedDate = orderDate.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+  
   for (const webhook of webhooks) {
     const customMsg = webhook.msgPendente ? applyVariables(webhook.msgPendente, order) : null;
     const embed: DiscordEmbed = {
@@ -81,7 +91,7 @@ export async function notifyPendingOrder(order: any) {
         { name: 'Número do Pedido', value: `#${order.orderNumber}`, inline: true },
         { name: 'Jogador', value: order.minecraftNickname, inline: true },
         { name: 'Total', value: `R$ ${parseFloat(String(order.total)).toFixed(2)}`, inline: true },
-        { name: 'Data', value: new Date().toLocaleString('pt-BR'), inline: true },
+        { name: 'Data', value: formattedDate, inline: true },
       ],
       timestamp: new Date().toISOString(),
     };
@@ -92,6 +102,10 @@ export async function notifyPendingOrder(order: any) {
 export async function notifyOrderAccepted(order: any) {
   const webhooks = await getActiveWebhooksByType('notification');
   if (!webhooks?.length) return;
+  
+  // Formatar data no horário de Brasília
+  const formattedDate = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+  
   for (const webhook of webhooks) {
     const customMsg = webhook.msgAceito ? applyVariables(webhook.msgAceito, order) : null;
     const embed: DiscordEmbed = {
@@ -102,7 +116,7 @@ export async function notifyOrderAccepted(order: any) {
         { name: 'Número do Pedido', value: `#${order.orderNumber}`, inline: true },
         { name: 'Jogador', value: order.minecraftNickname, inline: true },
         { name: 'Total', value: `R$ ${parseFloat(String(order.total)).toFixed(2)}`, inline: true },
-        { name: 'Data de Aprovação', value: new Date().toLocaleString('pt-BR'), inline: true },
+        { name: 'Data de Aprovação', value: formattedDate, inline: true },
       ],
       timestamp: new Date().toISOString(),
     };
@@ -113,6 +127,10 @@ export async function notifyOrderAccepted(order: any) {
 export async function notifyOrderRejected(order: any) {
   const webhooks = await getActiveWebhooksByType('notification');
   if (!webhooks?.length) return;
+  
+  // Formatar data no horário de Brasília
+  const formattedDate = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+  
   for (const webhook of webhooks) {
     const customMsg = webhook.msgRecusado ? applyVariables(webhook.msgRecusado, order) : null;
     const embed: DiscordEmbed = {
@@ -123,7 +141,7 @@ export async function notifyOrderRejected(order: any) {
         { name: 'Número do Pedido', value: `#${order.orderNumber}`, inline: true },
         { name: 'Jogador', value: order.minecraftNickname, inline: true },
         { name: 'Total', value: `R$ ${parseFloat(String(order.total)).toFixed(2)}`, inline: true },
-        { name: 'Data de Recusa', value: new Date().toLocaleString('pt-BR'), inline: true },
+        { name: 'Data de Recusa', value: formattedDate, inline: true },
       ],
       timestamp: new Date().toISOString(),
     };
@@ -146,6 +164,9 @@ export async function notifyOrderDelivered(order: any) {
     return;
   }
 
+  // Formatar data no horário de Brasília
+  const formattedDate = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+
   for (const webhook of webhooks) {
     console.log('[Webhook] Enviando notificação de entrega para:', webhook.url.substring(0, 50) + '...');
     
@@ -158,7 +179,7 @@ export async function notifyOrderDelivered(order: any) {
         { name: 'Número do Pedido', value: `#${order.orderNumber}`, inline: true },
         { name: 'Jogador', value: order.minecraftNickname, inline: true },
         { name: 'Total', value: `R$ ${parseFloat(String(order.total)).toFixed(2)}`, inline: true },
-        { name: 'Data de Entrega', value: new Date().toLocaleString('pt-BR'), inline: true },
+        { name: 'Data de Entrega', value: formattedDate, inline: true },
       ],
       timestamp: new Date().toISOString(),
     };
@@ -171,6 +192,10 @@ export async function notifyOrderDelivered(order: any) {
 export async function notifyOrderDeleted(order: any) {
   const webhooks = await getActiveWebhooksByType('notification');
   if (!webhooks?.length) return;
+  
+  // Formatar data no horário de Brasília
+  const formattedDate = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+  
   for (const webhook of webhooks) {
     const customMsg = webhook.msgDeletado ? applyVariables(webhook.msgDeletado, order) : null;
     const embed: DiscordEmbed = {
@@ -180,7 +205,7 @@ export async function notifyOrderDeleted(order: any) {
       fields: customMsg ? [] : [
         { name: 'Número do Pedido', value: `#${order.orderNumber}`, inline: true },
         { name: 'Jogador', value: order.minecraftNickname, inline: true },
-        { name: 'Data', value: new Date().toLocaleString('pt-BR'), inline: true },
+        { name: 'Data', value: formattedDate, inline: true },
       ],
       timestamp: new Date().toISOString(),
     };
@@ -208,6 +233,9 @@ export async function sendDeliveryReceipt(order: any) {
     return;
   }
 
+  // Formatar data no horário de Brasília
+  const formattedDate = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+
   for (const webhook of webhooks) {
     console.log('[Webhook] Enviando comprovante para:', webhook.url.substring(0, 50) + '...');
     
@@ -220,7 +248,7 @@ export async function sendDeliveryReceipt(order: any) {
         { name: 'Número do Pedido', value: `#${order.orderNumber}`, inline: true },
         { name: 'Jogador', value: order.minecraftNickname, inline: true },
         { name: 'Total', value: `R$ ${parseFloat(String(order.total)).toFixed(2)}`, inline: true },
-        { name: 'Data de Entrega', value: new Date().toLocaleString('pt-BR'), inline: true },
+        { name: 'Data de Entrega', value: formattedDate, inline: true },
       ],
       timestamp: new Date().toISOString(),
     };
