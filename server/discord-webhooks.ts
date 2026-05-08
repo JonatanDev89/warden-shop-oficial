@@ -55,9 +55,32 @@ function applyVariables(template: string, order: any): string {
   }
   
   // Formatar data no horário de Brasília
-  const orderDate = order.createdAt ? new Date(order.createdAt) : new Date();
-  const brasiliaDate = new Date(orderDate.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
-  const formattedDate = brasiliaDate.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+  // O createdAt vem em UTC do banco, precisamos converter para BRT/BRST (-3h)
+  let formattedDate = '';
+  if (order.createdAt) {
+    const orderDate = new Date(order.createdAt);
+    // Converter para horário de Brasília usando Intl.DateTimeFormat
+    formattedDate = new Intl.DateTimeFormat('pt-BR', {
+      timeZone: 'America/Sao_Paulo',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    }).format(orderDate);
+  } else {
+    const now = new Date();
+    formattedDate = new Intl.DateTimeFormat('pt-BR', {
+      timeZone: 'America/Sao_Paulo',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    }).format(now);
+  }
   
   return template
     .replace(/\{nick\}/g, order.minecraftNickname ?? '')
@@ -79,7 +102,15 @@ export async function notifyPendingOrder(order: any) {
   
   // Formatar data no horário de Brasília
   const orderDate = order.createdAt ? new Date(order.createdAt) : new Date();
-  const formattedDate = orderDate.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+  const formattedDate = new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).format(orderDate);
   
   for (const webhook of webhooks) {
     const customMsg = webhook.msgPendente ? applyVariables(webhook.msgPendente, order) : null;
@@ -104,7 +135,15 @@ export async function notifyOrderAccepted(order: any) {
   if (!webhooks?.length) return;
   
   // Formatar data no horário de Brasília
-  const formattedDate = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+  const formattedDate = new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).format(new Date());
   
   for (const webhook of webhooks) {
     const customMsg = webhook.msgAceito ? applyVariables(webhook.msgAceito, order) : null;
@@ -129,7 +168,15 @@ export async function notifyOrderRejected(order: any) {
   if (!webhooks?.length) return;
   
   // Formatar data no horário de Brasília
-  const formattedDate = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+  const formattedDate = new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).format(new Date());
   
   for (const webhook of webhooks) {
     const customMsg = webhook.msgRecusado ? applyVariables(webhook.msgRecusado, order) : null;
@@ -165,7 +212,15 @@ export async function notifyOrderDelivered(order: any) {
   }
 
   // Formatar data no horário de Brasília
-  const formattedDate = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+  const formattedDate = new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).format(new Date());
 
   for (const webhook of webhooks) {
     console.log('[Webhook] Enviando notificação de entrega para:', webhook.url.substring(0, 50) + '...');
@@ -194,7 +249,15 @@ export async function notifyOrderDeleted(order: any) {
   if (!webhooks?.length) return;
   
   // Formatar data no horário de Brasília
-  const formattedDate = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+  const formattedDate = new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).format(new Date());
   
   for (const webhook of webhooks) {
     const customMsg = webhook.msgDeletado ? applyVariables(webhook.msgDeletado, order) : null;
@@ -234,7 +297,15 @@ export async function sendDeliveryReceipt(order: any) {
   }
 
   // Formatar data no horário de Brasília
-  const formattedDate = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+  const formattedDate = new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).format(new Date());
 
   for (const webhook of webhooks) {
     console.log('[Webhook] Enviando comprovante para:', webhook.url.substring(0, 50) + '...');
