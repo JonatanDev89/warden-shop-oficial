@@ -77,11 +77,11 @@ export async function handleMpWebhook(req: Request, res: Response) {
 
       // Notificar Discord
       try {
-        const updatedOrder = await getOrderByNumber(orderNumber);
+        const { getOrderWithItemsByNumber } = await import("./db");
+        const updatedOrder = await getOrderWithItemsByNumber(orderNumber);
         if (updatedOrder) {
           await notifyOrderAccepted({
             ...updatedOrder,
-            items: [],
             total: parseFloat(String(updatedOrder.total)),
           });
         }

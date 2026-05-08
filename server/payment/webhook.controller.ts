@@ -69,11 +69,11 @@ export async function handleMpWebhook(req: Request, res: Response): Promise<void
 
       if (result.action === "approved" && result.orderNumber) {
         try {
-          const order = await findOrderByNumber(result.orderNumber);
+          const { getOrderWithItemsByNumber } = await import("../db");
+          const order = await getOrderWithItemsByNumber(result.orderNumber);
           if (order) {
             await notifyOrderAccepted({
               ...order,
-              items: [],
               total: parseFloat(String(order.total)),
             });
           }
