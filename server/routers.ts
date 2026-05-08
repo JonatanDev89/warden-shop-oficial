@@ -330,11 +330,13 @@ const shopRouter = router({
       );
 
       // Send Discord notification for new pending order
-      await notifyPendingOrder({
-        ...order,
-        minecraftNickname: input.minecraftNickname,
-        total: parseFloat(String(order.total)),
-      });
+      const orderWithItems = await getOrderWithItemsByNumber(orderNumber);
+      if (orderWithItems) {
+        await notifyPendingOrder({
+          ...orderWithItems,
+          total: parseFloat(String(orderWithItems.total)),
+        });
+      }
 
       return order;
     }),
