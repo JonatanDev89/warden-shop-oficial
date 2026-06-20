@@ -193,6 +193,30 @@ const shopRouter = router({
       if (input.couponCode) {
         const coupon = await getCouponByCode(input.couponCode);
         if (coupon) {
+          // Validar Primeira Compra
+          if (coupon.isFirstPurchase) {
+            const orderCount = await countUserOrders(input.minecraftNickname);
+            if (orderCount > 0) {
+              throw new TRPCError({ code: "BAD_REQUEST", message: "Este cupom é válido apenas para a primeira compra." });
+            }
+          }
+
+          // Validar Categoria
+          if (coupon.categoryId) {
+            // Pegar categorias de todos os produtos no pedido
+            const productIds = orderItemsToCreate.filter(i => i.productId > 0).map(i => i.productId);
+            const orderCategories = new Set<number>();
+            
+            for (const pid of productIds) {
+              const product = await getProductById(pid);
+              if (product?.categoryId) orderCategories.add(product.categoryId);
+            }
+
+            if (!orderCategories.has(coupon.categoryId)) {
+              throw new TRPCError({ code: "BAD_REQUEST", message: "Este cupom não é válido para os itens no seu pedido." });
+            }
+          }
+
           if (coupon.discountType === "percent") {
             discount = subtotal * (parseFloat(String(coupon.discountValue)) / 100);
           } else {
@@ -234,10 +258,31 @@ const shopRouter = router({
     }),
 
   validateCoupon: publicProcedure
-    .input(z.object({ code: z.string() }))
+    .input(z.object({ 
+      code: z.string(), 
+      nickname: z.string().optional(),
+      categoryIds: z.array(z.number()).optional()
+    }))
     .query(async ({ input }) => {
       const coupon = await getCouponByCode(input.code);
       if (!coupon) throw new TRPCError({ code: "NOT_FOUND", message: "Cupom inválido ou expirado." });
+      
+      // 1. Validar Primeira Compra
+      if (coupon.isFirstPurchase && input.nickname) {
+        const orderCount = await countUserOrders(input.nickname);
+        if (orderCount > 0) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Este cupom é válido apenas para a primeira compra." });
+        }
+      }
+
+      // 2. Validar Categoria
+      if (coupon.categoryId && input.categoryIds) {
+        const hasValidCategory = input.categoryIds.includes(coupon.categoryId);
+        if (!hasValidCategory) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Este cupom não é válido para os itens no seu carrinho." });
+        }
+      }
+
       return coupon;
     }),
 
@@ -573,6 +618,8 @@ const adminRouter = router({
         code: z.string().min(1),
         discountType: z.enum(["fixed", "percent"]),
         discountValue: z.string(),
+        categoryId: z.number().optional().nullable(),
+        isFirstPurchase: z.boolean().optional(),
         active: z.boolean().optional(),
       })
     )
@@ -584,6 +631,8 @@ const adminRouter = router({
         code: z.string().optional(),
         discountType: z.enum(["fixed", "percent"]).optional(),
         discountValue: z.string().optional(),
+        categoryId: z.number().optional().nullable(),
+        isFirstPurchase: z.boolean().optional(),
         active: z.boolean().optional(),
       })
     )

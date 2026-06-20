@@ -184,11 +184,29 @@ export default function CheckoutPage() {
   const handleApplyCoupon = async () => {
     setCouponError("");
     if (!couponInput.trim()) return;
+    
+    // Buscar categorias dos itens no carrinho (para itens normais)
+    // Para kits personalizados, tratamos como uma categoria especial ou nula se não houver mapeamento
+    const categoryIds: number[] = [];
+    
+    // Precisamos buscar os produtos para saber suas categorias
+    // Mas para simplificar, se o cupom tiver categoria, o backend validará
+    // Vamos apenas enviar os IDs que temos
+    
     try {
-      const result = await utils.shop.validateCoupon.fetch({ code: couponInput.trim() });
+      const result = await utils.shop.validateCoupon.fetch({ 
+        code: couponInput.trim(),
+        nickname: nickname.trim() || undefined,
+        // O backend precisará saber as categorias dos itens no carrinho
+        // Vamos buscar isso de forma mais robusta no backend durante a criação do pedido
+        // Para a validação visual, vamos apenas tentar validar o código
+      });
       setAppliedCoupon({ code: result.code, discountType: result.discountType, discountValue: String(result.discountValue) });
       toast.success(`Cupom "${result.code}" aplicado!`);
-    } catch { setCouponError("Cupom inválido ou expirado."); setAppliedCoupon(null); }
+    } catch (err: any) { 
+      setCouponError(err.message || "Cupom inválido ou expirado."); 
+      setAppliedCoupon(null); 
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

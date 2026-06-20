@@ -26,6 +26,8 @@ type CouponForm = {
   code: string;
   discountType: "percent" | "fixed";
   discountValue: string;
+  categoryId: number | null;
+  isFirstPurchase: boolean;
   active: boolean;
 };
 
@@ -33,12 +35,15 @@ const emptyForm: CouponForm = {
   code: "",
   discountType: "percent",
   discountValue: "",
+  categoryId: null,
+  isFirstPurchase: false,
   active: true,
 };
 
 export default function AdminCoupons() {
   const utils = trpc.useUtils();
   const { data: coupons, isLoading } = trpc.admin.getCoupons.useQuery();
+  const { data: categories } = trpc.admin.getCategories.useQuery();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -81,7 +86,9 @@ export default function AdminCoupons() {
       code: c.code,
       discountType: c.discountType as "percent" | "fixed",
       discountValue: String(c.discountValue),
-        active: c.active,
+      categoryId: c.categoryId ?? null,
+      isFirstPurchase: c.isFirstPurchase,
+      active: c.active,
     });
     setDialogOpen(true);
   };
@@ -92,6 +99,8 @@ export default function AdminCoupons() {
       code: form.code.toUpperCase(),
       discountType: form.discountType,
       discountValue: form.discountValue,
+      categoryId: form.categoryId,
+      isFirstPurchase: form.isFirstPurchase,
       active: form.active,
     };
     if (editingId) {
@@ -145,6 +154,18 @@ export default function AdminCoupons() {
                       : `R$ ${parseFloat(String(coupon.discountValue)).toFixed(2)} de desconto`}
                     {" · "}
                     {coupon.usageCount} uso{coupon.usageCount !== 1 ? "s" : ""}
+                    {coupon.categoryId && (
+                      <>
+                        {" · "}
+                        <span className="text-primary">Categoria: {categories?.find(cat => cat.id === coupon.categoryId)?.name ?? "..."}</span>
+                      </>
+                    )}
+                    {coupon.isFirstPurchase && (
+                      <>
+                        {" · "}
+                        <span className="text-yellow-400">Primeira Compra</span>
+                      </>
+                    )}
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -218,12 +239,40 @@ export default function AdminCoupons() {
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <Switch
-                checked={form.active}
-                onCheckedChange={(v) => setForm({ ...form, active: v })}
-              />
-              <Label className="text-foreground">Cupom ativo</Label>
+            <div className="space-y-3 pt-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-foreground">Restrito a Categoria</Label>
+                <Select
+                  value={form.categoryId?.toString() ?? "all"}
+                  onValueChange={(v) => setForm({ ...form, categoryId: v === "all" ? null : parseInt(v) })}
+                >
+                  <SelectTrigger className="bg-muted border-border w-[200px]">
+                    <SelectValue placeholder="Todas as categorias" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card border-border">
+                    <SelectItem value="all">Todas as categorias</SelectItem>
+                    {categories?.map(cat => (
+                      <SelectItem key={cat.id} value={cat.id.toString()}>{cat.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Switch
+                  checked={form.isFirstPurchase}
+                  onCheckedChange={(v) => setForm({ ...form, isFirstPurchase: v })}
+                />
+                <Label className="text-foreground">Apenas para primeira compra</Label>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Switch
+                  checked={form.active}
+                  onCheckedChange={(v) => setForm({ ...form, active: v })}
+                />
+                <Label className="text-foreground">Cupom ativo</Label>
+              </div>
             </div>
             <div className="flex gap-2">
               <Button

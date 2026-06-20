@@ -274,6 +274,8 @@ export async function createCoupon(data: {
   code: string;
   discountType: "fixed" | "percent";
   discountValue: string;
+  categoryId?: number | null;
+  isFirstPurchase?: boolean;
   active?: boolean;
 }) {
   const db = await getDb();
@@ -283,7 +285,14 @@ export async function createCoupon(data: {
 
 export async function updateCoupon(
   id: number,
-  data: { code?: string; discountType?: "fixed" | "percent"; discountValue?: string; active?: boolean }
+  data: { 
+    code?: string; 
+    discountType?: "fixed" | "percent"; 
+    discountValue?: string; 
+    categoryId?: number | null;
+    isFirstPurchase?: boolean;
+    active?: boolean 
+  }
 ) {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
@@ -404,6 +413,16 @@ export async function deleteOrder(id: number) {
   if (!db) throw new Error("DB unavailable");
   await db.delete(orderItems).where(eq(orderItems.orderId, id));
   await db.delete(orders).where(eq(orders.id, id));
+}
+
+export async function countUserOrders(nickname: string) {
+  const db = await getDb();
+  if (!db) return 0;
+  const result = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(orders)
+    .where(and(eq(orders.minecraftNickname, nickname), or(eq(orders.paymentStatus, "approved"), eq(orders.status, "delivered"))));
+  return Number(result[0]?.count ?? 0);
 }
 
 export async function getDashboardStats() {
@@ -842,6 +861,10 @@ export async function runMigrations() {
         "updatedAt" timestamp NOT NULL DEFAULT now()
       )
     `);
+
+    // ─── Coupons — categorias e primeira compra ──────────────────────────────
+    await db.execute(sql`ALTER TABLE "coupons" ADD COLUMN IF NOT EXISTS "categoryId" integer`);
+    await db.execute(sql`ALTER TABLE "coupons" ADD COLUMN IF NOT EXISTS "isFirstPurchase" boolean NOT NULL DEFAULT false`);
 
     // ─── order_items.delivered ────────────────────────────────────────────────
     await db.execute(sql`ALTER TABLE "order_items" ADD COLUMN IF NOT EXISTS "delivered" boolean NOT NULL DEFAULT false`);
