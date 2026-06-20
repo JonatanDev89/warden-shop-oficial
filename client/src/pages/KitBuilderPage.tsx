@@ -76,7 +76,8 @@ export default function KitBuilderPage() {
 
   const totalPrice = slots.reduce((sum, s) => {
     if (!s) return sum;
-    return sum + (s.pricePerUnit ? parseFloat(s.unitPrice) * s.quantity : parseFloat(s.unitPrice));
+    const itemPrice = s.pricePerUnit ? parseFloat(s.unitPrice) * s.quantity : parseFloat(s.unitPrice);
+    return sum + Math.round(itemPrice * 100) / 100;
   }, 0);
 
   const filledSlots = slots.filter(Boolean).length;

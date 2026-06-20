@@ -49,6 +49,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const addItem = (item: Omit<CartItem, "quantity">, qty = 1) => {
     setItems((prev) => {
+      // Se for um kit personalizado (productId === -1), nunca agrupar
+      if (item.productId === -1) {
+        return [...prev, { ...item, quantity: qty }];
+      }
+
       const existing = prev.find((i) => i.productId === item.productId);
       if (existing) {
         return prev.map((i) =>
@@ -61,14 +66,35 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const removeItem = (productId: number) =>
-    setItems((prev) => prev.filter((i) => i.productId !== productId));
+  const removeItem = (productId: number, kitSlots?: KitSlot[]) =>
+    setItems((prev) => {
+      if (productId === -1 && kitSlots) {
+        // Para kits, remove pela referência exata dos slots (ou poderia usar um ID único)
+        const index = prev.findIndex(i => i.productId === -1 && JSON.stringify(i.kitSlots) === JSON.stringify(kitSlots));
+        if (index !== -1) {
+          const next = [...prev];
+          next.splice(index, 1);
+          return next;
+        }
+        return prev;
+      }
+      return prev.filter((i) => i.productId !== productId);
+    });
 
-  const updateQty = (productId: number, qty: number) => {
-    if (qty <= 0) { removeItem(productId); return; }
-    setItems((prev) =>
-      prev.map((i) => (i.productId === productId ? { ...i, quantity: qty } : i))
-    );
+  const updateQty = (productId: number, qty: number, kitSlots?: KitSlot[]) => {
+    if (qty <= 0) { removeItem(productId, kitSlots); return; }
+    setItems((prev) => {
+      if (productId === -1 && kitSlots) {
+        const index = prev.findIndex(i => i.productId === -1 && JSON.stringify(i.kitSlots) === JSON.stringify(kitSlots));
+        if (index !== -1) {
+          const next = [...prev];
+          next[index] = { ...next[index], quantity: qty };
+          return next;
+        }
+        return prev;
+      }
+      return prev.map((i) => (i.productId === productId ? { ...i, quantity: qty } : i));
+    });
   };
 
   const clearCart = () => {

@@ -201,15 +201,18 @@ export default function CheckoutPage() {
 
     let orderNumber: string | undefined;
 
-    if (kitItems.length > 0 && kitItems[0].kitSlots) {
-      // Pedido de kit personalizado
+    if (kitItems.length > 0) {
+      // Por enquanto o backend suporta apenas um kit por pedido #KIT
+      // Se houver múltiplos kits ou mistura, o ideal seria o backend suportar itens normais + kits
+      // Mas para manter a compatibilidade com o sistema de resgate do addon:
+      const kit = kitItems[0];
       const kitOrder = await createKitOrder.mutateAsync({
         minecraftNickname: nickname.trim(),
         email: email.trim(),
-        slots: kitItems[0].kitSlots,
+        slots: kit.kitSlots!,
       });
       orderNumber = kitOrder?.orderNumber;
-    } else if (normalItems.length > 0) {
+    } else {
       // Pedido normal com produtos do catálogo
       const order = await createOrder.mutateAsync({
         minecraftNickname: nickname.trim(), email: email.trim(),
@@ -388,7 +391,7 @@ export default function CheckoutPage() {
                 {/* Itens com controles de quantidade */}
                 <div className="space-y-3">
                   {items.map((item) => (
-                    <div key={item.productId} className="flex items-center gap-3">
+                    <div key={item.productId + (item.kitSlots ? JSON.stringify(item.kitSlots) : "")} className="flex items-center gap-3">
                       <div className="h-12 w-12 rounded-xl bg-muted border border-border flex items-center justify-center shrink-0 overflow-hidden">
                         {item.imageUrl
                           ? <img src={item.imageUrl} alt={item.name} className="h-full w-full object-cover" />
@@ -400,16 +403,16 @@ export default function CheckoutPage() {
                       </div>
                       {/* Controles */}
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <button type="button" onClick={() => updateQty(item.productId, item.quantity - 1)}
+                        <button type="button" onClick={() => updateQty(item.productId, item.quantity - 1, item.kitSlots)}
                           className="h-7 w-7 rounded-full border border-border bg-muted flex items-center justify-center hover:border-primary/50 transition-colors">
                           <Minus className="h-3 w-3" />
                         </button>
                         <span className="w-6 text-center text-sm font-semibold text-foreground">{item.quantity}</span>
-                        <button type="button" onClick={() => updateQty(item.productId, item.quantity + 1)}
+                        <button type="button" onClick={() => updateQty(item.productId, item.quantity + 1, item.kitSlots)}
                           className="h-7 w-7 rounded-full border border-border bg-muted flex items-center justify-center hover:border-primary/50 transition-colors">
                           <Plus className="h-3 w-3" />
                         </button>
-                        <button type="button" onClick={() => removeItem(item.productId)}
+                        <button type="button" onClick={() => removeItem(item.productId, item.kitSlots)}
                           className="h-7 w-7 rounded-full bg-destructive/10 text-destructive flex items-center justify-center hover:bg-destructive/20 transition-colors">
                           <X className="h-3 w-3" />
                         </button>
