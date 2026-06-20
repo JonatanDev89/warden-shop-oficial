@@ -329,8 +329,8 @@ const shopRouter = router({
       z.object({
         minecraftNickname: z.string()
           .min(1, "Nickname obrigatório")
-          .max(16, "Nickname muito longo")
-          .regex(/^[a-zA-Z0-9_]+$/, "Nickname inválido — use apenas letras, números e _"),
+          .max(32, "Nickname muito longo")
+          .regex(/^[a-zA-Z0-9_ ]+$/, "Nickname inválido — use apenas letras, números, espaços e _"),
         email: z.string().email("E-mail inválido").max(320),
         couponCode: z.string().max(64).optional(),
         items: z.array(

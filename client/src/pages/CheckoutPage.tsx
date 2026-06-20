@@ -328,8 +328,9 @@ export default function CheckoutPage() {
                       placeholder="Nickname (Minecraft)" required disabled={isGenerating}
                       className="bg-muted/50 border-border rounded-xl h-11"
                       autoComplete="on"
-                      name="minecraft-nickname"
+                      name="nickname"
                       id="checkout-nickname"
+                      maxLength={32}
                     />
                     {/* Alerta de atenção ao nickname */}
                     <div className="flex items-start gap-2 p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
