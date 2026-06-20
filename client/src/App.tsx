@@ -19,7 +19,6 @@ import OrderConfirmedPage from "./pages/OrderConfirmedPage";
 import ApiDocsPage from "./pages/ApiDocsPage";
 import TermsPage from "./pages/TermsPage";
 import LoginPage from "./pages/LoginPage";
-import MaintenancePage from "./pages/MaintenancePage";
 import { trpc } from "./lib/trpc";
 
 // Admin pages
@@ -36,31 +35,8 @@ import AdminKitItems from "./pages/admin/AdminKitItems";
 import KitBuilderPage from "./pages/KitBuilderPage";
 
 function Router() {
-  const { data: user } = trpc.auth.me.useQuery(undefined, {
-    retry: false,
-    refetchOnWindowFocus: false,
-  });
-  const { data: settings } = trpc.shop.getSettings.useQuery();
-  
-  const isMaintenance = settings?.maintenanceMode === "true";
-  const isAdmin = user?.role === "admin";
-
   return (
     <Switch>
-      {/* Maintenance route (highest priority for non-admin) */}
-      {isMaintenance && !isAdmin && (
-        <Route path="/:rest*">
-          {(params) => {
-            const path = params["rest*"] || "";
-            // SEMPRE permitir acesso ao login e admin para que o admin possa gerenciar a loja
-            if (path.startsWith("login") || path.startsWith("admin")) {
-              return null; 
-            }
-            return <MaintenancePage />;
-          }}
-        </Route>
-      )}
-
       {/* Public routes */}
       <Route path="/" component={Home} />
       <Route path="/loja" component={ShopPage} />

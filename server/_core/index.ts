@@ -42,14 +42,13 @@ async function startServer() {
 
   // ─── Middleware de Manutenção ──────────────────────────────────────────────
   app.use(async (req, res, next) => {
-    // Permitir rotas críticas e ativos sempre
+    // SEMPRE permitir ativos estáticos e rotas de sistema
     const isPublicAsset = req.path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|otf)$/);
-    const isAdminRoute = req.path.startsWith('/admin') || req.path.startsWith('/login');
-    const isAuthApi = req.path.startsWith('/api/trpc/auth') || req.path.startsWith('/api/trpc/admin');
-    const isWebhookOrAddon = req.path.startsWith('/api/mp/webhook') || req.path.startsWith('/api/addon');
+    const isSystemRoute = req.path.startsWith('/admin') || req.path.startsWith('/login') || 
+                         req.path.startsWith('/api/trpc/auth') || req.path.startsWith('/api/trpc/admin') ||
+                         req.path.startsWith('/api/mp/webhook') || req.path.startsWith('/api/addon');
     
-    // SEMPRE permitir essas rotas para evitar quebrar o login ou admin
-    if (isPublicAsset || isAdminRoute || isAuthApi || isWebhookOrAddon) {
+    if (isPublicAsset || isSystemRoute) {
       return next();
     }
 
@@ -59,18 +58,16 @@ async function startServer() {
       const isMaintenance = settings.maintenanceMode === "true";
 
       if (isMaintenance) {
-        // Permitir chamadas tRPC de configuração e autenticação básica
+        // Permitir chamadas essenciais para o frontend decidir o que exibir
         if (req.path.startsWith('/api/trpc')) {
           const isEssential = req.path.includes('getSettings') || req.path.includes('auth.me') || req.query.batch === '1';
           if (isEssential) return next();
           
-          // Bloquear apenas chamadas da loja
+          // Bloquear apenas ações da loja (compras, etc)
           if (req.path.startsWith('/api/trpc/shop')) {
             return res.status(503).json([{ error: { message: "Manutenção", code: -32000 } }]);
           }
         }
-        
-        // O roteamento do frontend cuidará de exibir a MaintenancePage para rotas HTML (/)
       }
     } catch (err) {
       console.error('[Maintenance Middleware] Error:', err);

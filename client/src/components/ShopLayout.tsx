@@ -30,6 +30,7 @@ export default function ShopLayout({ children }: ShopLayoutProps) {
   const { items, totalItems, totalPrice, updateQty, removeItem } = useCart();
 
   const discordUrl = s?.discordUrl ?? "";
+  const isMaintenance = s?.maintenanceMode === "true";
 
   const flag = (key: string) => (s?.[key] ?? "true") !== "false";
   const featureSearch       = flag("featureSearch");
@@ -46,6 +47,66 @@ export default function ShopLayout({ children }: ShopLayoutProps) {
       setSearchQuery("");
     }
   };
+
+  if (isMaintenance && !isAdmin) {
+    return (
+      <div className="min-h-screen flex flex-col" style={{ fontFamily }}>
+        <main className="flex-1">
+          <div className="min-h-[80vh] flex items-center justify-center p-4">
+            <div className="w-full max-w-md text-center space-y-6">
+              <div className="flex justify-center">
+                {logoUrl ? (
+                  <img src={logoUrl} alt={storeName} className="h-20 w-20 object-contain rounded-2xl shadow-2xl" />
+                ) : (
+                  <div className="h-20 w-20 rounded-2xl bg-primary flex items-center justify-center shadow-2xl">
+                    <Sword className="h-10 w-10 text-primary-foreground" />
+                  </div>
+                )}
+              </div>
+              
+              <div className="space-y-2">
+                <h1 className="text-3xl font-bold text-foreground" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                  {storeName}
+                </h1>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-xs font-bold uppercase tracking-wider">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>
+                  </span>
+                  Modo Manutenção
+                </div>
+              </div>
+
+              <p className="text-muted-foreground leading-relaxed">
+                {s?.maintenanceMessage || "Estamos realizando melhorias para oferecer uma experiência ainda melhor. Voltaremos em breve!"}
+              </p>
+
+              <div className="pt-4 flex flex-col gap-3">
+                {discordUrl && (
+                  <a href={discordUrl} target="_blank" rel="noopener noreferrer">
+                    <Button className="w-full h-12 font-bold rounded-xl gap-2 shadow-lg shadow-primary/20">
+                      Acompanhar no Discord
+                    </Button>
+                  </a>
+                )}
+                <Link href="/login">
+                  <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                    Área Administrativa
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </main>
+        
+        <footer className="py-8 text-center border-t border-border/40">
+          <p className="text-xs text-muted-foreground">
+            © {new Date().getFullYear()} {storeName}. Todos os direitos reservados.
+          </p>
+        </footer>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col" style={{ fontFamily }}>
