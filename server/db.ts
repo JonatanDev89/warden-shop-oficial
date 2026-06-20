@@ -635,53 +635,41 @@ export async function upsertKitItem(data: {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
   
-  // Construir insertData apenas com campos que têm valores
-  const insertData: any = {
-    minecraftId: data.minecraftId,
-    name: data.name,
-    price: data.price,
-    minPerSlot: Number(data.minPerSlot ?? 1), 
-    maxPerSlot: Number(data.maxPerSlot ?? 64), 
-    pricePerUnit: Boolean(data.pricePerUnit ?? false), 
-    active: Boolean(data.active ?? true) 
-  };
-  
-  // Adicionar imageUrl e itemConfig apenas se tiverem valor
-  if (data.imageUrl !== null && data.imageUrl !== undefined) {
-    insertData.imageUrl = data.imageUrl;
-  }
-  if (data.itemConfig !== null && data.itemConfig !== undefined) {
-    insertData.itemConfig = data.itemConfig;
-  }
-  
-  console.log('[DB upsertKitItem] insertData:', JSON.stringify(insertData));
-  
-  // Construir updateData
-  const updateData: any = {
-    name: data.name,
-    price: data.price,
-    minPerSlot: Number(data.minPerSlot ?? 1),
-    maxPerSlot: Number(data.maxPerSlot ?? 64),
-    pricePerUnit: Boolean(data.pricePerUnit ?? false),
-    active: Boolean(data.active ?? true),
-    updatedAt: new Date(),
-  };
-  
-  // Adicionar imageUrl e itemConfig no update apenas se tiverem valor
-  if (data.imageUrl !== null && data.imageUrl !== undefined) {
-    updateData.imageUrl = data.imageUrl;
-  }
-  if (data.itemConfig !== null && data.itemConfig !== undefined) {
-    updateData.itemConfig = data.itemConfig;
-  }
-  
-  await db
-    .insert(kitItems)
-    .values(insertData)
-    .onConflictDoUpdate({
-      target: kitItems.minecraftId,
-      set: updateData,
-    });
+  // Usar query SQL direta para garantir o comportamento correto do ON CONFLICT
+  // e evitar problemas de mapeamento do Drizzle em migrações incompletas
+  const pool = await getPool();
+  if (!pool) throw new Error("DB unavailable");
+
+  const query = `
+    INSERT INTO "kit_items" (
+      "minecraftId", "name", "price", "minPerSlot", "maxPerSlot", 
+      "pricePerUnit", "imageUrl", "itemConfig", "active", "updatedAt"
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+    ON CONFLICT ("minecraftId") DO UPDATE SET
+      "name" = EXCLUDED."name",
+      "price" = EXCLUDED."price",
+      "minPerSlot" = EXCLUDED."minPerSlot",
+      "maxPerSlot" = EXCLUDED."maxPerSlot",
+      "pricePerUnit" = EXCLUDED."pricePerUnit",
+      "imageUrl" = EXCLUDED."imageUrl",
+      "itemConfig" = EXCLUDED."itemConfig",
+      "active" = EXCLUDED."active",
+      "updatedAt" = NOW()
+  `;
+
+  const params = [
+    data.minecraftId,
+    data.name,
+    data.price,
+    Number(data.minPerSlot ?? 1),
+    Number(data.maxPerSlot ?? 64),
+    Boolean(data.pricePerUnit ?? false),
+    data.imageUrl || null,
+    data.itemConfig || null,
+    Boolean(data.active ?? true)
+  ];
+
+  await pool.query(query, params);
 }
 
 export async function deleteKitItem(id: number) {
