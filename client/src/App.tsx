@@ -36,11 +36,15 @@ import AdminKitItems from "./pages/admin/AdminKitItems";
 import KitBuilderPage from "./pages/KitBuilderPage";
 
 function Router() {
-  const { data: user } = trpc.auth.me.useQuery();
-  const { data: settings } = trpc.shop.getSettings.useQuery();
+  const { data: user, isLoading: isLoadingUser } = trpc.auth.me.useQuery();
+  const { data: settings, isLoading: isLoadingSettings } = trpc.shop.getSettings.useQuery();
   
   const isMaintenance = settings?.maintenanceMode === "true";
   const isAdmin = user?.role === "admin";
+
+  if (isLoadingSettings || isLoadingUser) {
+    return null; // Evita piscar a tela de manutenção enquanto carrega
+  }
 
   return (
     <Switch>
@@ -50,7 +54,8 @@ function Router() {
           {(params) => {
             const path = params["rest*"] || "";
             // Permitir acesso ao login mesmo em manutenção para que o admin possa entrar
-            if (path.startsWith("login")) {
+            // Também permitimos acesso ao /admin para que ele seja redirecionado para o login se não estiver logado
+            if (path.startsWith("login") || path.startsWith("admin")) {
               return null; 
             }
             return <MaintenancePage />;

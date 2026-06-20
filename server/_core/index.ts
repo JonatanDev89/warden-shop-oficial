@@ -67,13 +67,19 @@ async function startServer() {
           return next();
         }
 
-        // Se for uma requisição tRPC da loja, retorna erro amigável
-        if (req.path.startsWith('/api/trpc/shop')) {
-          // Permitir getSettings para que o frontend saiba que está em manutenção
-          if (req.path.includes('getSettings')) {
+        // Se for uma requisição tRPC
+        if (req.path.startsWith('/api/trpc')) {
+          // Permitir getSettings e auth.me sempre para que o frontend possa decidir o que exibir
+          // e para evitar desconectar usuários (batch requests podem conter vários calls)
+          const isAllowedCall = req.path.includes('getSettings') || req.path.includes('auth.me') || req.query.batch === '1';
+          
+          if (isAllowedCall) {
             return next();
           }
-          return res.status(503).json([{ error: { message: "Loja em manutenção", code: -32000, data: { httpStatus: 503 } } }]);
+          
+          if (req.path.startsWith('/api/trpc/shop')) {
+            return res.status(503).json([{ error: { message: "Loja em manutenção", code: -32000, data: { httpStatus: 503 } } }]);
+          }
         }
         
         // Para rotas de API que não sejam as permitidas acima, bloqueamos
