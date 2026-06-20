@@ -739,6 +739,7 @@ export async function runMigrations() {
   const db = await getDb();
   if (!db) return;
   try {
+    // Forçar a criação da tabela e da restrição de unicidade
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS "kit_items" (
         "id" serial PRIMARY KEY NOT NULL,
@@ -746,12 +747,19 @@ export async function runMigrations() {
         "name" varchar(256) NOT NULL,
         "price" numeric(10, 2) NOT NULL DEFAULT '0',
         "maxPerSlot" integer NOT NULL DEFAULT 64,
-        "imageUrl" text,
         "active" boolean NOT NULL DEFAULT true,
         "createdAt" timestamp NOT NULL DEFAULT now(),
-        "updatedAt" timestamp NOT NULL DEFAULT now(),
-        CONSTRAINT "kit_items_minecraftId_unique" UNIQUE("minecraftId")
+        "updatedAt" timestamp NOT NULL DEFAULT now()
       )
+    `);
+    
+    // Garantir que a restrição UNIQUE existe (essencial para o ON CONFLICT)
+    await db.execute(sql`
+      DO $$ BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'kit_items_minecraftId_unique') THEN
+          ALTER TABLE "kit_items" ADD CONSTRAINT "kit_items_minecraftId_unique" UNIQUE ("minecraftId");
+        END IF;
+      END $$
     `);
     // Add imageUrl column if table already exists without it
     await db.execute(sql`
