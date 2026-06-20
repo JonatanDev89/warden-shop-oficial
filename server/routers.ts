@@ -128,6 +128,13 @@ const shopRouter = router({
     .input(z.object({
       minecraftNickname: z.string().min(1),
       email: z.string().email(),
+      couponCode: z.string().optional(),
+      // Itens normais
+      items: z.array(z.object({
+        productId: z.number(),
+        quantity: z.number(),
+      })).optional(),
+      // Itens do kit personalizado
       slots: z.array(z.object({
         slot: z.number(),
         minecraftId: z.string(),
@@ -135,32 +142,94 @@ const shopRouter = router({
         quantity: z.number().min(1),
         unitPrice: z.string(),
         configLabel: z.string().optional(),
-      })),
+      })).optional(),
     }))
     .mutation(async ({ input }) => {
-      if (input.slots.length === 0) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Adicione pelo menos um item ao kit." });
+      const hasNormalItems = input.items && input.items.length > 0;
+      const hasKitSlots = input.slots && input.slots.length > 0;
+
+      if (!hasNormalItems && !hasKitSlots) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "O carrinho está vazio." });
       }
-      const subtotal = input.slots.reduce((sum, s) => sum + parseFloat(s.unitPrice) * s.quantity, 0);
-      const orderNumber = `#KIT${Date.now().toString().slice(-5)}`;
-      const kitSummary = input.slots.map(s => `${s.quantity}x ${s.name}`).join(", ");
+
+      const orderItemsToCreate: Array<{ productId: number; productName: string; quantity: number; unitPrice: string }> = [];
+      let subtotal = 0;
+
+      // 1. Processar itens normais
+      if (hasNormalItems) {
+        for (const item of input.items!) {
+          const product = await getProductById(item.productId);
+          if (product && product.active) {
+            const price = parseFloat(String(product.price));
+            subtotal += price * item.quantity;
+            orderItemsToCreate.push({
+              productId: product.id,
+              productName: product.name,
+              quantity: item.quantity,
+              unitPrice: price.toFixed(2),
+            });
+          }
+        }
+      }
+
+      // 2. Processar slots do kit
+      let kitSummary = "";
+      if (hasKitSlots) {
+        kitSummary = input.slots!.map(s => `${s.quantity}x ${s.name}`).join(", ");
+        for (const s of input.slots!) {
+          const price = parseFloat(s.unitPrice);
+          subtotal += price * s.quantity;
+          orderItemsToCreate.push({
+            productId: 0, // 0 indica item de kit personalizado
+            productName: `[SLOT ${s.slot + 1}] ${s.quantity}x ${s.name} [${s.minecraftId}]${s.configLabel ? ` {${s.configLabel}}` : ""}`,
+            quantity: s.quantity,
+            unitPrice: s.unitPrice,
+          });
+        }
+      }
+
+      // 3. Aplicar cupom
+      let discount = 0;
+      if (input.couponCode) {
+        const coupon = await getCouponByCode(input.couponCode);
+        if (coupon) {
+          if (coupon.discountType === "percent") {
+            discount = subtotal * (parseFloat(String(coupon.discountValue)) / 100);
+          } else {
+            discount = parseFloat(String(coupon.discountValue));
+          }
+          discount = Math.min(discount, subtotal);
+          await incrementCouponUsage(coupon.code);
+        }
+      }
+
+      const total = Math.max(0, subtotal - discount);
+      // Se tiver kit, usa prefixo #KIT para o addon identificar a entrega via shulker
+      const orderNumber = `${hasKitSlots ? "#KIT" : "#"}${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 5).toUpperCase()}`;
+
       const order = await createOrder(
         {
           orderNumber,
           minecraftNickname: input.minecraftNickname,
           email: input.email,
+          couponCode: input.couponCode,
           subtotal: subtotal.toFixed(2),
-          discount: "0.00",
-          total: subtotal.toFixed(2),
-          notes: `KIT PERSONALIZADO: ${kitSummary}`,
-        } as Parameters<typeof createOrder>[0],
-        input.slots.map((s) => ({
-          productId: 0,
-          productName: `[SLOT ${s.slot + 1}] ${s.quantity}x ${s.name} [${s.minecraftId}]${s.configLabel ? ` {${s.configLabel}}` : ""}`,
-          quantity: s.quantity,
-          unitPrice: s.unitPrice,
-        }))
+          discount: discount.toFixed(2),
+          total: total.toFixed(2),
+          notes: hasKitSlots ? `KIT PERSONALIZADO: ${kitSummary}` : undefined,
+        },
+        orderItemsToCreate
       );
+
+      // Notificação Discord
+      const orderWithItems = await getOrderWithItemsByNumber(orderNumber);
+      if (orderWithItems) {
+        await notifyPendingOrder({
+          ...orderWithItems,
+          total: parseFloat(String(orderWithItems.total)),
+        });
+      }
+
       return order;
     }),
 

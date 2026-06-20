@@ -201,26 +201,16 @@ export default function CheckoutPage() {
 
     let orderNumber: string | undefined;
 
-    if (kitItems.length > 0) {
-      // Por enquanto o backend suporta apenas um kit por pedido #KIT
-      // Se houver múltiplos kits ou mistura, o ideal seria o backend suportar itens normais + kits
-      // Mas para manter a compatibilidade com o sistema de resgate do addon:
-      const kit = kitItems[0];
-      const kitOrder = await createKitOrder.mutateAsync({
-        minecraftNickname: nickname.trim(),
-        email: email.trim(),
-        slots: kit.kitSlots!,
-      });
-      orderNumber = kitOrder?.orderNumber;
-    } else {
-      // Pedido normal com produtos do catálogo
-      const order = await createOrder.mutateAsync({
-        minecraftNickname: nickname.trim(), email: email.trim(),
-        couponCode: appliedCoupon?.code,
-        items: normalItems.map(i => ({ productId: i.productId, quantity: i.quantity })),
-      });
-      orderNumber = order?.orderNumber;
-    }
+    // Agora usamos createKitOrder como uma rota unificada para Kits + Itens Normais
+    const kitOrder = await createKitOrder.mutateAsync({
+      minecraftNickname: nickname.trim(),
+      email: email.trim(),
+      couponCode: appliedCoupon?.code,
+      items: normalItems.map(i => ({ productId: i.productId, quantity: i.quantity })),
+      // Se houver kits, pegamos o primeiro (o backend agora suporta a mistura)
+      slots: kitItems.length > 0 ? kitItems[0].kitSlots : undefined,
+    });
+    orderNumber = kitOrder?.orderNumber;
 
     if (!orderNumber) { setStep("form"); return; }
     const pix = await createPix.mutateAsync({ orderNumber, payerEmail: email.trim(), payerName: nickname.trim() });
