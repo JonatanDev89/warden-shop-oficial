@@ -36,19 +36,22 @@ import AdminKitItems from "./pages/admin/AdminKitItems";
 import KitBuilderPage from "./pages/KitBuilderPage";
 
 function Router() {
+  const { data: user } = trpc.auth.me.useQuery();
   const { data: settings } = trpc.shop.getSettings.useQuery();
+  
   const isMaintenance = settings?.maintenanceMode === "true";
+  const isAdmin = user?.role === "admin";
 
   return (
     <Switch>
       {/* Maintenance route (highest priority for non-admin) */}
-      {isMaintenance && (
+      {isMaintenance && !isAdmin && (
         <Route path="/:rest*">
           {(params) => {
             const path = params["rest*"] || "";
-            // Permitir acesso ao admin e login mesmo em manutenção
-            if (path.startsWith("admin") || path.startsWith("login")) {
-              return null; // Deixa o Switch continuar procurando
+            // Permitir acesso ao login mesmo em manutenção para que o admin possa entrar
+            if (path.startsWith("login")) {
+              return null; 
             }
             return <MaintenancePage />;
           }}

@@ -59,13 +59,24 @@ async function startServer() {
       const isMaintenance = settings.maintenanceMode === "true";
 
       if (isMaintenance) {
-        // Se for uma requisição tRPC da loja, retorna erro
+        // Verificar se o usuário é admin antes de bloquear
+        const { sdk } = await import('./sdk');
+        const user = await sdk.authenticateRequest(req).catch(() => null);
+        
+        if (user?.role === 'admin') {
+          return next();
+        }
+
+        // Se for uma requisição tRPC da loja, retorna erro amigável
         if (req.path.startsWith('/api/trpc/shop')) {
+          // Permitir getSettings para que o frontend saiba que está em manutenção
+          if (req.path.includes('getSettings')) {
+            return next();
+          }
           return res.status(503).json([{ error: { message: "Loja em manutenção", code: -32000, data: { httpStatus: 503 } } }]);
         }
         
-        // Para outras rotas da loja (HTML), o frontend lidará com a exibição da tela de manutenção
-        // Mas se for uma rota de API que não as permitidas acima, bloqueamos
+        // Para rotas de API que não sejam as permitidas acima, bloqueamos
         if (req.path.startsWith('/api/')) {
           return res.status(503).json({ error: "Manutenção" });
         }
