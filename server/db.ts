@@ -14,7 +14,9 @@ import {
   storeCustomization,
   users,
   kitItems,
-} from "../drizzle/schema";import { ENV } from "./_core/env";
+} from "../drizzle/schema";
+import { sql, eq, and, or, like, desc, asc } from "drizzle-orm";
+import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 let _pool: Pool | null = null;
@@ -768,7 +770,13 @@ export async function runMigrations() {
       ALTER TABLE "kit_items" ADD COLUMN IF NOT EXISTS "imageUrl" text
     `);
     await db.execute(sql`
-      ALTER TABLE "kit_items" ADD COLUMN IF NOT EXISTS "minPerSlot" integer NOT NULL DEFAULT 1
+      ALTER TABLE "kit_items" ADD COLUMN IF NOT EXISTS "minPerSlot" integer DEFAULT 1
+    `);
+    await db.execute(sql`
+      UPDATE "kit_items" SET "minPerSlot" = 1 WHERE "minPerSlot" IS NULL
+    `);
+    await db.execute(sql`
+      ALTER TABLE "kit_items" ALTER COLUMN "minPerSlot" SET NOT NULL
     `);
     await db.execute(sql`
       ALTER TABLE "kit_items" ADD COLUMN IF NOT EXISTS "pricePerUnit" boolean NOT NULL DEFAULT false
