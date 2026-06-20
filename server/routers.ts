@@ -674,8 +674,12 @@ const adminRouter = router({
       // Converter undefined e strings vazias para null
       const data = {
         ...input,
-        imageUrl: input.imageUrl && input.imageUrl.trim() !== '' ? input.imageUrl : null,
-        itemConfig: input.itemConfig && input.itemConfig.trim() !== '' ? input.itemConfig : null,
+        minPerSlot: input.minPerSlot ?? 1,
+        maxPerSlot: input.maxPerSlot ?? 64,
+        pricePerUnit: !!input.pricePerUnit,
+        active: input.active ?? true,
+        imageUrl: (input.imageUrl && String(input.imageUrl).trim() !== '') ? String(input.imageUrl).trim() : null,
+        itemConfig: (input.itemConfig && String(input.itemConfig).trim() !== '') ? String(input.itemConfig).trim() : null,
       };
       
       console.log('[upsertKitItem] Data processado:', JSON.stringify(data));

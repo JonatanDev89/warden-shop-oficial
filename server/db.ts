@@ -640,10 +640,10 @@ export async function upsertKitItem(data: {
     minecraftId: data.minecraftId,
     name: data.name,
     price: data.price,
-    minPerSlot: data.minPerSlot ?? 1, 
-    maxPerSlot: data.maxPerSlot ?? 64, 
-    pricePerUnit: data.pricePerUnit ?? false, 
-    active: data.active ?? true 
+    minPerSlot: Number(data.minPerSlot ?? 1), 
+    maxPerSlot: Number(data.maxPerSlot ?? 64), 
+    pricePerUnit: Boolean(data.pricePerUnit ?? false), 
+    active: Boolean(data.active ?? true) 
   };
   
   // Adicionar imageUrl e itemConfig apenas se tiverem valor
@@ -660,10 +660,10 @@ export async function upsertKitItem(data: {
   const updateData: any = {
     name: data.name,
     price: data.price,
-    minPerSlot: data.minPerSlot ?? 1,
-    maxPerSlot: data.maxPerSlot ?? 64,
-    pricePerUnit: data.pricePerUnit ?? false,
-    active: data.active ?? true,
+    minPerSlot: Number(data.minPerSlot ?? 1),
+    maxPerSlot: Number(data.maxPerSlot ?? 64),
+    pricePerUnit: Boolean(data.pricePerUnit ?? false),
+    active: Boolean(data.active ?? true),
     updatedAt: new Date(),
   };
   
