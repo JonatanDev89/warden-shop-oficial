@@ -42,14 +42,14 @@ async function startServer() {
 
   // ─── Middleware de Manutenção ──────────────────────────────────────────────
   app.use(async (req, res, next) => {
-    // Permitir rotas de admin, login, webhooks e addon sempre
+    // Permitir rotas críticas e ativos sempre
     const isPublicAsset = req.path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|otf)$/);
-    const isAdminRoute = req.path.startsWith('/admin') || req.path.startsWith('/login') || req.path.startsWith('/api/trpc/admin') || req.path.startsWith('/api/trpc/auth');
-    const isWebhookRoute = req.path.startsWith('/api/mp/webhook');
-    const isAddonRoute = req.path.startsWith('/api/addon');
-    const isStaticFile = req.path === '/' || req.path.startsWith('/assets') || req.path.startsWith('/@vite');
-
-    if (isPublicAsset || isAdminRoute || isWebhookRoute || isAddonRoute) {
+    const isAdminRoute = req.path.startsWith('/admin') || req.path.startsWith('/login');
+    const isAuthApi = req.path.startsWith('/api/trpc/auth') || req.path.startsWith('/api/trpc/admin');
+    const isWebhookOrAddon = req.path.startsWith('/api/mp/webhook') || req.path.startsWith('/api/addon');
+    
+    // SEMPRE permitir essas rotas para evitar quebrar o login ou admin
+    if (isPublicAsset || isAdminRoute || isAuthApi || isWebhookOrAddon) {
       return next();
     }
 
@@ -59,33 +59,18 @@ async function startServer() {
       const isMaintenance = settings.maintenanceMode === "true";
 
       if (isMaintenance) {
-        // Verificar se o usuário é admin antes de bloquear
-        const { sdk } = await import('./sdk');
-        const user = await sdk.authenticateRequest(req).catch(() => null);
-        
-        if (user?.role === 'admin') {
-          return next();
-        }
-
-        // Se for uma requisição tRPC
+        // Permitir chamadas tRPC de configuração e autenticação básica
         if (req.path.startsWith('/api/trpc')) {
-          // Permitir getSettings e auth.me sempre para que o frontend possa decidir o que exibir
-          // e para evitar desconectar usuários (batch requests podem conter vários calls)
-          const isAllowedCall = req.path.includes('getSettings') || req.path.includes('auth.me') || req.query.batch === '1';
+          const isEssential = req.path.includes('getSettings') || req.path.includes('auth.me') || req.query.batch === '1';
+          if (isEssential) return next();
           
-          if (isAllowedCall) {
-            return next();
-          }
-          
+          // Bloquear apenas chamadas da loja
           if (req.path.startsWith('/api/trpc/shop')) {
-            return res.status(503).json([{ error: { message: "Loja em manutenção", code: -32000, data: { httpStatus: 503 } } }]);
+            return res.status(503).json([{ error: { message: "Manutenção", code: -32000 } }]);
           }
         }
         
-        // Para rotas de API que não sejam as permitidas acima, bloqueamos
-        if (req.path.startsWith('/api/')) {
-          return res.status(503).json({ error: "Manutenção" });
-        }
+        // O roteamento do frontend cuidará de exibir a MaintenancePage para rotas HTML (/)
       }
     } catch (err) {
       console.error('[Maintenance Middleware] Error:', err);
