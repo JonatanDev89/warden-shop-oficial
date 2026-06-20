@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import {
   Loader2, Palette, Save, Store, Megaphone, Sparkles, Target,
   Paintbrush, Type, Wand2, Eye, Image, Link2, Trophy, MessageSquare,
-  ToggleLeft,
+  ToggleLeft, Hammer,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
@@ -312,6 +312,8 @@ export default function AdminCustomization() {
   const [featureKitBuilder, setFeatureKitBuilder]     = useState(true);
   const [featureFaq, setFeatureFaq]                   = useState(true);
   const [featureHighlights, setFeatureHighlights]     = useState(true);
+  const [maintenanceMode, setMaintenanceMode]         = useState(false);
+  const [maintenanceMessage, setMaintenanceMessage]   = useState("");
 
   useEffect(() => {
     if (!settings) return;
@@ -346,6 +348,8 @@ export default function AdminCustomization() {
     setFeatureKitBuilder(flag("featureKitBuilder"));
     setFeatureFaq(flag("featureFaq"));
     setFeatureHighlights(flag("featureHighlights"));
+    setMaintenanceMode(settings.maintenanceMode === "true");
+    setMaintenanceMessage(settings.maintenanceMessage ?? "Estamos realizando melhorias para oferecer uma experiência ainda melhor para você. Voltaremos em breve!");
   }, [settings]);
 
   const saveSettings = trpc.admin.saveSettings.useMutation({
@@ -374,6 +378,8 @@ export default function AdminCustomization() {
       featureKitBuilder: String(featureKitBuilder),
       featureFaq: String(featureFaq),
       featureHighlights: String(featureHighlights),
+      maintenanceMode: String(maintenanceMode),
+      maintenanceMessage,
     });
   };
 
@@ -852,6 +858,34 @@ export default function AdminCustomization() {
       {/* ── Tab: Avançado ── */}
       {activeTab === "avancado" && (
         <div className="max-w-2xl space-y-6">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Hammer className="h-4 w-4 text-primary" /> Modo Manutenção
+              </CardTitle>
+              <CardDescription>
+                Ative para bloquear o acesso de clientes à loja e exibir uma página de manutenção.
+                O painel administrativo e a API do Addon continuarão funcionando.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FeatureToggle
+                label="Ativar Modo Manutenção"
+                description="Quando ativado, os clientes verão apenas a página de manutenção."
+                enabled={maintenanceMode}
+                onChange={setMaintenanceMode}
+              />
+              <FieldGroup label="Mensagem de Manutenção" hint="Texto exibido para os clientes enquanto a loja estiver em manutenção.">
+                <Textarea 
+                  value={maintenanceMessage} 
+                  onChange={e=>setMaintenanceMessage(e.target.value)} 
+                  placeholder="Estamos em manutenção..."
+                  className="min-h-[100px]"
+                />
+              </FieldGroup>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">

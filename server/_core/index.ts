@@ -40,6 +40,43 @@ async function startServer() {
   registerOAuthRoutes(app);
   await runMigrations();
 
+  // ─── Middleware de Manutenção ──────────────────────────────────────────────
+  app.use(async (req, res, next) => {
+    // Permitir rotas de admin, login, webhooks e addon sempre
+    const isPublicAsset = req.path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|otf)$/);
+    const isAdminRoute = req.path.startsWith('/admin') || req.path.startsWith('/login') || req.path.startsWith('/api/trpc/admin') || req.path.startsWith('/api/trpc/auth');
+    const isWebhookRoute = req.path.startsWith('/api/mp/webhook');
+    const isAddonRoute = req.path.startsWith('/api/addon');
+    const isStaticFile = req.path === '/' || req.path.startsWith('/assets') || req.path.startsWith('/@vite');
+
+    if (isPublicAsset || isAdminRoute || isWebhookRoute || isAddonRoute) {
+      return next();
+    }
+
+    try {
+      const { getSiteSettings } = await import('../db');
+      const settings = await getSiteSettings();
+      const isMaintenance = settings.maintenanceMode === "true";
+
+      if (isMaintenance) {
+        // Se for uma requisição tRPC da loja, retorna erro
+        if (req.path.startsWith('/api/trpc/shop')) {
+          return res.status(503).json([{ error: { message: "Loja em manutenção", code: -32000, data: { httpStatus: 503 } } }]);
+        }
+        
+        // Para outras rotas da loja (HTML), o frontend lidará com a exibição da tela de manutenção
+        // Mas se for uma rota de API que não as permitidas acima, bloqueamos
+        if (req.path.startsWith('/api/')) {
+          return res.status(503).json({ error: "Manutenção" });
+        }
+      }
+    } catch (err) {
+      console.error('[Maintenance Middleware] Error:', err);
+    }
+
+    next();
+  });
+
   // ─── Redirect intermediário para evitar App Links do Android ──────────────
   // O Android intercepta URLs do mercadopago.com e abre o app.
   // Esta rota serve uma página HTML no nosso domínio com um link simples —
