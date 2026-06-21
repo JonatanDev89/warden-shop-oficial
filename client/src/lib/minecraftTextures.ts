@@ -10,7 +10,9 @@ const BEDROCK_TO_JAVA_MAP: Record<string, string> = {
   "mace": "mace",
   "trident": "trident",
   "enchanted_golden_apple": "enchanted_golden_apple",
+  "apple_enchanted": "enchanted_golden_apple", // Nome alternativo no Bedrock
   "golden_apple": "golden_apple",
+  "apple_golden": "golden_apple", // Nome alternativo no Bedrock
   "netherite_helmet": "netherite_helmet",
   "netherite_chestplate": "netherite_chestplate",
   "netherite_leggings": "netherite_leggings",
