@@ -64,19 +64,9 @@ export function getItemTexture(minecraftId: string, customImageUrl?: string | nu
   if (customImageUrl) return customImageUrl;
 
   const id = minecraftId.toLowerCase().trim();
-  let normalizedId = BEDROCK_TO_JAVA_MAP[id] || id;
+  const normalizedId = BEDROCK_TO_JAVA_MAP[id] || id;
 
-  // Caso especial: IDs que o S7A não tem mas outras fontes tem
-  if (normalizedId === "spawn_egg") {
-    return "https://raw.githubusercontent.com/PrismLauncher/MC-Assets/master/Assets/minecraft/textures/item/spawn_egg.png";
-  }
-
-  // Fallback para IDs de Ovos que podem estar faltando no S7A
-  if (normalizedId.endsWith("_spawn_egg")) {
-    return `https://raw.githubusercontent.com/PrismLauncher/MC-Assets/develop/Assets/minecraft/textures/item/${normalizedId}.png`;
-  }
-
-  // Fonte 1: Minecraft Inventory API (S7A) - Muito boa para itens 2D
+  // Fonte principal: Minecraft Inventory API (S7A) — suporta spawn eggs e demais itens
   return `https://minecraft-inventory.s7a.dev/items/${normalizedId}.png`;
 }
 
@@ -88,8 +78,8 @@ export function getItemTextureFallback(minecraftId: string): string {
   const id = minecraftId.toLowerCase().trim();
   const normalizedId = BEDROCK_TO_JAVA_MAP[id] || id;
 
-  // Tenta uma fonte alternativa específica para itens do Minecraft se o GitHub falhar
-  return `https://minecraft-items.com/images/items/${normalizedId}.png`;
+  // Fallback: repositório de assets do Minecraft no GitHub (branch master)
+  return `https://raw.githubusercontent.com/PrismLauncher/MC-Assets/master/Assets/minecraft/textures/item/${normalizedId}.png`;
 }
 
 /**
