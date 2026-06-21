@@ -39,6 +39,21 @@ const BEDROCK_TO_JAVA_MAP: Record<string, string> = {
   "lingering_potion": "lingering_potion",
   "iron_golem_spawn_egg": "iron_golem_spawn_egg",
   "spawn_egg_iron_golem": "iron_golem_spawn_egg",
+  "zombie_spawn_egg": "zombie_spawn_egg",
+  "skeleton_spawn_egg": "skeleton_spawn_egg",
+  "evoker_spawn_egg": "evoker_spawn_egg",
+  "blaze_spawn_egg": "blaze_spawn_egg",
+  "wither_skeleton_spawn_egg": "wither_skeleton_spawn_egg",
+  "cow_spawn_egg": "cow_spawn_egg",
+  "sheep_spawn_egg": "sheep_spawn_egg",
+  "pig_spawn_egg": "pig_spawn_egg",
+  "slime_spawn_egg": "slime_spawn_egg",
+  "villager_spawn_egg": "villager_spawn_egg",
+  "shulker_spawn_egg": "shulker_spawn_egg",
+  "piglin_brute_spawn_egg": "piglin_brute_spawn_egg",
+  "pillager_spawn_egg": "pillager_spawn_egg",
+  "enderman_spawn_egg": "enderman_spawn_egg",
+  "creeper_spawn_egg": "creeper_spawn_egg",
 };
 
 /**
@@ -73,8 +88,8 @@ export function getItemTextureFallback(minecraftId: string): string {
   const id = minecraftId.toLowerCase().trim();
   const normalizedId = BEDROCK_TO_JAVA_MAP[id] || id;
 
-  // Fonte 2: MC-Assets (GitHub) - Backup confiável
-  return `https://raw.githubusercontent.com/PrismLauncher/MC-Assets/develop/Assets/minecraft/textures/item/${normalizedId}.png`;
+  // Tenta uma fonte alternativa específica para itens do Minecraft se o GitHub falhar
+  return `https://minecraft-items.com/images/items/${normalizedId}.png`;
 }
 
 /**
