@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import ShopLayout from "@/components/ShopLayout";
 import { ChevronRight, Package, ShoppingCart } from "lucide-react";
 import { parseProductImages } from "@/lib/productImages";
+import { getItemTexture, getItemTextureFallback, getGenericFallback } from "@/lib/minecraftTextures";
 
 function PixIcon() {
   return (
@@ -75,7 +76,23 @@ export default function CategoryPage() {
                       {(() => {
                         const { main } = parseProductImages(product.imageUrl);
                         return main ? (
-                          <img src={main} alt={product.name} className="h-full w-full object-cover" />
+                          <img 
+                            src={main} 
+                            alt={product.name} 
+                            className="h-full w-full object-cover" 
+                            onError={(e) => {
+                              const img = e.target as HTMLImageElement;
+                              // Tenta tratar o nome do produto como ID do Minecraft se a imagem falhar
+                              const id = product.name.toLowerCase().replace(/ /g, "_");
+                              if (img.src !== getItemTexture(id)) {
+                                img.src = getItemTexture(id);
+                              } else if (img.src !== getItemTextureFallback(id)) {
+                                img.src = getItemTextureFallback(id);
+                              } else {
+                                img.src = getGenericFallback();
+                              }
+                            }}
+                          />
                         ) : (
                           <Package className="h-10 w-10 text-muted-foreground" />
                         );

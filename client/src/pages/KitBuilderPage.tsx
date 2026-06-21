@@ -16,21 +16,7 @@ import {
 } from "@/components/ui/select";
 import { parseItemConfig, ALL_ENCHANTS, type ToolEnchantOption } from "@/lib/kitEnchants";
 import { useCart } from "@/contexts/CartContext";
-
-function itemTexture(minecraftId: string, imageUrl?: string | null) {
-  if (imageUrl) return imageUrl;
-  
-  // Normalização de IDs para busca de textura (Bedrock -> Java naming style)
-  let id = minecraftId.toLowerCase();
-  if (id === "elytra") id = "elytra";
-  if (id === "totem_of_undying" || id === "totem") id = "totem_of_undying";
-  if (id.includes("spawn_egg")) {
-    // Se for um spawn egg genérico sem o mob no nome, usa o ícone padrão
-    if (id === "spawn_egg") id = "spawn_egg";
-  }
-
-  return `https://minecraft-inventory.s7a.dev/items/${id}.png`;
-}
+import { getItemTexture, getItemTextureFallback, getGenericFallback } from "@/lib/minecraftTextures";
 
 const INVENTORY_ROWS = 4;
 const INVENTORY_COLS = 9;
@@ -336,12 +322,18 @@ export default function KitBuilderPage() {
                     {slot ? (
                       <>
                         <img
-                          src={itemTexture(slot.minecraftId, slot.imageUrl)}
+                          src={getItemTexture(slot.minecraftId, slot.imageUrl)}
                           alt={slot.name}
                           className="w-full h-full object-contain p-0.5"
                           style={{ imageRendering: "pixelated" }}
                           onError={(e) => {
-                            (e.target as HTMLImageElement).src = "";
+                            const img = e.target as HTMLImageElement;
+                            const id = slot?.minecraftId || "";
+                            if (img.src !== getItemTextureFallback(id)) {
+                              img.src = getItemTextureFallback(id);
+                            } else {
+                              img.src = getGenericFallback();
+                            }
                           }}
                         />
                         <span className="absolute bottom-0 right-0.5 text-white text-[10px] font-bold leading-none drop-shadow-[0_1px_1px_rgba(0,0,0,1)]">
@@ -663,7 +655,7 @@ export default function KitBuilderPage() {
                               }`}
                             >
                               <img
-                                src={itemTexture(opt.id)}
+                                src={getItemTexture(opt.id)}
                                 alt=""
                                 className="h-8 w-8 object-contain shrink-0"
                                 style={{ imageRendering: "pixelated" }}
@@ -744,12 +736,18 @@ export default function KitBuilderPage() {
                               className="flex items-center gap-2 p-2 rounded-lg bg-muted hover:bg-primary/10 hover:border-primary border border-border transition-all text-left"
                             >
                               <img
-                                src={itemTexture(item.minecraftId, item.imageUrl)}
+                                src={getItemTexture(item.minecraftId, item.imageUrl)}
                                 alt={item.name}
                                 className="h-8 w-8 object-contain shrink-0"
                                 style={{ imageRendering: "pixelated" }}
                                 onError={(e) => {
-                                  (e.target as HTMLImageElement).style.display = "none";
+                                  const img = e.target as HTMLImageElement;
+                                  const id = item?.minecraftId || "";
+                                  if (img.src !== getItemTextureFallback(id)) {
+                                    img.src = getItemTextureFallback(id);
+                                  } else {
+                                    img.src = getGenericFallback();
+                                  }
                                 }}
                               />
                               <div className="min-w-0">
@@ -815,7 +813,7 @@ export default function KitBuilderPage() {
                       s && (
                         <li key={i} className="flex items-center gap-2 text-xs">
                           <img
-                            src={itemTexture(s.minecraftId, s.imageUrl)}
+                            src={getItemTexture(s.minecraftId, s.imageUrl)}
                             alt={s.name}
                             className="h-6 w-6 object-contain shrink-0"
                             style={{ imageRendering: "pixelated" }}
