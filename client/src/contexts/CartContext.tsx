@@ -6,6 +6,7 @@ export interface KitSlot {
   name: string;
   quantity: number;
   unitPrice: string;
+  pricePerUnit?: boolean;
   configLabel?: string;
 }
 

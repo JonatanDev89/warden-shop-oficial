@@ -141,6 +141,7 @@ const shopRouter = router({
         name: z.string(),
         quantity: z.number().min(1),
         unitPrice: z.string(),
+        pricePerUnit: z.boolean().optional(),
         configLabel: z.string().optional(),
       })).optional(),
     }))
@@ -178,7 +179,10 @@ const shopRouter = router({
         kitSummary = input.slots!.map(s => `${s.quantity}x ${s.name}`).join(", ");
         for (const s of input.slots!) {
           const price = parseFloat(s.unitPrice);
-          subtotal += price * s.quantity;
+          // BUG FIX: Only multiply by quantity if pricePerUnit is true
+          const itemTotal = s.pricePerUnit ? price * s.quantity : price;
+          subtotal += itemTotal;
+          
           orderItemsToCreate.push({
             productId: 0, // 0 indica item de kit personalizado
             productName: `[SLOT ${s.slot + 1}] ${s.quantity}x ${s.name} [${s.minecraftId}]${s.configLabel ? ` {${s.configLabel}}` : ""}`,

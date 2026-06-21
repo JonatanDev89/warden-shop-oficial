@@ -217,8 +217,8 @@ export default function KitBuilderPage() {
   function addKitToCart() {
     if (filledSlots === 0) { toast.error("Adicione pelo menos um item ao kit."); return; }
     const filled = slots
-      .map((s, i) => s ? { slot: i, minecraftId: s.minecraftId, name: s.name, quantity: s.quantity, unitPrice: s.unitPrice, configLabel: s.configLabel } : null)
-      .filter(Boolean) as { slot: number; minecraftId: string; name: string; quantity: number; unitPrice: string; configLabel?: string }[];
+      .map((s, i) => s ? { slot: i, minecraftId: s.minecraftId, name: s.name, quantity: s.quantity, unitPrice: s.unitPrice, pricePerUnit: s.pricePerUnit, configLabel: s.configLabel } : null)
+      .filter(Boolean) as { slot: number; minecraftId: string; name: string; quantity: number; unitPrice: string; pricePerUnit: boolean; configLabel?: string }[];
     // Remove itens normais do carrinho antes de adicionar o kit
     addItem({
       productId: -1,
@@ -233,8 +233,8 @@ export default function KitBuilderPage() {
   function buyKitNow() {
     if (filledSlots === 0) { toast.error("Adicione pelo menos um item ao kit."); return; }
     const filled = slots
-      .map((s, i) => s ? { slot: i, minecraftId: s.minecraftId, name: s.name, quantity: s.quantity, unitPrice: s.unitPrice, configLabel: s.configLabel } : null)
-      .filter(Boolean) as { slot: number; minecraftId: string; name: string; quantity: number; unitPrice: string; configLabel?: string }[];
+      .map((s, i) => s ? { slot: i, minecraftId: s.minecraftId, name: s.name, quantity: s.quantity, unitPrice: s.unitPrice, pricePerUnit: s.pricePerUnit, configLabel: s.configLabel } : null)
+      .filter(Boolean) as { slot: number; minecraftId: string; name: string; quantity: number; unitPrice: string; pricePerUnit: boolean; configLabel?: string }[];
     // Limpa o carrinho e adiciona só o kit
     clearCart();
     addItem({
