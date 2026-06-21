@@ -76,8 +76,14 @@ export default function CategoryPage() {
                       {(() => {
                         // Se não houver imagem definida, tenta usar o nome do produto como ID do Minecraft
                         const { main } = parseProductImages(product.imageUrl);
-                        const id = product.name.toLowerCase().replace(/ /g, "_");
-                        const displayUrl = main || getItemTexture(id);
+                        // Limpa o nome do produto para tentar achar um ID de textura (remove cores § e símbolos)
+                        const cleanId = product.name.toLowerCase()
+                          .replace(/§[0-9a-fk-or]/g, "") // Remove códigos de cores do Minecraft
+                          .replace(/[^a-z0-9]/g, "_")   // Mantém apenas letras e números, troca o resto por _
+                          .replace(/_+/g, "_")          // Remove underscores duplicados
+                          .replace(/^_|_$/g, "");       // Remove underscores no início ou fim
+                        
+                        const displayUrl = main || getItemTexture(cleanId);
 
                         return (
                           <img 
@@ -86,10 +92,10 @@ export default function CategoryPage() {
                             className="h-full w-full object-contain p-4" 
                             onError={(e) => {
                               const img = e.target as HTMLImageElement;
-                              if (img.src !== getItemTexture(id)) {
-                                img.src = getItemTexture(id);
-                              } else if (img.src !== getItemTextureFallback(id)) {
-                                img.src = getItemTextureFallback(id);
+                              if (img.src !== getItemTexture(cleanId)) {
+                                img.src = getItemTexture(cleanId);
+                              } else if (img.src !== getItemTextureFallback(cleanId)) {
+                                img.src = getItemTextureFallback(cleanId);
                               } else {
                                 // Se tudo falhar, mostra o ícone de pacote
                                 img.style.display = "none";

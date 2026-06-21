@@ -6,6 +6,7 @@ import ShopLayout from "@/components/ShopLayout";
 import { ChevronRight, Package, Shield, Truck, Zap, Check, Infinity, Plus, ShoppingCart } from "lucide-react";
 import { useState } from "react";
 import { parseProductImages } from "@/lib/productImages";
+import { getItemTexture, getItemTextureFallback } from "@/lib/minecraftTextures";
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "sonner";
 
@@ -121,15 +122,40 @@ export default function ProductPage() {
           {/* Product main image */}
           <div className="flex flex-col gap-3">
             <div className="aspect-square rounded-xl bg-card border border-border flex items-center justify-center overflow-hidden">
-              {mainImage ? (
-                <img
-                  src={mainImage}
-                  alt={product.name}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <Package className="h-20 w-20 text-muted-foreground" />
-              )}
+              {(() => {
+                const cleanId = product.name.toLowerCase()
+                  .replace(/§[0-9a-fk-or]/g, "")
+                  .replace(/[^a-z0-9]/g, "_")
+                  .replace(/_+/g, "_")
+                  .replace(/^_|_$/g, "");
+                
+                const displayUrl = mainImage || getItemTexture(cleanId);
+
+                return (
+                  <img
+                    src={displayUrl}
+                    alt={product.name}
+                    className="h-full w-full object-contain p-8"
+                    onError={(e) => {
+                      const img = e.target as HTMLImageElement;
+                      if (img.src !== getItemTexture(cleanId)) {
+                        img.src = getItemTexture(cleanId);
+                      } else if (img.src !== getItemTextureFallback(cleanId)) {
+                        img.src = getItemTextureFallback(cleanId);
+                      } else {
+                        img.style.display = "none";
+                        const parent = img.parentElement;
+                        if (parent && !parent.querySelector(".fallback-icon")) {
+                          const icon = document.createElement("div");
+                          icon.className = "fallback-icon flex items-center justify-center h-full w-full";
+                          icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground"><path d="m7.5 4.27 9 5.15"></path><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.3 7 8.7 5 8.7-5"></path><path d="M12 22V12"></path></svg>`;
+                          parent.appendChild(icon);
+                        }
+                      }
+                    }}
+                  />
+                );
+              })()}
             </div>
           </div>
 
