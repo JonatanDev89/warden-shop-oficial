@@ -74,27 +74,35 @@ export default function CategoryPage() {
                   <Link href={`/produto/${product.id}`}>
                     <div className="aspect-square w-full rounded-lg bg-muted flex items-center justify-center mb-4 group-hover:bg-primary/5 transition-colors overflow-hidden cursor-pointer">
                       {(() => {
+                        // Se não houver imagem definida, tenta usar o nome do produto como ID do Minecraft
                         const { main } = parseProductImages(product.imageUrl);
-                        return main ? (
+                        const id = product.name.toLowerCase().replace(/ /g, "_");
+                        const displayUrl = main || getItemTexture(id);
+
+                        return (
                           <img 
-                            src={main} 
+                            src={displayUrl} 
                             alt={product.name} 
-                            className="h-full w-full object-cover" 
+                            className="h-full w-full object-contain p-4" 
                             onError={(e) => {
                               const img = e.target as HTMLImageElement;
-                              // Tenta tratar o nome do produto como ID do Minecraft se a imagem falhar
-                              const id = product.name.toLowerCase().replace(/ /g, "_");
                               if (img.src !== getItemTexture(id)) {
                                 img.src = getItemTexture(id);
                               } else if (img.src !== getItemTextureFallback(id)) {
                                 img.src = getItemTextureFallback(id);
                               } else {
-                                img.src = getGenericFallback();
+                                // Se tudo falhar, mostra o ícone de pacote
+                                img.style.display = "none";
+                                const parent = img.parentElement;
+                                if (parent && !parent.querySelector(".fallback-icon")) {
+                                  const icon = document.createElement("div");
+                                  icon.className = "fallback-icon flex items-center justify-center";
+                                  icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground"><path d="m7.5 4.27 9 5.15"></path><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.3 7 8.7 5 8.7-5"></path><path d="M12 22V12"></path></svg>`;
+                                  parent.appendChild(icon);
+                                }
                               }
                             }}
                           />
-                        ) : (
-                          <Package className="h-10 w-10 text-muted-foreground" />
                         );
                       })()}
                     </div>
