@@ -37,6 +37,8 @@ const BEDROCK_TO_JAVA_MAP: Record<string, string> = {
   "potion": "potion",
   "splash_potion": "splash_potion",
   "lingering_potion": "lingering_potion",
+  "iron_golem_spawn_egg": "iron_golem_spawn_egg",
+  "spawn_egg_iron_golem": "iron_golem_spawn_egg",
 };
 
 /**
@@ -52,6 +54,11 @@ export function getItemTexture(minecraftId: string, customImageUrl?: string | nu
   // Caso especial: IDs que o S7A não tem mas outras fontes tem
   if (normalizedId === "spawn_egg") {
     return "https://raw.githubusercontent.com/PrismLauncher/MC-Assets/master/Assets/minecraft/textures/item/spawn_egg.png";
+  }
+
+  // Fallback para IDs de Ovos que podem estar faltando no S7A
+  if (normalizedId.endsWith("_spawn_egg")) {
+    return `https://raw.githubusercontent.com/PrismLauncher/MC-Assets/master/Assets/minecraft/textures/item/${normalizedId}.png`;
   }
 
   // Fonte 1: Minecraft Inventory API (S7A) - Muito boa para itens 2D
