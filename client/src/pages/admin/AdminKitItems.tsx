@@ -35,16 +35,18 @@ import {
   BookOpen,
   Shield,
   Wrench,
+  Egg,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
   ALL_ENCHANTS,
   type EnchantEntry,
   type ToolEnchantOption,
+  type EggOption,
 } from "@/lib/kitEnchants";
 
 type KitItem = NonNullable<ReturnType<typeof trpc.admin.getKitItems.useQuery>["data"]>[0];
-type ConfigType = "none" | "armor" | "book" | "tool";
+type ConfigType = "none" | "armor" | "book" | "tool" | "egg";
 
 type KitItemForm = {
   minecraftId: string;
@@ -62,6 +64,7 @@ type KitItemForm = {
   armorEnchantsGod: EnchantEntry[];
   bookPricePerLevel: string;
   toolEnchants: ToolEnchantOption[];
+  eggOptions: EggOption[];
 };
 
 const emptyForm: KitItemForm = {
@@ -80,11 +83,22 @@ const emptyForm: KitItemForm = {
   armorEnchantsGod: [],
   bookPricePerLevel: "0",
   toolEnchants: [],
+  eggOptions: [],
 };
 
 function itemTexture(minecraftId: string, imageUrl?: string | null) {
   if (imageUrl) return imageUrl;
-  return `https://minecraft-inventory.s7a.dev/items/${minecraftId}.png`;
+  
+  // Normalização de IDs para busca de textura (Bedrock -> Java naming style)
+  let id = minecraftId.toLowerCase();
+  if (id === "elytra") id = "elytra";
+  if (id === "totem_of_undying" || id === "totem") id = "totem_of_undying";
+  if (id.includes("spawn_egg")) {
+    // Se for um spawn egg genérico sem o mob no nome, usa o ícone padrão
+    if (id === "spawn_egg") id = "spawn_egg";
+  }
+
+  return `https://minecraft-inventory.s7a.dev/items/${id}.png`;
 }
 
 function formatPrice(v: string | number) {
@@ -114,6 +128,12 @@ function buildItemConfig(form: KitItemForm): string | undefined {
       enchants: form.toolEnchants,
     });
   }
+  if (form.configType === "egg") {
+    return JSON.stringify({
+      type: "egg",
+      options: form.eggOptions,
+    });
+  }
   return undefined;
 }
 
@@ -134,6 +154,7 @@ function parseFormFromItem(item: KitItem): KitItemForm {
     armorEnchantsGod: [],
     bookPricePerLevel: "0",
     toolEnchants: [],
+    eggOptions: [],
   };
   if (item.itemConfig) {
     try {
@@ -146,11 +167,13 @@ function parseFormFromItem(item: KitItem): KitItemForm {
         base.armorEnchantsGod = cfg.enchantsGod ?? [];
       } else if (cfg?.type === "book") {
         base.configType = "book";
-        // support old format (enchants array) and new format (pricePerLevel)
         base.bookPricePerLevel = cfg.pricePerLevel ?? "0";
       } else if (cfg?.type === "tool") {
         base.configType = "tool";
         base.toolEnchants = cfg.enchants ?? [];
+      } else if (cfg?.type === "egg") {
+        base.configType = "egg";
+        base.eggOptions = cfg.options ?? [];
       }
     } catch {}
   }
@@ -352,6 +375,78 @@ function ToolEnchantList({
   );
 }
 
+function EggOptionList({
+  options,
+  onChange,
+}: {
+  options: EggOption[];
+  onChange: (v: EggOption[]) => void;
+}) {
+  const [addId, setAddId] = useState("");
+  const [addName, setAddName] = useState("");
+  const [addPrice, setAddPrice] = useState("0");
+
+  const add = () => {
+    if (!addId || !addName) return;
+    onChange([...options, { id: addId, name: addName, price: addPrice }]);
+    setAddId("");
+    setAddName("");
+    setAddPrice("0");
+  };
+
+  const remove = (id: string) => onChange(options.filter((o) => o.id !== id));
+
+  return (
+    <div className="space-y-2">
+      <Label className="text-foreground text-sm">Opções de Ovos</Label>
+      <div className="space-y-1">
+        {options.map((o) => (
+          <div key={o.id} className="flex items-center gap-2 bg-muted/50 rounded px-2 py-1">
+            <div className="h-6 w-6 shrink-0 flex items-center justify-center">
+               <img src={itemTexture(o.id)} alt="" className="h-5 w-5 object-contain" />
+            </div>
+            <span className="flex-1 text-sm text-foreground truncate">{o.name}</span>
+            <span className="text-xs text-primary font-bold">R$ {parseFloat(o.price).toFixed(2)}</span>
+            <button
+              type="button"
+              onClick={() => remove(o.id)}
+              className="text-muted-foreground hover:text-destructive"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 gap-2 border-t border-border pt-2">
+        <Input
+          value={addId}
+          onChange={(e) => setAddId(e.target.value)}
+          placeholder="minecraft_id (ex: creeper_spawn_egg)"
+          className="h-8 text-xs bg-muted border-border"
+        />
+        <div className="flex gap-2">
+          <Input
+            value={addName}
+            onChange={(e) => setAddName(e.target.value)}
+            placeholder="Nome (ex: Ovo de Creeper)"
+            className="h-8 text-xs bg-muted border-border flex-1"
+          />
+          <Input
+            type="number"
+            step="0.01"
+            value={addPrice}
+            onChange={(e) => setAddPrice(e.target.value)}
+            className="h-8 text-xs bg-muted border-border w-20"
+          />
+          <Button type="button" size="sm" variant="outline" onClick={add} className="h-8 px-2">
+            <Plus className="h-3 w-3" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminKitItems() {
   const utils = trpc.useUtils();
   const { data: items, isLoading } = trpc.admin.getKitItems.useQuery();
@@ -453,6 +548,12 @@ export default function AdminKitItems() {
                     configBadge = (
                       <Badge variant="outline" className="text-xs gap-1">
                         <Wrench className="h-3 w-3" /> Ferramenta
+                      </Badge>
+                    );
+                  else if (cfg?.type === "egg")
+                    configBadge = (
+                      <Badge variant="outline" className="text-xs gap-1">
+                        <Egg className="h-3 w-3" /> Ovos
                       </Badge>
                     );
                 } catch {}
@@ -648,6 +749,7 @@ export default function AdminKitItems() {
                   <SelectItem value="armor">Armadura (Full / God)</SelectItem>
                   <SelectItem value="book">Livro de Encantamento</SelectItem>
                   <SelectItem value="tool">Ferramenta / Arma (encantamentos avulsos)</SelectItem>
+                  <SelectItem value="egg">Ovos (Spawn Eggs)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -746,6 +848,21 @@ export default function AdminKitItems() {
                 <ToolEnchantList
                   enchants={form.toolEnchants}
                   onChange={(v) => setF({ toolEnchants: v })}
+                />
+              </div>
+            )}
+
+            {form.configType === "egg" && (
+              <div className="rounded-lg border border-border p-3 space-y-3 bg-muted/30">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Configuracao de Ovos (Spawn Eggs)
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  O comprador escolhe qual tipo de mob quer no slot.
+                </p>
+                <EggOptionList
+                  options={form.eggOptions}
+                  onChange={(v) => setF({ eggOptions: v })}
                 />
               </div>
             )}

@@ -19,7 +19,17 @@ import { useCart } from "@/contexts/CartContext";
 
 function itemTexture(minecraftId: string, imageUrl?: string | null) {
   if (imageUrl) return imageUrl;
-  return `https://minecraft-inventory.s7a.dev/items/${minecraftId}.png`;
+  
+  // Normalização de IDs para busca de textura (Bedrock -> Java naming style)
+  let id = minecraftId.toLowerCase();
+  if (id === "elytra") id = "elytra";
+  if (id === "totem_of_undying" || id === "totem") id = "totem_of_undying";
+  if (id.includes("spawn_egg")) {
+    // Se for um spawn egg genérico sem o mob no nome, usa o ícone padrão
+    if (id === "spawn_egg") id = "spawn_egg";
+  }
+
+  return `https://minecraft-inventory.s7a.dev/items/${id}.png`;
 }
 
 const INVENTORY_ROWS = 4;
@@ -43,7 +53,8 @@ type SlotItem = {
 type PendingConfig =
   | { type: "armor"; item: KitItem }
   | { type: "book"; item: KitItem }
-  | { type: "tool"; item: KitItem; enchants: ToolEnchantOption[] };
+  | { type: "tool"; item: KitItem; enchants: ToolEnchantOption[] }
+  | { type: "egg"; item: KitItem };
 
 type KitItem = NonNullable<ReturnType<typeof trpc.shop.getKitItems.useQuery>["data"]>[0];
 
@@ -67,6 +78,9 @@ export default function KitBuilderPage() {
   const [toolSelectedEnchants, setToolSelectedEnchants] = useState<{ id: string; level: number }[]>([]);
   const [toolAddId, setToolAddId] = useState("");
   const [toolAddLevel, setToolAddLevel] = useState("1");
+
+  // egg selection
+  const [selectedEggId, setSelectedEggId] = useState("");
 
   const filteredItems = kitItems.filter(
     (i) =>
@@ -121,6 +135,12 @@ export default function KitBuilderPage() {
       setToolAddId(cfg.enchants.length > 0 ? cfg.enchants[0].id : "");
       setToolAddLevel("1");
       setPendingConfig({ type: "tool", item, enchants: cfg.enchants });
+      return;
+    }
+
+    if (cfg?.type === "egg") {
+      setSelectedEggId(cfg.options.length > 0 ? cfg.options[0].id : "");
+      setPendingConfig({ type: "egg", item });
       return;
     }
 
@@ -208,6 +228,34 @@ export default function KitBuilderPage() {
             return `${meta?.name ?? sel.id} ${sel.level}`;
           }).join(", ")
         : "Sem encantamentos",
+    };
+    setSlots(next);
+    setSelectedSlot(null);
+    setPendingConfig(null);
+  }
+
+  function confirmEgg() {
+    if (!pendingConfig || pendingConfig.type !== "egg") return;
+    const cfg = parseItemConfig(pendingConfig.item.itemConfig);
+    if (cfg?.type !== "egg") return;
+    const opt = cfg.options.find((o) => o.id === selectedEggId);
+    if (!opt) return;
+    
+    if (selectedSlot === null) return;
+    const qty = Math.max(
+      pendingConfig.item.minPerSlot,
+      Math.min(pendingConfig.item.maxPerSlot, parseInt(quantityInput) || pendingConfig.item.minPerSlot)
+    );
+    const next = [...slots];
+    next[selectedSlot] = {
+      minecraftId: opt.id,
+      name: opt.name,
+      quantity: qty,
+      unitPrice: opt.price,
+      pricePerUnit: false, // Ovos geralmente são por slot
+      imageUrl: undefined,
+      configLabel: undefined,
+      displayLabel: undefined,
     };
     setSlots(next);
     setSelectedSlot(null);
@@ -585,6 +633,59 @@ export default function KitBuilderPage() {
                       Confirmar
                     </Button>
                   </div>
+                ) : pendingConfig?.type === "egg" ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setPendingConfig(null)}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+                      <p className="text-sm font-semibold text-foreground">
+                        {pendingConfig.item.name} — escolha o mob
+                      </p>
+                    </div>
+
+                    {(() => {
+                      const cfg = parseItemConfig(pendingConfig.item.itemConfig);
+                      if (cfg?.type !== "egg") return null;
+                      return (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {cfg.options.map((opt) => (
+                            <button
+                              key={opt.id}
+                              onClick={() => setSelectedEggId(opt.id)}
+                              className={`flex items-center gap-3 p-2 rounded-lg border-2 text-left transition-all ${
+                                selectedEggId === opt.id
+                                  ? "border-primary bg-primary/10"
+                                  : "border-border bg-muted hover:border-primary/50"
+                              }`}
+                            >
+                              <img
+                                src={itemTexture(opt.id)}
+                                alt=""
+                                className="h-8 w-8 object-contain shrink-0"
+                                style={{ imageRendering: "pixelated" }}
+                              />
+                              <div className="min-w-0">
+                                <p className="text-xs font-medium text-foreground truncate">
+                                  {opt.name}
+                                </p>
+                                <p className="text-xs text-primary font-bold">
+                                  R$ {parseFloat(opt.price).toFixed(2).replace(".", ",")}
+                                </p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      );
+                    })()}
+
+                    <Button onClick={confirmEgg} className="w-full">
+                      Confirmar
+                    </Button>
+                  </div>
                 ) : (
                   /* ── Normal item picker ── */                  <>
                     <div className="flex items-center justify-between mb-3">
@@ -664,6 +765,10 @@ export default function KitBuilderPage() {
                                 ) : cfg?.type === "tool" ? (
                                   <p className="text-xs text-muted-foreground">
                                     Ferramenta · {cfg.enchants.length} encant. disponíveis
+                                  </p>
+                                ) : cfg?.type === "egg" ? (
+                                  <p className="text-xs text-muted-foreground">
+                                    Ovos · {cfg.options.length} mobs disponíveis
                                   </p>
                                 ) : (
                                   <p className="text-xs text-primary font-bold">

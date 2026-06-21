@@ -93,7 +93,13 @@ export type ToolConfig = {
   enchants: ToolEnchantOption[];
 };
 
-export type ItemConfig = ArmorConfig | BookConfig | ToolConfig | null;
+export type EggOption = { id: string; name: string; price: string };
+export type EggConfig = {
+  type: "egg";
+  options: EggOption[];
+};
+
+export type ItemConfig = ArmorConfig | BookConfig | ToolConfig | EggConfig | null;
 
 export function parseItemConfig(raw: string | null | undefined): ItemConfig {
   if (!raw) return null;
