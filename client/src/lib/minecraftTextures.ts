@@ -16,6 +16,7 @@ const BEDROCK_TO_JAVA_MAP: Record<string, string> = {
   "netherite_leggings": "netherite_leggings",
   "netherite_boots": "netherite_boots",
   "spawn_egg": "spawn_egg",
+  "egg_spawn": "spawn_egg", // Algumas versões usam invertido
   "ender_pearl": "ender_pearl",
   "end_crystal": "end_crystal",
   "experience_bottle": "experience_bottle",
@@ -44,7 +45,12 @@ export function getItemTexture(minecraftId: string, customImageUrl?: string | nu
   if (customImageUrl) return customImageUrl;
 
   const id = minecraftId.toLowerCase().trim();
-  const normalizedId = BEDROCK_TO_JAVA_MAP[id] || id;
+  let normalizedId = BEDROCK_TO_JAVA_MAP[id] || id;
+
+  // Caso especial: IDs que o S7A não tem mas outras fontes tem
+  if (normalizedId === "spawn_egg") {
+    return "https://raw.githubusercontent.com/PrismLauncher/MC-Assets/master/Assets/minecraft/textures/item/spawn_egg.png";
+  }
 
   // Fonte 1: Minecraft Inventory API (S7A) - Muito boa para itens 2D
   return `https://minecraft-inventory.s7a.dev/items/${normalizedId}.png`;
