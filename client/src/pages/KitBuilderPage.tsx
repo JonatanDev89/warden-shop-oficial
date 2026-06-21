@@ -644,32 +644,41 @@ export default function KitBuilderPage() {
                       if (cfg?.type !== "egg") return null;
                       return (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          {cfg.options.map((opt) => (
-                            <button
-                              key={opt.id}
-                              onClick={() => setSelectedEggId(opt.id)}
-                              className={`flex items-center gap-3 p-2 rounded-lg border-2 text-left transition-all ${
-                                selectedEggId === opt.id
-                                  ? "border-primary bg-primary/10"
-                                  : "border-border bg-muted hover:border-primary/50"
-                              }`}
-                            >
-                              <img
-                                src={getItemTexture(opt.id)}
-                                alt=""
-                                className="h-8 w-8 object-contain shrink-0"
-                                style={{ imageRendering: "pixelated" }}
-                              />
-                              <div className="min-w-0">
-                                <p className="text-xs font-medium text-foreground truncate">
-                                  {opt.name}
-                                </p>
-                                <p className="text-xs text-primary font-bold">
-                                  R$ {parseFloat(opt.price).toFixed(2).replace(".", ",")}
-                                </p>
-                              </div>
-                            </button>
-                          ))}
+	                          {cfg.options.map((opt) => (
+	                            <button
+	                              key={opt.id}
+	                              onClick={() => setSelectedEggId(opt.id)}
+	                              className={`flex items-center gap-3 p-2 rounded-lg border-2 text-left transition-all ${
+	                                selectedEggId === opt.id
+	                                  ? "border-primary bg-primary/10"
+	                                  : "border-border bg-muted hover:border-primary/50"
+	                              }`}
+	                            >
+	                              <img
+	                                src={getItemTexture(opt.id)}
+	                                alt=""
+	                                className="h-8 w-8 object-contain shrink-0"
+	                                style={{ imageRendering: "pixelated" }}
+	                                onError={(e) => {
+	                                  const img = e.target as HTMLImageElement;
+	                                  const id = opt.id.toLowerCase().trim();
+	                                  if (img.src !== getItemTextureFallback(id)) {
+	                                    img.src = getItemTextureFallback(id);
+	                                  } else {
+	                                    img.src = getGenericFallback();
+	                                  }
+	                                }}
+	                              />
+	                              <div className="min-w-0">
+	                                <p className="text-xs font-medium text-foreground truncate">
+	                                  {opt.name}
+	                                </p>
+	                                <p className="text-xs text-primary font-bold">
+	                                  R$ {parseFloat(opt.price).toFixed(2).replace(".", ",")}
+	                                </p>
+	                              </div>
+	                            </button>
+	                          ))}
                         </div>
                       );
                     })()}
