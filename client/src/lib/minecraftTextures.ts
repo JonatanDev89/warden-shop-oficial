@@ -58,7 +58,7 @@ export function getItemTexture(minecraftId: string, customImageUrl?: string | nu
 
   // Fallback para IDs de Ovos que podem estar faltando no S7A
   if (normalizedId.endsWith("_spawn_egg")) {
-    return `https://raw.githubusercontent.com/PrismLauncher/MC-Assets/master/Assets/minecraft/textures/item/${normalizedId}.png`;
+    return `https://raw.githubusercontent.com/PrismLauncher/MC-Assets/develop/Assets/minecraft/textures/item/${normalizedId}.png`;
   }
 
   // Fonte 1: Minecraft Inventory API (S7A) - Muito boa para itens 2D
@@ -74,7 +74,7 @@ export function getItemTextureFallback(minecraftId: string): string {
   const normalizedId = BEDROCK_TO_JAVA_MAP[id] || id;
 
   // Fonte 2: MC-Assets (GitHub) - Backup confiável
-  return `https://raw.githubusercontent.com/PrismLauncher/MC-Assets/master/Assets/minecraft/textures/item/${normalizedId}.png`;
+  return `https://raw.githubusercontent.com/PrismLauncher/MC-Assets/develop/Assets/minecraft/textures/item/${normalizedId}.png`;
 }
 
 /**
