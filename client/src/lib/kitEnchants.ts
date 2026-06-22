@@ -93,13 +93,24 @@ export type ToolConfig = {
   enchants: ToolEnchantOption[];
 };
 
-export type EggOption = { id: string; name: string; price: string };
+export type GenericOption = { id: string; name: string; price: string };
+
 export type EggConfig = {
   type: "egg";
-  options: EggOption[];
+  options: GenericOption[];
 };
 
-export type ItemConfig = ArmorConfig | BookConfig | ToolConfig | EggConfig | null;
+export type PotionConfig = {
+  type: "potion";
+  options: GenericOption[];
+};
+
+export type TrimConfig = {
+  type: "trim";
+  options: GenericOption[];
+};
+
+export type ItemConfig = ArmorConfig | BookConfig | ToolConfig | EggConfig | PotionConfig | TrimConfig | null;
 
 export function parseItemConfig(raw: string | null | undefined): ItemConfig {
   if (!raw) return null;

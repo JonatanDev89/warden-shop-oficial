@@ -35,11 +35,18 @@ const BEDROCK_TO_JAVA_MAP: Record<string, string> = {
   "potion": "potion",
   "splash_potion": "splash_potion",
   "lingering_potion": "lingering_potion",
+  // Mapeamento de Cabeças (Bedrock -> Java)
+  "skull_zombie": "zombie_head",
+  "skull_creeper": "creeper_head",
+  "skull_skeleton": "skeleton_skull",
+  "skull_wither": "wither_skeleton_skull",
+  "skull_player": "player_head",
+  "skull_dragon": "dragon_head",
+  "skull": "skeleton_skull", // Padrão
 };
 
 /**
  * Normaliza o ID do Minecraft para o formato esperado pela API de texturas (Java Edition style).
- * Exemplo: spawn_egg_zombie -> zombie_spawn_egg
  */
 function normalizeMinecraftId(minecraftId: string): string {
   let id = minecraftId.toLowerCase().trim();
@@ -66,35 +73,44 @@ function normalizeMinecraftId(minecraftId: string): string {
     return `${mob}_spawn_egg`;
   }
 
+  // Correção para Cabeças do Bedrock (skull_mob -> mob_head)
+  if (id.startsWith("skull_")) {
+    const mob = id.replace("skull_", "");
+    if (mob === "zombie" || mob === "creeper" || mob === "dragon") {
+      return `${mob}_head`;
+    }
+    if (mob === "skeleton" || mob === "wither") {
+      return `${mob}_skeleton_skull`;
+    }
+  }
+
   return id;
 }
 
 /**
  * Retorna a URL da textura para um ID do Minecraft.
- * Tenta normalizar o ID e fornece fallbacks se a imagem principal falhar.
  */
 export function getItemTexture(minecraftId: string, customImageUrl?: string | null): string {
   if (customImageUrl) return customImageUrl;
 
   const normalizedId = normalizeMinecraftId(minecraftId);
 
-  // Fonte principal: Minecraft Inventory API (S7A) — suporta spawn eggs e demais itens
+  // Fonte principal: Minecraft Inventory API (S7A)
   return `https://minecraft-inventory.s7a.dev/items/${normalizedId}.png`;
 }
 
 /**
  * Fornece uma URL de fallback caso a primeira falhe.
- * Pode ser usada no evento onError das imagens.
  */
 export function getItemTextureFallback(minecraftId: string): string {
   const normalizedId = normalizeMinecraftId(minecraftId);
 
-  // Fallback: repositório de assets do Minecraft no GitHub (branch master)
+  // Fallback 1: PrismLauncher master
   return `https://raw.githubusercontent.com/PrismLauncher/MC-Assets/master/Assets/minecraft/textures/item/${normalizedId}.png`;
 }
 
 /**
- * Fallback de "último recurso" (ícone de bloco ou item genérico)
+ * Fallback de "último recurso"
  */
 export function getGenericFallback(): string {
   return "https://minecraft-inventory.s7a.dev/items/barrier.png";

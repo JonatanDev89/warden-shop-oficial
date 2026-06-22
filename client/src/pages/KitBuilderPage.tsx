@@ -29,18 +29,17 @@ type SlotItem = {
   unitPrice: string;
   pricePerUnit: boolean;
   imageUrl?: string | null;
-  // configLabel: IDs for server/addon (e.g. "sharpness 5")
   configLabel?: string;
-  // displayLabel: human-readable for UI (e.g. "Afiação 5")
   displayLabel?: string;
 };
 
-// Pending selection state when item needs extra config
 type PendingConfig =
   | { type: "armor"; item: KitItem }
   | { type: "book"; item: KitItem }
   | { type: "tool"; item: KitItem; enchants: ToolEnchantOption[] }
-  | { type: "egg"; item: KitItem };
+  | { type: "egg"; item: KitItem }
+  | { type: "potion"; item: KitItem }
+  | { type: "trim"; item: KitItem };
 
 type KitItem = NonNullable<ReturnType<typeof trpc.shop.getKitItems.useQuery>["data"]>[0];
 
@@ -55,18 +54,14 @@ export default function KitBuilderPage() {
   const [quantityInput, setQuantityInput] = useState("1");
   const searchRef = useRef<HTMLInputElement>(null);
 
-  // Config sub-step
   const [pendingConfig, setPendingConfig] = useState<PendingConfig | null>(null);
   const [armorTier, setArmorTier] = useState<"full" | "god">("full");
   const [bookEnchantId, setBookEnchantId] = useState("");
   const [bookEnchantLevel, setBookEnchantLevel] = useState("1");
-  // tool enchants: list of { id, level } chosen by user
   const [toolSelectedEnchants, setToolSelectedEnchants] = useState<{ id: string; level: number }[]>([]);
   const [toolAddId, setToolAddId] = useState("");
   const [toolAddLevel, setToolAddLevel] = useState("1");
-
-  // egg selection
-  const [selectedEggId, setSelectedEggId] = useState("");
+  const [selectedOptionId, setSelectedOptionId] = useState("");
 
   const filteredItems = kitItems.filter(
     (i) =>
@@ -98,7 +93,6 @@ export default function KitBuilderPage() {
     if (selectedSlot === index) setSelectedSlot(null);
   }
 
-  // Called when user clicks an item in the picker
   function selectItem(item: KitItem) {
     if (selectedSlot === null) return;
     const cfg = parseItemConfig(item.itemConfig);
@@ -112,7 +106,7 @@ export default function KitBuilderPage() {
     if (cfg?.type === "book") {
       setBookEnchantId(ALL_ENCHANTS[0].id);
       setBookEnchantLevel("1");
-      setPendingConfig({ type: "book", item, enchants: [] });
+      setPendingConfig({ type: "book", item });
       return;
     }
 
@@ -124,13 +118,12 @@ export default function KitBuilderPage() {
       return;
     }
 
-    if (cfg?.type === "egg") {
-      setSelectedEggId(cfg.options.length > 0 ? cfg.options[0].id : "");
-      setPendingConfig({ type: "egg", item });
+    if (cfg?.type === "egg" || cfg?.type === "potion" || cfg?.type === "trim") {
+      setSelectedOptionId(cfg.options.length > 0 ? cfg.options[0].id : "");
+      setPendingConfig({ type: cfg.type, item } as PendingConfig);
       return;
     }
 
-    // No special config — place directly
     placeItem(item, String(item.price), false, undefined);
   }
 
@@ -179,7 +172,6 @@ export default function KitBuilderPage() {
     if (!enchantMeta) return;
     const level = Math.max(1, Math.min(enchantMeta.maxLevel, parseInt(bookEnchantLevel) || 1));
     const totalEnchantPrice = (parseFloat(cfg.pricePerLevel) * level).toFixed(2);
-    // configLabel uses ID for addon; displayLabel uses PT-BR name for UI
     placeItem(pendingConfig.item, totalEnchantPrice, false, `${enchantMeta.id} ${level}`, `${enchantMeta.name} ${level}`);
   }
 
@@ -199,8 +191,10 @@ export default function KitBuilderPage() {
             .map((sel) => `${sel.id} ${sel.level}`)
             .join(", ")
         : "Sem encantamentos";
+    
+    if (selectedSlot === null) return;
     const next = [...slots];
-    next[selectedSlot!] = {
+    next[selectedSlot] = {
       minecraftId: pendingConfig.item.minecraftId,
       name: pendingConfig.item.name,
       quantity: 1,
@@ -220,11 +214,11 @@ export default function KitBuilderPage() {
     setPendingConfig(null);
   }
 
-  function confirmEgg() {
-    if (!pendingConfig || pendingConfig.type !== "egg") return;
+  function confirmGenericOption() {
+    if (!pendingConfig || !["egg", "potion", "trim"].includes(pendingConfig.type)) return;
     const cfg = parseItemConfig(pendingConfig.item.itemConfig);
-    if (cfg?.type !== "egg") return;
-    const opt = cfg.options.find((o) => o.id === selectedEggId);
+    if (!cfg || !("options" in cfg)) return;
+    const opt = cfg.options.find((o) => o.id === selectedOptionId);
     if (!opt) return;
     
     if (selectedSlot === null) return;
@@ -238,7 +232,7 @@ export default function KitBuilderPage() {
       name: opt.name,
       quantity: qty,
       unitPrice: opt.price,
-      pricePerUnit: false, // Ovos geralmente são por slot
+      pricePerUnit: false,
       imageUrl: undefined,
       configLabel: undefined,
       displayLabel: undefined,
@@ -252,8 +246,7 @@ export default function KitBuilderPage() {
     if (filledSlots === 0) { toast.error("Adicione pelo menos um item ao kit."); return; }
     const filled = slots
       .map((s, i) => s ? { slot: i, minecraftId: s.minecraftId, name: s.name, quantity: s.quantity, unitPrice: s.unitPrice, pricePerUnit: s.pricePerUnit, configLabel: s.configLabel } : null)
-      .filter(Boolean) as { slot: number; minecraftId: string; name: string; quantity: number; unitPrice: string; pricePerUnit: boolean; configLabel?: string }[];
-    // Remove itens normais do carrinho antes de adicionar o kit
+      .filter(Boolean) as any[];
     addItem({
       productId: -1,
       name: `Kit Personalizado (${filledSlots} item${filledSlots > 1 ? "s" : ""})`,
@@ -268,8 +261,7 @@ export default function KitBuilderPage() {
     if (filledSlots === 0) { toast.error("Adicione pelo menos um item ao kit."); return; }
     const filled = slots
       .map((s, i) => s ? { slot: i, minecraftId: s.minecraftId, name: s.name, quantity: s.quantity, unitPrice: s.unitPrice, pricePerUnit: s.pricePerUnit, configLabel: s.configLabel } : null)
-      .filter(Boolean) as { slot: number; minecraftId: string; name: string; quantity: number; unitPrice: string; pricePerUnit: boolean; configLabel?: string }[];
-    // Limpa o carrinho e adiciona só o kit
+      .filter(Boolean) as any[];
     clearCart();
     addItem({
       productId: -1,
@@ -285,10 +277,7 @@ export default function KitBuilderPage() {
     <ShopLayout>
       <div className="container py-8">
         <div className="mb-6">
-          <h1
-            className="text-3xl font-bold text-foreground mb-1"
-            style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-          >
+          <h1 className="text-3xl font-bold text-foreground mb-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
             Monte seu Kit
           </h1>
           <p className="text-muted-foreground text-sm">
@@ -297,24 +286,15 @@ export default function KitBuilderPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left: Inventory grid */}
           <div className="lg:col-span-2 space-y-4">
-            {/* Grid */}
             <div className="bg-[#c6c6c6] border-4 border-[#555] rounded-sm p-3 inline-block w-full">
-              <div
-                className="grid gap-1"
-                style={{ gridTemplateColumns: `repeat(${INVENTORY_COLS}, minmax(0, 1fr))` }}
-              >
+              <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${INVENTORY_COLS}, minmax(0, 1fr))` }}>
                 {slots.map((slot, i) => (
                   <button
                     key={i}
                     onClick={() => openSlot(i)}
                     className={`relative aspect-square rounded-sm border-2 flex items-center justify-center transition-all
-                      ${
-                        selectedSlot === i
-                          ? "border-white bg-[#8b8b8b] shadow-inner"
-                          : "border-[#555] bg-[#8b8b8b] hover:border-white hover:bg-[#9b9b9b]"
-                      }
+                      ${selectedSlot === i ? "border-white bg-[#8b8b8b] shadow-inner" : "border-[#555] bg-[#8b8b8b] hover:border-white hover:bg-[#9b9b9b]"}
                       ${slot ? "border-[#333]" : ""}
                     `}
                     title={slot ? `${slot.name}${slot.displayLabel ? ` (${slot.displayLabel})` : ""} x${slot.quantity}` : `Slot ${i + 1}`}
@@ -339,10 +319,7 @@ export default function KitBuilderPage() {
                         <span className="absolute bottom-0 right-0.5 text-white text-[10px] font-bold leading-none drop-shadow-[0_1px_1px_rgba(0,0,0,1)]">
                           {slot.quantity}
                         </span>
-                        <button
-                          onClick={(e) => clearSlot(i, e)}
-                          className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity z-10"
-                        >
+                        <button onClick={(e) => clearSlot(i, e)} className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity z-10">
                           <X className="h-2.5 w-2.5" />
                         </button>
                       </>
@@ -354,450 +331,180 @@ export default function KitBuilderPage() {
               </div>
             </div>
 
-            {/* Item picker panel */}
             {selectedSlot !== null && (
               <div className="border border-border rounded-xl bg-card p-4">
-                {/* ── Config sub-step: Armor ── */}
                 {pendingConfig?.type === "armor" ? (
                   <div className="space-y-4">
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setPendingConfig(null)}
-                        className="text-muted-foreground hover:text-foreground"
-                      >
+                      <button onClick={() => setPendingConfig(null)} className="text-muted-foreground hover:text-foreground">
                         <ChevronLeft className="h-4 w-4" />
                       </button>
-                      <p className="text-sm font-semibold text-foreground">
-                        {pendingConfig.item.name} — escolha o tier
-                      </p>
+                      <p className="text-sm font-semibold text-foreground">{pendingConfig.item.name} — escolha o tier</p>
                     </div>
                     {(() => {
                       const cfg = parseItemConfig(pendingConfig.item.itemConfig);
                       if (cfg?.type !== "armor") return null;
                       return (
-                        <div className="grid grid-cols-2 gap-3">
-                          {(["full", "god"] as const).map((tier) => {
-                            const price = tier === "full" ? cfg.priceFull : cfg.priceGod;
-                            const enchants = tier === "full" ? cfg.enchantsFull : cfg.enchantsGod;
-                            return (
-                              <button
-                                key={tier}
-                                onClick={() => setArmorTier(tier)}
-                                className={`rounded-lg border-2 p-3 text-left transition-all ${
-                                  armorTier === tier
-                                    ? "border-primary bg-primary/10"
-                                    : "border-border bg-muted hover:border-primary/50"
-                                }`}
-                              >
-                                <p className="font-semibold text-foreground capitalize">{tier}</p>
-                                <p className="text-primary font-bold text-sm mt-0.5">
-                                  R$ {parseFloat(price).toFixed(2).replace(".", ",")}
-                                </p>
-                                {enchants.length > 0 && (
-                                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                                    {enchants.map((e) => `${e.name} ${e.level}`).join(", ")}
-                                  </p>
-                                )}
-                              </button>
-                            );
-                          })}
+                        <div className="grid grid-cols-2 gap-4">
+                          <button onClick={() => setArmorTier("full")} className={`p-4 rounded-xl border-2 text-left transition-all ${armorTier === "full" ? "border-primary bg-primary/10" : "border-border bg-muted hover:border-primary/50"}`}>
+                            <p className="text-sm font-bold text-foreground mb-1">Full</p>
+                            <p className="text-xs text-primary font-bold">R$ {parseFloat(cfg.priceFull).toFixed(2).replace(".", ",")}</p>
+                          </button>
+                          <button onClick={() => setArmorTier("god")} className={`p-4 rounded-xl border-2 text-left transition-all ${armorTier === "god" ? "border-primary bg-primary/10" : "border-border bg-muted hover:border-primary/50"}`}>
+                            <p className="text-sm font-bold text-foreground mb-1">God</p>
+                            <p className="text-xs text-primary font-bold">R$ {parseFloat(cfg.priceGod).toFixed(2).replace(".", ",")}</p>
+                          </button>
                         </div>
                       );
                     })()}
-                    <Button onClick={confirmArmor} className="w-full">
-                      Confirmar
-                    </Button>
+                    <Button onClick={confirmArmor} className="w-full">Confirmar</Button>
                   </div>
                 ) : pendingConfig?.type === "book" ? (
-                  /* ── Config sub-step: Book ── */
                   <div className="space-y-4">
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setPendingConfig(null)}
-                        className="text-muted-foreground hover:text-foreground"
-                      >
+                      <button onClick={() => setPendingConfig(null)} className="text-muted-foreground hover:text-foreground">
                         <ChevronLeft className="h-4 w-4" />
                       </button>
-                      <p className="text-sm font-semibold text-foreground">
-                        {pendingConfig.item.name} — escolha o encantamento
-                      </p>
+                      <p className="text-sm font-semibold text-foreground">{pendingConfig.item.name} — escolha o encantamento</p>
                     </div>
-
-                    {(() => {
-                      const cfg = parseItemConfig(pendingConfig.item.itemConfig);
-                      const pricePerLevel = cfg?.type === "book" ? parseFloat(cfg.pricePerLevel) : 0;
-                      const enchantMeta = ALL_ENCHANTS.find((e) => e.id === bookEnchantId);
-                      const level = enchantMeta
-                        ? Math.max(1, Math.min(enchantMeta.maxLevel, parseInt(bookEnchantLevel) || 1))
-                        : 1;
-                      const price = pricePerLevel * level;
-
-                      return (
-                        <div className="space-y-3">
-                          <div>
-                            <Label className="text-xs text-muted-foreground mb-1 block">
-                              Encantamento
-                            </Label>
-                            <Select value={bookEnchantId} onValueChange={(v) => {
-                              setBookEnchantId(v);
-                              setBookEnchantLevel("1");
-                            }}>
-                              <SelectTrigger className="bg-muted border-border">
-                                <SelectValue placeholder="Selecione..." />
-                              </SelectTrigger>
-                              <SelectContent className="bg-card border-border max-h-64">
-                                {ALL_ENCHANTS.map((e) => (
-                                  <SelectItem key={e.id} value={e.id}>
-                                    {e.name}{" "}
-                                    <span className="text-muted-foreground text-xs">
-                                      ({e.category} · max. {e.maxLevel})
-                                    </span>
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          {bookEnchantId && enchantMeta && (
-                            <div className="space-y-2">
-                              <div>
-                                <Label className="text-xs text-muted-foreground mb-1 block">
-                                  Nivel (1–{enchantMeta.maxLevel})
-                                </Label>
-                                <Input
-                                  type="number"
-                                  min={1}
-                                  max={enchantMeta.maxLevel}
-                                  value={bookEnchantLevel}
-                                  onChange={(e) => setBookEnchantLevel(e.target.value)}
-                                  className="bg-muted border-border h-9 w-24"
-                                />
-                              </div>
-                              <p className="text-sm text-muted-foreground">
-                                {level} nivel(is) x R$ {pricePerLevel.toFixed(2).replace(".", ",")} ={" "}
-                                <span className="text-primary font-bold">
-                                  R$ {price.toFixed(2).replace(".", ",")}
-                                </span>
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })()}
-
-                    <Button onClick={confirmBook} disabled={!bookEnchantId} className="w-full">
-                      Confirmar
-                    </Button>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-xs">Encantamento</Label>
+                        <Select value={bookEnchantId} onValueChange={setBookEnchantId}>
+                          <SelectTrigger className="bg-muted border-border h-9 text-xs">
+                            <SelectValue placeholder="Selecione..." />
+                          </SelectTrigger>
+                          <SelectContent className="bg-card border-border max-h-60">
+                            {ALL_ENCHANTS.map((e) => (
+                              <SelectItem key={e.id} value={e.id} className="text-xs">{e.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs">Nível (Máx {ALL_ENCHANTS.find(e => e.id === bookEnchantId)?.maxLevel ?? 5})</Label>
+                        <Input type="number" min="1" max={ALL_ENCHANTS.find(e => e.id === bookEnchantId)?.maxLevel ?? 10} value={bookEnchantLevel} onChange={(e) => setBookEnchantLevel(e.target.value)} className="bg-muted border-border h-9 text-xs" />
+                      </div>
+                    </div>
+                    <Button onClick={confirmBook} className="w-full">Confirmar</Button>
                   </div>
                 ) : pendingConfig?.type === "tool" ? (
-                  /* ── Config sub-step: Tool ── */
-                  <div className="space-y-4">
+                   <div className="space-y-4">
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setPendingConfig(null)}
-                        className="text-muted-foreground hover:text-foreground"
-                      >
+                      <button onClick={() => setPendingConfig(null)} className="text-muted-foreground hover:text-foreground">
                         <ChevronLeft className="h-4 w-4" />
                       </button>
-                      <p className="text-sm font-semibold text-foreground">
-                        {pendingConfig.item.name} — escolha os encantamentos
-                      </p>
+                      <p className="text-sm font-semibold text-foreground">{pendingConfig.item.name} — escolha os encantamentos</p>
                     </div>
-
-                    {/* Selected enchants */}
                     <div className="space-y-1">
                       {toolSelectedEnchants.map((sel) => {
                         const meta = pendingConfig.enchants.find((e) => e.id === sel.id);
                         if (!meta) return null;
-                        const cost = parseFloat(meta.price) * sel.level;
                         return (
                           <div key={sel.id} className="flex items-center gap-2 bg-muted/50 rounded px-2 py-1">
                             <span className="flex-1 text-sm text-foreground">{meta.name}</span>
-                            <Input
-                              type="number"
-                              min={1}
-                              max={meta.maxLevel}
-                              value={sel.level}
-                              onChange={(e) => {
+                            <Input type="number" min={1} max={meta.maxLevel} value={sel.level} onChange={(e) => {
                                 const lv = Math.max(1, Math.min(meta.maxLevel, parseInt(e.target.value) || 1));
-                                setToolSelectedEnchants((prev) =>
-                                  prev.map((s) => (s.id === sel.id ? { ...s, level: lv } : s))
-                                );
-                              }}
-                              className="w-16 h-7 text-xs bg-muted border-border"
-                            />
-                            <span className="text-xs text-primary font-bold w-16 text-right shrink-0">
-                              R$ {cost.toFixed(2).replace(".", ",")}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setToolSelectedEnchants((prev) => prev.filter((s) => s.id !== sel.id))
-                              }
-                              className="text-muted-foreground hover:text-destructive"
-                            >
+                                setToolSelectedEnchants((prev) => prev.map((s) => (s.id === sel.id ? { ...s, level: lv } : s)));
+                              }} className="w-16 h-7 text-xs bg-muted border-border" />
+                            <button type="button" onClick={() => setToolSelectedEnchants((prev) => prev.filter((s) => s.id !== sel.id))} className="text-muted-foreground hover:text-destructive">
                               <X className="h-3 w-3" />
                             </button>
                           </div>
                         );
                       })}
-                      {toolSelectedEnchants.length === 0 && (
-                        <p className="text-xs text-muted-foreground">Nenhum encantamento selecionado.</p>
-                      )}
                     </div>
-
-                    {/* Add enchant */}
-                    {(() => {
-                      const selectedIds = new Set(toolSelectedEnchants.map((s) => s.id));
-                      const available = pendingConfig.enchants.filter((e) => !selectedIds.has(e.id));
-                      if (available.length === 0) return null;
-                      return (
-                        <div className="flex gap-2">
-                          <Select value={toolAddId} onValueChange={(v) => { setToolAddId(v); setToolAddLevel("1"); }}>
-                            <SelectTrigger className="bg-muted border-border h-8 text-xs flex-1">
-                              <SelectValue placeholder="Encantamento..." />
-                            </SelectTrigger>
-                            <SelectContent className="bg-card border-border max-h-60">
-                              {available.map((e) => (
-                                <SelectItem key={e.id} value={e.id} className="text-xs">
-                                  {e.name} (máx. {e.maxLevel}) — R$ {parseFloat(e.price).toFixed(2).replace(".", ",")}/nv
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <Input
-                            type="number"
-                            min={1}
-                            max={pendingConfig.enchants.find((e) => e.id === toolAddId)?.maxLevel ?? 10}
-                            value={toolAddLevel}
-                            onChange={(e) => setToolAddLevel(e.target.value)}
-                            className="w-16 h-8 text-xs bg-muted border-border"
-                            placeholder="Nv."
-                          />
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            disabled={!toolAddId}
-                            onClick={() => {
-                              const meta = pendingConfig.enchants.find((e) => e.id === toolAddId);
-                              if (!meta) return;
-                              const lv = Math.max(1, Math.min(meta.maxLevel, parseInt(toolAddLevel) || 1));
-                              setToolSelectedEnchants((prev) => [...prev, { id: meta.id, level: lv }]);
-                              const remaining = pendingConfig.enchants.filter(
-                                (e) => e.id !== toolAddId && !toolSelectedEnchants.find((s) => s.id === e.id)
-                              );
-                              setToolAddId(remaining[0]?.id ?? "");
-                              setToolAddLevel("1");
-                            }}
-                            className="h-8 px-2"
-                          >
-                            <X className="h-3 w-3 rotate-45" />
-                          </Button>
-                        </div>
-                      );
-                    })()}
-
-                    {/* Price preview */}
-                    {(() => {
-                      const cfg = parseItemConfig(pendingConfig.item.itemConfig);
-                      if (cfg?.type !== "tool") return null;
-                      const enchantCost = toolSelectedEnchants.reduce((sum, sel) => {
-                        const meta = pendingConfig.enchants.find((e) => e.id === sel.id);
-                        return sum + (meta ? parseFloat(meta.price) * sel.level : 0);
-                      }, 0);
-                      const total = parseFloat(cfg.basePrice) + enchantCost;
-                      return (
-                        <p className="text-sm text-muted-foreground">
-                          Base: R$ {parseFloat(cfg.basePrice).toFixed(2).replace(".", ",")}
-                          {enchantCost > 0 && (
-                            <> + encantamentos: R$ {enchantCost.toFixed(2).replace(".", ",")}</>
-                          )}
-                          {" = "}
-                          <span className="text-primary font-bold">
-                            R$ {total.toFixed(2).replace(".", ",")}
-                          </span>
-                        </p>
-                      );
-                    })()}
-
-                    <Button onClick={confirmTool} className="w-full">
-                      Confirmar
-                    </Button>
+                    <div className="flex gap-2">
+                      <Select value={toolAddId} onValueChange={(v) => { setToolAddId(v); setToolAddLevel("1"); }}>
+                        <SelectTrigger className="bg-muted border-border h-8 text-xs flex-1">
+                          <SelectValue placeholder="Adicionar..." />
+                        </SelectTrigger>
+                        <SelectContent className="bg-card border-border max-h-60">
+                          {pendingConfig.enchants.filter(e => !toolSelectedEnchants.find(s => s.id === e.id)).map((e) => (
+                            <SelectItem key={e.id} value={e.id} className="text-xs">{e.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button type="button" size="sm" variant="outline" disabled={!toolAddId} onClick={() => {
+                        const meta = pendingConfig.enchants.find((e) => e.id === toolAddId);
+                        if (!meta) return;
+                        setToolSelectedEnchants((prev) => [...prev, { id: meta.id, level: parseInt(toolAddLevel) || 1 }]);
+                        setToolAddId("");
+                      }} className="h-8 px-2">
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    <Button onClick={confirmTool} className="w-full">Confirmar</Button>
                   </div>
-                ) : pendingConfig?.type === "egg" ? (
+                ) : (pendingConfig?.type === "egg" || pendingConfig?.type === "potion" || pendingConfig?.type === "trim") ? (
                   <div className="space-y-4">
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setPendingConfig(null)}
-                        className="text-muted-foreground hover:text-foreground"
-                      >
+                      <button onClick={() => setPendingConfig(null)} className="text-muted-foreground hover:text-foreground">
                         <ChevronLeft className="h-4 w-4" />
                       </button>
                       <p className="text-sm font-semibold text-foreground">
-                        {pendingConfig.item.name} — escolha o mob
+                        {pendingConfig.item.name} — escolha uma opção
                       </p>
                     </div>
-
                     {(() => {
                       const cfg = parseItemConfig(pendingConfig.item.itemConfig);
-                      if (cfg?.type !== "egg") return null;
+                      if (!cfg || !("options" in cfg)) return null;
                       return (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-	                          {cfg.options.map((opt) => (
-	                            <button
-	                              key={opt.id}
-	                              onClick={() => setSelectedEggId(opt.id)}
-	                              className={`flex items-center gap-3 p-2 rounded-lg border-2 text-left transition-all ${
-	                                selectedEggId === opt.id
-	                                  ? "border-primary bg-primary/10"
-	                                  : "border-border bg-muted hover:border-primary/50"
-	                              }`}
-	                            >
-	                              <img
-	                                src={getItemTexture(opt.id)}
-	                                alt=""
-	                                className="h-8 w-8 object-contain shrink-0"
-	                                style={{ imageRendering: "pixelated" }}
-	                                onError={(e) => {
-	                                  const img = e.target as HTMLImageElement;
-	                                  const id = opt.id.toLowerCase().trim();
-	                                  if (img.src !== getItemTextureFallback(id)) {
-	                                    img.src = getItemTextureFallback(id);
-	                                  } else {
-	                                    img.src = getGenericFallback();
-	                                  }
-	                                }}
-	                              />
-	                              <div className="min-w-0">
-	                                <p className="text-xs font-medium text-foreground truncate">
-	                                  {opt.name}
-	                                </p>
-	                                <p className="text-xs text-primary font-bold">
-	                                  R$ {parseFloat(opt.price).toFixed(2).replace(".", ",")}
-	                                </p>
-	                              </div>
-	                            </button>
-	                          ))}
-                        </div>
-                      );
-                    })()}
-
-                    <Button onClick={confirmEgg} className="w-full">
-                      Confirmar
-                    </Button>
-                  </div>
-                ) : (
-                  /* ── Normal item picker ── */                  <>
-                    <div className="flex items-center justify-between mb-3">
-                      <p className="text-sm font-semibold text-foreground">
-                        Slot {selectedSlot + 1} — escolha um item
-                      </p>
-                      <button
-                        onClick={() => setSelectedSlot(null)}
-                        className="text-muted-foreground hover:text-foreground"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-
-                    {/* Quantity */}
-                    <div className="flex items-center gap-2 mb-3">
-                      <Label className="text-xs text-muted-foreground shrink-0">Quantidade:</Label>
-                      <Input
-                        type="number"
-                        min="1"
-                        max="64"
-                        value={quantityInput}
-                        onChange={(e) => setQuantityInput(e.target.value)}
-                        className="bg-muted border-border h-8 w-20 text-sm"
-                      />
-                      <span className="text-xs text-muted-foreground">
-                        (escolha o item para ver limites)
-                      </span>
-                    </div>
-
-                    {/* Search */}
-                    <div className="relative mb-3">
-                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                      <Input
-                        ref={searchRef}
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Buscar item..."
-                        className="bg-muted border-border pl-8 h-8 text-sm"
-                      />
-                    </div>
-
-                    {/* Item list */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-52 overflow-y-auto pr-1">
-                      {filteredItems.length === 0 ? (
-                        <p className="col-span-3 text-center text-xs text-muted-foreground py-4">
-                          Nenhum item encontrado. O admin precisa cadastrar itens.
-                        </p>
-                      ) : (
-                        filteredItems.map((item) => {
-                          const cfg = parseItemConfig(item.itemConfig);
-                          return (
-                            <button
-                              key={item.id}
-                              onClick={() => selectItem(item)}
-                              className="flex items-center gap-2 p-2 rounded-lg bg-muted hover:bg-primary/10 hover:border-primary border border-border transition-all text-left"
-                            >
-                              <img
-                                src={getItemTexture(item.minecraftId, item.imageUrl)}
-                                alt={item.name}
-                                className="h-8 w-8 object-contain shrink-0"
-                                style={{ imageRendering: "pixelated" }}
-                                onError={(e) => {
+                          {cfg.options.map((opt) => (
+                            <button key={opt.id} onClick={() => setSelectedOptionId(opt.id)} className={`flex items-center gap-3 p-2 rounded-lg border-2 text-left transition-all ${selectedOptionId === opt.id ? "border-primary bg-primary/10" : "border-border bg-muted hover:border-primary/50"}`}>
+                              <img src={getItemTexture(opt.id)} alt="" className="h-8 w-8 object-contain shrink-0" style={{ imageRendering: "pixelated" }} onError={(e) => {
                                   const img = e.target as HTMLImageElement;
-                                  const id = item?.minecraftId || "";
-                                  if (img.src !== getItemTextureFallback(id)) {
-                                    img.src = getItemTextureFallback(id);
+                                  if (img.src !== getItemTextureFallback(opt.id)) {
+                                    img.src = getItemTextureFallback(opt.id);
                                   } else {
                                     img.src = getGenericFallback();
                                   }
-                                }}
-                              />
+                                }} />
                               <div className="min-w-0">
-                                <p className="text-xs font-medium text-foreground truncate">
-                                  {item.name}
-                                </p>
-                                {cfg?.type === "armor" ? (
-                                  <p className="text-xs text-muted-foreground">Full / God</p>
-                                ) : cfg?.type === "book" ? (
-                                  <p className="text-xs text-muted-foreground">
-                                    Livro de encantamento
-                                  </p>
-                                ) : cfg?.type === "tool" ? (
-                                  <p className="text-xs text-muted-foreground">
-                                    Ferramenta · {cfg.enchants.length} encant. disponíveis
-                                  </p>
-                                ) : cfg?.type === "egg" ? (
-                                  <p className="text-xs text-muted-foreground">
-                                    Ovos · {cfg.options.length} mobs disponíveis
-                                  </p>
-                                ) : (
-                                  <p className="text-xs text-primary font-bold">
-                                    R${" "}
-                                    {parseFloat(String(item.price))
-                                      .toFixed(2)
-                                      .replace(".", ",")}
-                                    <span className="text-muted-foreground font-normal ml-1">
-                                      {item.pricePerUnit ? "/un" : "/slot"}
-                                    </span>
-                                  </p>
-                                )}
-                                <p className="text-[10px] text-muted-foreground">
-                                  {item.minPerSlot === item.maxPerSlot
-                                    ? `${item.minPerSlot} un`
-                                    : `${item.minPerSlot}–${item.maxPerSlot} un`}
-                                </p>
+                                <p className="text-xs font-medium text-foreground truncate">{opt.name}</p>
+                                <p className="text-xs text-primary font-bold">R$ {parseFloat(opt.price).toFixed(2).replace(".", ",")}</p>
                               </div>
                             </button>
-                          );
-                        })
-                      )}
+                          ))}
+                        </div>
+                      );
+                    })()}
+                    <Button onClick={confirmGenericOption} className="w-full">Confirmar</Button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-sm font-semibold text-foreground">Slot {selectedSlot + 1} — escolha um item</p>
+                      <button onClick={() => setSelectedSlot(null)} className="text-muted-foreground hover:text-foreground">
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Label className="text-xs text-muted-foreground shrink-0">Quantidade:</Label>
+                      <Input type="number" min="1" max="64" value={quantityInput} onChange={(e) => setQuantityInput(e.target.value)} className="bg-muted border-border h-8 w-20 text-sm" />
+                    </div>
+                    <div className="relative mb-3">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                      <Input ref={searchRef} value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar item..." className="bg-muted border-border pl-8 h-8 text-sm" />
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-52 overflow-y-auto pr-1">
+                      {filteredItems.map((item) => (
+                        <button key={item.id} onClick={() => selectItem(item)} className="flex items-center gap-2 p-2 rounded-lg bg-muted hover:bg-primary/10 hover:border-primary border border-border transition-all text-left">
+                          <img src={getItemTexture(item.minecraftId, item.imageUrl)} alt={item.name} className="h-8 w-8 object-contain shrink-0" style={{ imageRendering: "pixelated" }} onError={(e) => {
+                              const img = e.target as HTMLImageElement;
+                              if (img.src !== getItemTextureFallback(item.minecraftId)) {
+                                img.src = getItemTextureFallback(item.minecraftId);
+                              } else {
+                                img.src = getGenericFallback();
+                              }
+                            }} />
+                          <div className="min-w-0">
+                            <p className="text-xs font-medium text-foreground truncate">{item.name}</p>
+                            <p className="text-xs text-primary font-bold">R$ {parseFloat(String(item.price)).toFixed(2).replace(".", ",")}</p>
+                          </div>
+                        </button>
+                      ))}
                     </div>
                   </>
                 )}
@@ -805,82 +512,36 @@ export default function KitBuilderPage() {
             )}
           </div>
 
-          {/* Right: Summary + checkout */}
           <div className="space-y-4">
-            {/* Kit summary */}
-            <div className="border border-border rounded-xl bg-card p-4">
-              <h2 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-                <Package className="h-4 w-4 text-primary" />
-                Resumo do Kit
+            <div className="bg-card border border-border rounded-xl p-6 sticky top-8">
+              <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+                <ShoppingCart className="h-5 w-5" /> Seu Kit
               </h2>
-              {filledSlots === 0 ? (
-                <p className="text-xs text-muted-foreground">Nenhum item adicionado ainda.</p>
-              ) : (
-                <ul className="space-y-1.5 max-h-64 overflow-y-auto">
-                  {slots.map(
-                    (s, i) =>
-                      s && (
-                        <li key={i} className="flex items-center gap-2 text-xs">
-                          <img
-                            src={getItemTexture(s.minecraftId, s.imageUrl)}
-                            alt={s.name}
-                            className="h-6 w-6 object-contain shrink-0"
-                            style={{ imageRendering: "pixelated" }}
-                          />
-                          <span className="flex-1 text-foreground truncate">
-                            {s.name}
-                            {s.displayLabel && (
-                              <span className="text-muted-foreground ml-1">({s.displayLabel})</span>
-                            )}
-                          </span>
-                          <span className="text-muted-foreground shrink-0">x{s.quantity}</span>
-                          <span className="text-primary font-bold shrink-0">
-                            R${" "}
-                            {(s.pricePerUnit
-                              ? parseFloat(s.unitPrice) * s.quantity
-                              : parseFloat(s.unitPrice)
-                            )
-                              .toFixed(2)
-                              .replace(".", ",")}
-                          </span>
-                          <button
-                            onClick={(e) => clearSlot(i, e)}
-                            className="text-muted-foreground hover:text-destructive shrink-0"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </button>
-                        </li>
-                      )
-                  )}
-                </ul>
-              )}
-              <div className="border-t border-border mt-3 pt-3 flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">{filledSlots} slot(s)</span>
-                <span className="text-lg font-bold text-primary">
-                  R$ {totalPrice.toFixed(2).replace(".", ",")}
-                </span>
+              <div className="space-y-3 mb-6 max-h-80 overflow-y-auto pr-2">
+                {slots.map((s, i) => s && (
+                  <div key={i} className="flex items-center gap-3 group">
+                    <div className="h-10 w-10 bg-muted rounded flex items-center justify-center shrink-0 border border-border">
+                      <img src={getItemTexture(s.minecraftId, s.imageUrl)} alt="" className="h-7 w-7 object-contain" style={{ imageRendering: "pixelated" }} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-bold text-foreground truncate">{s.name} x{s.quantity}</p>
+                      {s.displayLabel && <p className="text-[10px] text-muted-foreground truncate">{s.displayLabel}</p>}
+                    </div>
+                    <button onClick={(e) => clearSlot(i, e)} className="text-muted-foreground hover:text-destructive p-1">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+                {filledSlots === 0 && <p className="text-sm text-muted-foreground text-center py-8">Seu kit está vazio.</p>}
               </div>
-            </div>
-
-            {/* Botões de ação */}
-            <div className="border border-border rounded-xl bg-card p-4 space-y-2">
-              <Button
-                className="w-full font-bold rounded-xl gap-2"
-                disabled={filledSlots === 0}
-                onClick={buyKitNow}
-              >
-                <ShoppingCart className="h-4 w-4" />
-                Comprar agora — R$ {totalPrice.toFixed(2).replace(".", ",")}
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full font-bold rounded-xl gap-2"
-                disabled={filledSlots === 0}
-                onClick={addKitToCart}
-              >
-                <Plus className="h-4 w-4" />
-                Adicionar ao carrinho
-              </Button>
+              <div className="border-t border-border pt-4 space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Total:</span>
+                  <span className="text-xl font-bold text-primary">R$ {totalPrice.toFixed(2).replace(".", ",")}</span>
+                </div>
+                <Button onClick={buyKitNow} className="w-full" disabled={filledSlots === 0}>Comprar Agora</Button>
+                <Button onClick={addKitToCart} variant="outline" className="w-full" disabled={filledSlots === 0}>Adicionar ao Carrinho</Button>
+              </div>
             </div>
           </div>
         </div>
