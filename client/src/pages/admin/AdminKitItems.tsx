@@ -36,20 +36,17 @@ import {
   Shield,
   Wrench,
   Egg,
-  FlaskConical,
-  Hammer,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
   ALL_ENCHANTS,
   type EnchantEntry,
   type ToolEnchantOption,
-  type GenericOption,
+  type EggOption,
 } from "@/lib/kitEnchants";
-import { getItemTexture } from "@/lib/minecraftTextures";
 
 type KitItem = NonNullable<ReturnType<typeof trpc.admin.getKitItems.useQuery>["data"]>[0];
-type ConfigType = "none" | "armor" | "book" | "tool" | "egg" | "potion" | "trim";
+type ConfigType = "none" | "armor" | "book" | "tool" | "egg";
 
 type KitItemForm = {
   minecraftId: string;
@@ -67,9 +64,7 @@ type KitItemForm = {
   armorEnchantsGod: EnchantEntry[];
   bookPricePerLevel: string;
   toolEnchants: ToolEnchantOption[];
-  eggOptions: GenericOption[];
-  potionOptions: GenericOption[];
-  trimOptions: GenericOption[];
+  eggOptions: EggOption[];
 };
 
 const emptyForm: KitItemForm = {
@@ -89,9 +84,22 @@ const emptyForm: KitItemForm = {
   bookPricePerLevel: "0",
   toolEnchants: [],
   eggOptions: [],
-  potionOptions: [],
-  trimOptions: [],
 };
+
+function itemTexture(minecraftId: string, imageUrl?: string | null) {
+  if (imageUrl) return imageUrl;
+  
+  // Normalização de IDs para busca de textura (Bedrock -> Java naming style)
+  let id = minecraftId.toLowerCase();
+  if (id === "elytra") id = "elytra";
+  if (id === "totem_of_undying" || id === "totem") id = "totem_of_undying";
+  if (id.includes("spawn_egg")) {
+    // Se for um spawn egg genérico sem o mob no nome, usa o ícone padrão
+    if (id === "spawn_egg") id = "spawn_egg";
+  }
+
+  return `https://minecraft-inventory.s7a.dev/items/${id}.png`;
+}
 
 function formatPrice(v: string | number) {
   return `R$ ${parseFloat(String(v)).toFixed(2).replace(".", ",")}`;
@@ -126,18 +134,6 @@ function buildItemConfig(form: KitItemForm): string | undefined {
       options: form.eggOptions,
     });
   }
-  if (form.configType === "potion") {
-    return JSON.stringify({
-      type: "potion",
-      options: form.potionOptions,
-    });
-  }
-  if (form.configType === "trim") {
-    return JSON.stringify({
-      type: "trim",
-      options: form.trimOptions,
-    });
-  }
   return undefined;
 }
 
@@ -159,8 +155,6 @@ function parseFormFromItem(item: KitItem): KitItemForm {
     bookPricePerLevel: "0",
     toolEnchants: [],
     eggOptions: [],
-    potionOptions: [],
-    trimOptions: [],
   };
   if (item.itemConfig) {
     try {
@@ -180,12 +174,6 @@ function parseFormFromItem(item: KitItem): KitItemForm {
       } else if (cfg?.type === "egg") {
         base.configType = "egg";
         base.eggOptions = cfg.options ?? [];
-      } else if (cfg?.type === "potion") {
-        base.configType = "potion";
-        base.potionOptions = cfg.options ?? [];
-      } else if (cfg?.type === "trim") {
-        base.configType = "trim";
-        base.trimOptions = cfg.options ?? [];
       }
     } catch {}
   }
@@ -387,16 +375,12 @@ function ToolEnchantList({
   );
 }
 
-function GenericOptionList({
-  label,
+function EggOptionList({
   options,
   onChange,
-  idPlaceholder = "minecraft_id",
 }: {
-  label: string;
-  options: GenericOption[];
-  onChange: (v: GenericOption[]) => void;
-  idPlaceholder?: string;
+  options: EggOption[];
+  onChange: (v: EggOption[]) => void;
 }) {
   const [addId, setAddId] = useState("");
   const [addName, setAddName] = useState("");
@@ -414,12 +398,12 @@ function GenericOptionList({
 
   return (
     <div className="space-y-2">
-      <Label className="text-foreground text-sm">{label}</Label>
+      <Label className="text-foreground text-sm">Opções de Ovos</Label>
       <div className="space-y-1">
         {options.map((o) => (
           <div key={o.id} className="flex items-center gap-2 bg-muted/50 rounded px-2 py-1">
             <div className="h-6 w-6 shrink-0 flex items-center justify-center">
-               <img src={getItemTexture(o.id)} alt="" className="h-5 w-5 object-contain" />
+               <img src={itemTexture(o.id)} alt="" className="h-5 w-5 object-contain" />
             </div>
             <span className="flex-1 text-sm text-foreground truncate">{o.name}</span>
             <span className="text-xs text-primary font-bold">R$ {parseFloat(o.price).toFixed(2)}</span>
@@ -437,14 +421,14 @@ function GenericOptionList({
         <Input
           value={addId}
           onChange={(e) => setAddId(e.target.value)}
-          placeholder={idPlaceholder}
+          placeholder="minecraft_id (ex: creeper_spawn_egg)"
           className="h-8 text-xs bg-muted border-border"
         />
         <div className="flex gap-2">
           <Input
             value={addName}
             onChange={(e) => setAddName(e.target.value)}
-            placeholder="Nome amigável"
+            placeholder="Nome (ex: Ovo de Creeper)"
             className="h-8 text-xs bg-muted border-border flex-1"
           />
           <Input
@@ -514,269 +498,405 @@ export default function AdminKitItems() {
     });
   };
 
+  const setF = (patch: Partial<KitItemForm>) =>
+    setForm((f: KitItemForm) => ({ ...f, ...patch }));
+
   return (
-    <AdminLayout>
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Itens do Kit</h1>
-            <p className="text-muted-foreground">Gerencie os itens disponíveis no construtor de kits.</p>
-          </div>
+    <AdminLayout title="Itens do Kit">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2
+            className="text-xl font-bold text-foreground"
+            style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+          >
+            Itens do Kit
+          </h2>
           <Button onClick={openCreate} className="gap-2">
             <Plus className="h-4 w-4" /> Novo Item
           </Button>
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <div className="flex items-center justify-center h-40">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          </div>
+        ) : !items?.length ? (
+          <div className="flex flex-col items-center justify-center h-40 text-muted-foreground gap-2">
+            <Package className="h-8 w-8" />
+            <p className="text-sm">Nenhum item cadastrado.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {items?.map((item) => (
-              <div key={item.id} className="bg-card border border-border rounded-xl p-4 flex gap-4">
-                <div className="h-16 w-16 bg-muted rounded-lg flex items-center justify-center shrink-0">
-                  <img
-                    src={getItemTexture(item.minecraftId, item.imageUrl)}
-                    alt={item.name}
-                    className="h-12 w-12 object-contain"
-                  />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-foreground truncate">{item.name}</h3>
-                    {!item.active && <Badge variant="secondary">Inativo</Badge>}
+          <div className="space-y-2">
+            {items.map((item) => {
+              let configBadge: React.ReactNode = null;
+              if (item.itemConfig) {
+                try {
+                  const cfg = JSON.parse(item.itemConfig);
+                  if (cfg?.type === "armor")
+                    configBadge = (
+                      <Badge variant="outline" className="text-xs gap-1">
+                        <Shield className="h-3 w-3" /> Armadura
+                      </Badge>
+                    );
+                  else if (cfg?.type === "book")
+                    configBadge = (
+                      <Badge variant="outline" className="text-xs gap-1">
+                        <BookOpen className="h-3 w-3" /> Livro
+                      </Badge>
+                    );
+                  else if (cfg?.type === "tool")
+                    configBadge = (
+                      <Badge variant="outline" className="text-xs gap-1">
+                        <Wrench className="h-3 w-3" /> Ferramenta
+                      </Badge>
+                    );
+                  else if (cfg?.type === "egg")
+                    configBadge = (
+                      <Badge variant="outline" className="text-xs gap-1">
+                        <Egg className="h-3 w-3" /> Ovos
+                      </Badge>
+                    );
+                } catch {}
+              }
+              return (
+                <div
+                  key={item.id}
+                  className="flex items-center gap-4 p-4 rounded-lg bg-card border border-border"
+                >
+                  <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center shrink-0 overflow-hidden">
+                    <img
+                      src={itemTexture(item.minecraftId, item.imageUrl)}
+                      alt={item.name}
+                      className="h-8 w-8 object-contain"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = "none";
+                      }}
+                    />
                   </div>
-                  <p className="text-xs text-muted-foreground mb-2 truncate">{item.minecraftId}</p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold text-primary">{formatPrice(item.price)}</span>
-                    <div className="flex gap-1">
-                      <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEdit(item)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={() => {
-                          if (confirm("Tem certeza que deseja remover este item?")) {
-                            deleteKitItem.mutate(item.id);
-                          }
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-medium text-foreground truncate">{item.name}</p>
+                      <span className="text-xs text-muted-foreground font-mono">
+                        {item.minecraftId}
+                      </span>
+                      {!item.active && (
+                        <Badge variant="outline" className="text-xs text-muted-foreground">
+                          Inativo
+                        </Badge>
+                      )}
+                      {configBadge}
+                    </div>
+                    <div className="flex items-center gap-3 mt-0.5">
+                      <p className="text-sm text-primary font-bold">
+                        {formatPrice(item.price)}
+                        {item.pricePerUnit && (
+                          <span className="text-xs text-muted-foreground font-normal ml-1">
+                            /unidade
+                          </span>
+                        )}
+                      </p>
+                      <span className="text-xs text-muted-foreground">
+                        {item.minPerSlot}-{item.maxPerSlot} por slot
+                      </span>
                     </div>
                   </div>
+                  <div className="flex gap-2 shrink-0">
+                    <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
+                      <Pencil className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => {
+                        if (confirm(`Remover "${item.name}"?`))
+                          deleteKitItem.mutate({ id: item.id });
+                      }}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
+      </div>
 
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-card border-border">
-            <DialogHeader>
-              <DialogTitle>{editingId ? "Editar Item" : "Novo Item do Kit"}</DialogTitle>
-            </DialogHeader>
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <Tabs value={form.configType} onValueChange={(v) => setForm({ ...form, configType: v as ConfigType })}>
-                <TabsList className="grid grid-cols-3 sm:grid-cols-6 gap-1 bg-muted p-1 h-auto">
-                  <TabsTrigger value="none" className="text-xs py-2">
-                    <Package className="h-3 w-3 mr-1" /> Simples
-                  </TabsTrigger>
-                  <TabsTrigger value="armor" className="text-xs py-2">
-                    <Shield className="h-3 w-3 mr-1" /> Armadura
-                  </TabsTrigger>
-                  <TabsTrigger value="book" className="text-xs py-2">
-                    <BookOpen className="h-3 w-3 mr-1" /> Livro
-                  </TabsTrigger>
-                  <TabsTrigger value="tool" className="text-xs py-2">
-                    <Wrench className="h-3 w-3 mr-1" /> Ferramenta
-                  </TabsTrigger>
-                  <TabsTrigger value="egg" className="text-xs py-2">
-                    <Egg className="h-3 w-3 mr-1" /> Ovos
-                  </TabsTrigger>
-                  <TabsTrigger value="potion" className="text-xs py-2">
-                    <FlaskConical className="h-3 w-3 mr-1" /> Poções
-                  </TabsTrigger>
-                  <TabsTrigger value="trim" className="text-xs py-2">
-                    <Hammer className="h-3 w-3 mr-1" /> Moldes
-                  </TabsTrigger>
-                </TabsList>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-                  <div className="space-y-2">
-                    <Label>Nome do Item</Label>
-                    <Input
-                      value={form.name}
-                      onChange={(e) => setForm({ ...form, name: e.target.value })}
-                      placeholder="Ex: Espada de Netherite"
-                      required
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="bg-card border-border max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-foreground">
+              {editingId ? "Editar Item" : "Novo Item do Kit"}
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <Label className="text-foreground mb-1.5 block">Minecraft ID *</Label>
+              <div className="flex gap-2 items-center">
+                <div className="h-10 w-10 rounded-lg bg-muted border border-border shrink-0 overflow-hidden flex items-center justify-center">
+                  {form.minecraftId ? (
+                    <img
+                      src={itemTexture(form.minecraftId, form.imageUrl || null)}
+                      alt=""
+                      className="h-8 w-8 object-contain"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = "none";
+                      }}
                     />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>ID do Minecraft</Label>
-                    <Input
-                      value={form.minecraftId}
-                      onChange={(e) => setForm({ ...form, minecraftId: e.target.value })}
-                      placeholder="Ex: netherite_sword"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Preço Base</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={form.price}
-                      onChange={(e) => setForm({ ...form, price: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>URL da Imagem (Opcional)</Label>
-                    <Input
-                      value={form.imageUrl}
-                      onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
-                      placeholder="https://..."
-                    />
-                  </div>
-                  <div className="flex items-center gap-4 py-2">
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        checked={form.active}
-                        onCheckedChange={(v) => setForm({ ...form, active: v })}
-                      />
-                      <Label>Ativo</Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        checked={form.pricePerUnit}
-                        onCheckedChange={(v) => setForm({ ...form, pricePerUnit: v })}
-                      />
-                      <Label>Preço por Unidade</Label>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-2">
-                      <Label>Min por Slot</Label>
-                      <Input
-                        type="number"
-                        value={form.minPerSlot}
-                        onChange={(e) => setForm({ ...form, minPerSlot: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Max por Slot</Label>
-                      <Input
-                        type="number"
-                        value={form.maxPerSlot}
-                        onChange={(e) => setForm({ ...form, maxPerSlot: e.target.value })}
-                      />
-                    </div>
-                  </div>
+                  ) : (
+                    <Package className="h-4 w-4 text-muted-foreground" />
+                  )}
                 </div>
+                <Input
+                  value={form.minecraftId}
+                  onChange={(e) => setF({ minecraftId: e.target.value })}
+                  className="bg-muted border-border flex-1 font-mono text-sm"
+                  placeholder="enchanted_book"
+                  required
+                  disabled={!!editingId}
+                />
+              </div>
+              {editingId && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  O Minecraft ID nao pode ser alterado apos a criacao.
+                </p>
+              )}
+            </div>
 
-                <TabsContent value="armor" className="space-y-4 mt-4 border-t pt-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Preço Full</Label>
+            <div>
+              <Label className="text-foreground mb-1.5 block">Nome *</Label>
+              <Input
+                value={form.name}
+                onChange={(e) => setF({ name: e.target.value })}
+                className="bg-muted border-border"
+                placeholder="Livro de Encantamento"
+                required
+              />
+            </div>
+
+            <div>
+              <Label className="text-foreground mb-1.5 block">
+                URL da Imagem{" "}
+                <span className="text-muted-foreground font-normal">(opcional)</span>
+              </Label>
+              <Input
+                value={form.imageUrl}
+                onChange={(e) => setF({ imageUrl: e.target.value })}
+                className="bg-muted border-border"
+                placeholder="https://..."
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-foreground mb-1.5 block">Preco base (R$) *</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={form.price}
+                  onChange={(e) => setF({ price: e.target.value })}
+                  className="bg-muted border-border"
+                  required
+                />
+              </div>
+              <div className="flex flex-col justify-end pb-1">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={form.pricePerUnit}
+                    onCheckedChange={(v) => setF({ pricePerUnit: v })}
+                  />
+                  <Label className="text-foreground text-sm">Preco por unidade</Label>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-foreground mb-1.5 block">Min. por slot</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={form.minPerSlot}
+                  onChange={(e) => setF({ minPerSlot: e.target.value })}
+                  className="bg-muted border-border"
+                />
+              </div>
+              <div>
+                <Label className="text-foreground mb-1.5 block">Max. por slot</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={form.maxPerSlot}
+                  onChange={(e) => setF({ maxPerSlot: e.target.value })}
+                  className="bg-muted border-border"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-foreground mb-1.5 block">Configuracao especial</Label>
+              <Select
+                value={form.configType}
+                onValueChange={(v) => setF({ configType: v as ConfigType })}
+              >
+                <SelectTrigger className="bg-muted border-border">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-card border-border">
+                  <SelectItem value="none">Nenhuma</SelectItem>
+                  <SelectItem value="armor">Armadura (Full / God)</SelectItem>
+                  <SelectItem value="book">Livro de Encantamento</SelectItem>
+                  <SelectItem value="tool">Ferramenta / Arma (encantamentos avulsos)</SelectItem>
+                  <SelectItem value="egg">Ovos (Spawn Eggs)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {form.configType === "armor" && (
+              <div className="rounded-lg border border-border p-3 space-y-4 bg-muted/30">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Configuracao de Armadura
+                </p>
+                <Tabs defaultValue="full">
+                  <TabsList className="bg-muted">
+                    <TabsTrigger value="full">Full</TabsTrigger>
+                    <TabsTrigger value="god">God</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="full" className="space-y-3 pt-2">
+                    <div>
+                      <Label className="text-foreground mb-1.5 block text-sm">
+                        Preco Full (R$)
+                      </Label>
                       <Input
                         type="number"
                         step="0.01"
+                        min="0"
                         value={form.armorPriceFull}
-                        onChange={(e) => setForm({ ...form, armorPriceFull: e.target.value })}
+                        onChange={(e) => setF({ armorPriceFull: e.target.value })}
+                        className="bg-muted border-border"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label>Preço God</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={form.armorPriceGod}
-                        onChange={(e) => setForm({ ...form, armorPriceGod: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <EnchantList
                       label="Encantamentos Full"
                       enchants={form.armorEnchantsFull}
-                      onChange={(v) => setForm({ ...form, armorEnchantsFull: v })}
+                      onChange={(v) => setF({ armorEnchantsFull: v })}
                     />
+                  </TabsContent>
+                  <TabsContent value="god" className="space-y-3 pt-2">
+                    <div>
+                      <Label className="text-foreground mb-1.5 block text-sm">
+                        Preco God (R$)
+                      </Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={form.armorPriceGod}
+                        onChange={(e) => setF({ armorPriceGod: e.target.value })}
+                        className="bg-muted border-border"
+                      />
+                    </div>
                     <EnchantList
                       label="Encantamentos God"
                       enchants={form.armorEnchantsGod}
-                      onChange={(v) => setForm({ ...form, armorEnchantsGod: v })}
+                      onChange={(v) => setF({ armorEnchantsGod: v })}
                     />
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="book" className="space-y-4 mt-4 border-t pt-4">
-                  <div className="space-y-2">
-                    <Label>Preço por Nível de Encantamento</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={form.bookPricePerLevel}
-                      onChange={(e) => setForm({ ...form, bookPricePerLevel: e.target.value })}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      O comprador poderá escolher qualquer encantamento. O preço será: nível x este valor.
-                    </p>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="tool" className="mt-4 border-t pt-4">
-                  <ToolEnchantList
-                    enchants={form.toolEnchants}
-                    onChange={(v) => setForm({ ...form, toolEnchants: v })}
-                  />
-                </TabsContent>
-
-                <TabsContent value="egg" className="mt-4 border-t pt-4">
-                  <GenericOptionList
-                    label="Opções de Ovos"
-                    options={form.eggOptions}
-                    onChange={(v) => setForm({ ...form, eggOptions: v })}
-                    idPlaceholder="creeper_spawn_egg"
-                  />
-                </TabsContent>
-
-                <TabsContent value="potion" className="mt-4 border-t pt-4">
-                  <GenericOptionList
-                    label="Opções de Poções"
-                    options={form.potionOptions}
-                    onChange={(v) => setForm({ ...form, potionOptions: v })}
-                    idPlaceholder="potion ou splash_potion"
-                  />
-                </TabsContent>
-
-                <TabsContent value="trim" className="mt-4 border-t pt-4">
-                  <GenericOptionList
-                    label="Opções de Moldes"
-                    options={form.trimOptions}
-                    onChange={(v) => setForm({ ...form, trimOptions: v })}
-                    idPlaceholder="coast_armor_trim_smithing_template"
-                  />
-                </TabsContent>
-              </Tabs>
-
-              <div className="flex justify-end gap-3 pt-4 border-t">
-                <Button type="button" variant="ghost" onClick={() => setDialogOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button type="submit" disabled={upsertKitItem.isPending}>
-                  {upsertKitItem.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  {editingId ? "Salvar Alterações" : "Criar Item"}
-                </Button>
+                  </TabsContent>
+                </Tabs>
               </div>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
+            )}
+
+            {form.configType === "book" && (
+              <div className="rounded-lg border border-border p-3 space-y-3 bg-muted/30">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Configuracao de Livro
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  O comprador escolhe qualquer encantamento na hora de montar o kit.
+                  Defina o preco cobrado por nivel de encantamento.
+                </p>
+                <div>
+                  <Label className="text-foreground mb-1.5 block text-sm">
+                    Preco por nivel (R$)
+                  </Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={form.bookPricePerLevel}
+                    onChange={(e) => setF({ bookPricePerLevel: e.target.value })}
+                    className="bg-muted border-border w-40"
+                    placeholder="ex: 2.50"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Exemplo: Afiacao V = 5 niveis x R$ {parseFloat(form.bookPricePerLevel || "0").toFixed(2)} = R$ {(5 * parseFloat(form.bookPricePerLevel || "0")).toFixed(2)}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {form.configType === "tool" && (
+              <div className="rounded-lg border border-border p-3 space-y-3 bg-muted/30">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Configuracao de Ferramenta / Arma
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Fixado em 1 por slot. O usuario escolhe os encantamentos e niveis na hora de montar o kit.
+                </p>
+                <ToolEnchantList
+                  enchants={form.toolEnchants}
+                  onChange={(v) => setF({ toolEnchants: v })}
+                />
+              </div>
+            )}
+
+            {form.configType === "egg" && (
+              <div className="rounded-lg border border-border p-3 space-y-3 bg-muted/30">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Configuracao de Ovos (Spawn Eggs)
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  O comprador escolhe qual tipo de mob quer no slot.
+                </p>
+                <EggOptionList
+                  options={form.eggOptions}
+                  onChange={(v) => setF({ eggOptions: v })}
+                />
+              </div>
+            )}
+
+            <div className="flex items-center gap-3">
+              <Switch
+                checked={form.active}
+                onCheckedChange={(v) => setF({ active: v })}
+              />
+              <Label className="text-foreground">Item ativo</Label>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <Button
+                type="submit"
+                disabled={upsertKitItem.isPending}
+                className="flex-1"
+              >
+                {upsertKitItem.isPending && (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                )}
+                {editingId ? "Salvar" : "Criar Item"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setDialogOpen(false)}
+              >
+                Cancelar
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 }
