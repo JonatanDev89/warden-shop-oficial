@@ -36,17 +36,19 @@ import {
   Shield,
   Wrench,
   Egg,
+  FlaskConical,
+  Hammer,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
   ALL_ENCHANTS,
   type EnchantEntry,
   type ToolEnchantOption,
-  type EggOption,
+  type GenericOption,
 } from "@/lib/kitEnchants";
 
 type KitItem = NonNullable<ReturnType<typeof trpc.admin.getKitItems.useQuery>["data"]>[0];
-type ConfigType = "none" | "armor" | "book" | "tool" | "egg";
+type ConfigType = "none" | "armor" | "book" | "tool" | "egg" | "potion" | "trim";
 
 type KitItemForm = {
   minecraftId: string;
@@ -64,7 +66,9 @@ type KitItemForm = {
   armorEnchantsGod: EnchantEntry[];
   bookPricePerLevel: string;
   toolEnchants: ToolEnchantOption[];
-  eggOptions: EggOption[];
+  eggOptions: GenericOption[];
+  potionOptions: GenericOption[];
+  trimOptions: GenericOption[];
 };
 
 const emptyForm: KitItemForm = {
@@ -84,6 +88,8 @@ const emptyForm: KitItemForm = {
   bookPricePerLevel: "0",
   toolEnchants: [],
   eggOptions: [],
+  potionOptions: [],
+  trimOptions: [],
 };
 
 function itemTexture(minecraftId: string, imageUrl?: string | null) {
@@ -134,6 +140,18 @@ function buildItemConfig(form: KitItemForm): string | undefined {
       options: form.eggOptions,
     });
   }
+  if (form.configType === "potion") {
+    return JSON.stringify({
+      type: "potion",
+      options: form.potionOptions,
+    });
+  }
+  if (form.configType === "trim") {
+    return JSON.stringify({
+      type: "trim",
+      options: form.trimOptions,
+    });
+  }
   return undefined;
 }
 
@@ -174,6 +192,12 @@ function parseFormFromItem(item: KitItem): KitItemForm {
       } else if (cfg?.type === "egg") {
         base.configType = "egg";
         base.eggOptions = cfg.options ?? [];
+      } else if (cfg?.type === "potion") {
+        base.configType = "potion";
+        base.potionOptions = cfg.options ?? [];
+      } else if (cfg?.type === "trim") {
+        base.configType = "trim";
+        base.trimOptions = cfg.options ?? [];
       }
     } catch {}
   }
@@ -375,12 +399,14 @@ function ToolEnchantList({
   );
 }
 
-function EggOptionList({
+function GenericOptionList({
+  label,
   options,
   onChange,
 }: {
-  options: EggOption[];
-  onChange: (v: EggOption[]) => void;
+  label: string;
+  options: GenericOption[];
+  onChange: (v: GenericOption[]) => void;
 }) {
   const [addId, setAddId] = useState("");
   const [addName, setAddName] = useState("");
@@ -398,7 +424,7 @@ function EggOptionList({
 
   return (
     <div className="space-y-2">
-      <Label className="text-foreground text-sm">Opções de Ovos</Label>
+      <Label className="text-foreground text-sm">{label}</Label>
       <div className="space-y-1">
         {options.map((o) => (
           <div key={o.id} className="flex items-center gap-2 bg-muted/50 rounded px-2 py-1">
@@ -554,6 +580,18 @@ export default function AdminKitItems() {
                     configBadge = (
                       <Badge variant="outline" className="text-xs gap-1">
                         <Egg className="h-3 w-3" /> Ovos
+                      </Badge>
+                    );
+                  else if (cfg?.type === "potion")
+                    configBadge = (
+                      <Badge variant="outline" className="text-xs gap-1">
+                        <FlaskConical className="h-3 w-3" /> Poções
+                      </Badge>
+                    );
+                  else if (cfg?.type === "trim")
+                    configBadge = (
+                      <Badge variant="outline" className="text-xs gap-1">
+                        <Hammer className="h-3 w-3" /> Moldes
                       </Badge>
                     );
                 } catch {}
@@ -750,6 +788,8 @@ export default function AdminKitItems() {
                   <SelectItem value="book">Livro de Encantamento</SelectItem>
                   <SelectItem value="tool">Ferramenta / Arma (encantamentos avulsos)</SelectItem>
                   <SelectItem value="egg">Ovos (Spawn Eggs)</SelectItem>
+                  <SelectItem value="potion">Poções</SelectItem>
+                  <SelectItem value="trim">Moldes de Ferraria</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -860,9 +900,42 @@ export default function AdminKitItems() {
                 <p className="text-xs text-muted-foreground">
                   O comprador escolhe qual tipo de mob quer no slot.
                 </p>
-                <EggOptionList
+                <GenericOptionList
+                  label="Opções de Ovos"
                   options={form.eggOptions}
                   onChange={(v) => setF({ eggOptions: v })}
+                />
+              </div>
+            )}
+
+            {form.configType === "potion" && (
+              <div className="rounded-lg border border-border p-3 space-y-3 bg-muted/30">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Configuracao de Poções
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  O comprador escolhe qual tipo de poção quer no slot.
+                </p>
+                <GenericOptionList
+                  label="Opções de Poções"
+                  options={form.potionOptions}
+                  onChange={(v) => setF({ potionOptions: v })}
+                />
+              </div>
+            )}
+
+            {form.configType === "trim" && (
+              <div className="rounded-lg border border-border p-3 space-y-3 bg-muted/30">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Configuracao de Moldes de Ferraria
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  O comprador escolhe qual tipo de molde quer no slot.
+                </p>
+                <GenericOptionList
+                  label="Opções de Moldes"
+                  options={form.trimOptions}
+                  onChange={(v) => setF({ trimOptions: v })}
                 />
               </div>
             )}
