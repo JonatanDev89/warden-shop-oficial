@@ -403,10 +403,12 @@ function GenericOptionList({
   label,
   options,
   onChange,
+  idPlaceholder = "minecraft_id (ex: creeper_spawn_egg)",
 }: {
   label: string;
   options: GenericOption[];
   onChange: (v: GenericOption[]) => void;
+  idPlaceholder?: string;
 }) {
   const [addId, setAddId] = useState("");
   const [addName, setAddName] = useState("");
@@ -447,7 +449,7 @@ function GenericOptionList({
         <Input
           value={addId}
           onChange={(e) => setAddId(e.target.value)}
-          placeholder="minecraft_id (ex: creeper_spawn_egg)"
+          placeholder={idPlaceholder}
           className="h-8 text-xs bg-muted border-border"
         />
         <div className="flex gap-2">
@@ -920,6 +922,7 @@ export default function AdminKitItems() {
                   label="Opções de Poções"
                   options={form.potionOptions}
                   onChange={(v) => setF({ potionOptions: v })}
+                  idPlaceholder="potion ou splash_potion"
                 />
               </div>
             )}
@@ -936,6 +939,7 @@ export default function AdminKitItems() {
                   label="Opções de Moldes"
                   options={form.trimOptions}
                   onChange={(v) => setF({ trimOptions: v })}
+                  idPlaceholder="coast_armor_trim_smithing_template"
                 />
               </div>
             )}
