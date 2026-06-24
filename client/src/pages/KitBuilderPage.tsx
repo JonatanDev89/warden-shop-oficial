@@ -462,7 +462,12 @@ export default function KitBuilderPage() {
                                   }
                                 }} />
                               <div className="min-w-0">
-                                <p className="text-xs font-medium text-foreground truncate">{opt.name}</p>
+                                <p className="text-xs font-medium text-foreground truncate">
+                                  {opt.name}
+                                  {(opt as any).level && (
+                                    <span className="text-muted-foreground ml-1">({(opt as any).level})</span>
+                                  )}
+                                </p>
                                 <p className="text-xs text-primary font-bold">R$ {parseFloat(opt.price).toFixed(2).replace(".", ",")}</p>
                               </div>
                             </button>

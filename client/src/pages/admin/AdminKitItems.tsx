@@ -45,6 +45,7 @@ import {
   type EnchantEntry,
   type ToolEnchantOption,
   type GenericOption,
+  type PotionOption,
 } from "@/lib/kitEnchants";
 
 type KitItem = NonNullable<ReturnType<typeof trpc.admin.getKitItems.useQuery>["data"]>[0];
@@ -67,7 +68,7 @@ type KitItemForm = {
   bookPricePerLevel: string;
   toolEnchants: ToolEnchantOption[];
   eggOptions: GenericOption[];
-  potionOptions: GenericOption[];
+  potionOptions: PotionOption[];
   trimOptions: GenericOption[];
 };
 
@@ -194,7 +195,10 @@ function parseFormFromItem(item: KitItem): KitItemForm {
         base.eggOptions = cfg.options ?? [];
       } else if (cfg?.type === "potion") {
         base.configType = "potion";
-        base.potionOptions = cfg.options ?? [];
+        base.potionOptions = (cfg.options ?? []).map((opt: any) => ({
+          ...opt,
+          level: opt.level || "I",
+        }));
       } else if (cfg?.type === "trim") {
         base.configType = "trim";
         base.trimOptions = cfg.options ?? [];
@@ -404,22 +408,30 @@ function GenericOptionList({
   options,
   onChange,
   idPlaceholder = "minecraft_id (ex: creeper_spawn_egg)",
+  showLevel = false,
 }: {
   label: string;
-  options: GenericOption[];
-  onChange: (v: GenericOption[]) => void;
+  options: GenericOption[] | PotionOption[];
+  onChange: (v: GenericOption[] | PotionOption[]) => void;
   idPlaceholder?: string;
+  showLevel?: boolean;
 }) {
   const [addId, setAddId] = useState("");
   const [addName, setAddName] = useState("");
   const [addPrice, setAddPrice] = useState("0");
+  const [addLevel, setAddLevel] = useState<"I" | "II">("I");
 
   const add = () => {
     if (!addId || !addName) return;
-    onChange([...options, { id: addId, name: addName, price: addPrice }]);
+    const newOption: any = { id: addId, name: addName, price: addPrice };
+    if (showLevel) {
+      newOption.level = addLevel;
+    }
+    onChange([...options, newOption]);
     setAddId("");
     setAddName("");
     setAddPrice("0");
+    setAddLevel("I");
   };
 
   const remove = (id: string) => onChange(options.filter((o) => o.id !== id));
@@ -433,7 +445,12 @@ function GenericOptionList({
             <div className="h-6 w-6 shrink-0 flex items-center justify-center">
                <img src={itemTexture(o.id)} alt="" className="h-5 w-5 object-contain" />
             </div>
-            <span className="flex-1 text-sm text-foreground truncate">{o.name}</span>
+            <span className="flex-1 text-sm text-foreground truncate">
+              {o.name}
+              {showLevel && (o as PotionOption).level && (
+                <span className="text-xs text-muted-foreground ml-1">({(o as PotionOption).level})</span>
+              )}
+            </span>
             <span className="text-xs text-primary font-bold">R$ {parseFloat(o.price).toFixed(2)}</span>
             <button
               type="button"
@@ -456,9 +473,20 @@ function GenericOptionList({
           <Input
             value={addName}
             onChange={(e) => setAddName(e.target.value)}
-            placeholder="Nome (ex: Ovo de Creeper)"
+            placeholder="Nome (ex: Poção de Força)"
             className="h-8 text-xs bg-muted border-border flex-1"
           />
+          {showLevel && (
+            <Select value={addLevel} onValueChange={(v) => setAddLevel(v as "I" | "II")}>
+              <SelectTrigger className="bg-muted border-border h-8 text-xs w-16">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-card border-border">
+                <SelectItem value="I" className="text-xs">Nível I</SelectItem>
+                <SelectItem value="II" className="text-xs">Nível II</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
           <Input
             type="number"
             step="0.01"
@@ -921,8 +949,9 @@ export default function AdminKitItems() {
                 <GenericOptionList
                   label="Opções de Poções"
                   options={form.potionOptions}
-                  onChange={(v) => setF({ potionOptions: v })}
-                  idPlaceholder="potion ou splash_potion"
+                  onChange={(v) => setF({ potionOptions: v as PotionOption[] })}
+                  idPlaceholder="potion"
+                  showLevel={true}
                 />
               </div>
             )}
