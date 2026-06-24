@@ -434,6 +434,17 @@ export default function KitBuilderPage() {
                         <Plus className="h-3 w-3" />
                       </Button>
                     </div>
+                    <div className="flex items-center gap-2 mb-4">
+                      <Label className="text-xs text-muted-foreground shrink-0">Quantidade:</Label>
+                      <Input 
+                        type="number" 
+                        min={pendingConfig.item.minPerSlot} 
+                        max={pendingConfig.item.maxPerSlot} 
+                        value={quantityInput} 
+                        onChange={(e) => setQuantityInput(e.target.value)} 
+                        className="bg-muted border-border h-8 w-20 text-sm" 
+                      />
+                    </div>
                     <Button onClick={confirmTool} className="w-full">Confirmar</Button>
                   </div>
                 ) : (pendingConfig?.type === "egg" || pendingConfig?.type === "potion" || pendingConfig?.type === "trim") ? (
@@ -446,11 +457,26 @@ export default function KitBuilderPage() {
                         {pendingConfig.item.name} — escolha uma opção
                       </p>
                     </div>
+                    <div className="flex items-center gap-2 mb-4">
+                      <Label className="text-xs text-muted-foreground shrink-0">Quantidade:</Label>
+                      <Input 
+                        type="number" 
+                        min={pendingConfig.item.minPerSlot} 
+                        max={pendingConfig.item.maxPerSlot} 
+                        value={quantityInput} 
+                        onChange={(e) => setQuantityInput(e.target.value)} 
+                        className="bg-muted border-border h-8 w-20 text-sm" 
+                      />
+                      <span className="text-[10px] text-muted-foreground">
+                        (Mín: {pendingConfig.item.minPerSlot}, Máx: {pendingConfig.item.maxPerSlot})
+                      </span>
+                    </div>
+
                     {(() => {
                       const cfg = parseItemConfig(pendingConfig.item.itemConfig);
                       if (!cfg || !("options" in cfg)) return null;
                       return (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
                           {cfg.options.map((opt) => (
                             <button key={opt.id} onClick={() => setSelectedOptionId(opt.id)} className={`flex items-center gap-3 p-2 rounded-lg border-2 text-left transition-all ${selectedOptionId === opt.id ? "border-primary bg-primary/10" : "border-border bg-muted hover:border-primary/50"}`}>
                               <img src={getItemTexture(opt.id)} alt="" className="h-8 w-8 object-contain shrink-0" style={{ imageRendering: "pixelated" }} onError={(e) => {
