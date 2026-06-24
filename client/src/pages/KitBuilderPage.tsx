@@ -232,7 +232,7 @@ export default function KitBuilderPage() {
       name: opt.name,
       quantity: qty,
       unitPrice: opt.price,
-      pricePerUnit: false,
+      pricePerUnit: true,
       imageUrl: undefined,
       configLabel: undefined,
       displayLabel: undefined,
