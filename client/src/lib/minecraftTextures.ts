@@ -52,6 +52,25 @@ const BEDROCK_TO_JAVA_MAP: Record<string, string> = {
   "rib_armor_trim": "rib_armor_trim_smithing_template",
   "eye_armor_trim": "eye_armor_trim_smithing_template",
   "spire_armor_trim": "spire_armor_trim_smithing_template",
+  // Poções com Efeitos (para diferenciação visual)
+  "strength_potion": "strength_potion",
+  "speed_potion": "speed_potion",
+  "haste_potion": "haste_potion",
+  "healing_potion": "healing_potion",
+  "instant_health_potion": "healing_potion",
+  "night_vision_potion": "night_vision_potion",
+  "invisibility_potion": "invisibility_potion",
+  "resistance_potion": "resistance_potion",
+  "fire_resistance_potion": "fire_resistance_potion",
+  "regeneration_potion": "regeneration_potion",
+  "weakness_potion": "weakness_potion",
+  "poison_potion": "poison_potion",
+  "slowness_potion": "slowness_potion",
+  "jump_boost_potion": "jump_boost_potion",
+  "water_breathing_potion": "water_breathing_potion",
+  "luck_potion": "luck_potion",
+  "slow_falling_potion": "slow_falling_potion",
+  "turtle_master_potion": "turtle_master_potion",
 };
 
 /**
@@ -103,6 +122,15 @@ function normalizeMinecraftId(minecraftId: string): string {
     const name = id.replace("_armor_trim", "").replace("_trim", "");
     if (trimNames.includes(name)) {
       return `${name}_armor_trim_smithing_template`;
+    }
+  }
+
+  // Poções com efeitos específicos (ex: strength_potion, speed_potion, etc)
+  const potionEffects = ["strength", "speed", "haste", "healing", "instant_health", "night_vision", "invisibility", "resistance", "fire_resistance", "regeneration", "weakness", "poison", "slowness", "jump_boost", "water_breathing", "luck", "slow_falling", "turtle_master"];
+  if (id.endsWith("_potion")) {
+    const effect = id.replace("_potion", "");
+    if (potionEffects.includes(effect)) {
+      return id; // Já está no formato correto
     }
   }
 
