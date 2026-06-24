@@ -43,6 +43,15 @@ const BEDROCK_TO_JAVA_MAP: Record<string, string> = {
   "skull_player": "player_head",
   "skull_dragon": "dragon_head",
   "skull": "skeleton_skull", // Padrão
+  // Moldes de Ferraria (Armor Trims)
+  "dune_armor_trim": "dune_armor_trim_smithing_template",
+  "coast_armor_trim": "coast_armor_trim_smithing_template",
+  "ward_armor_trim": "ward_armor_trim_smithing_template",
+  "silence_armor_trim": "silence_armor_trim_smithing_template",
+  "snout_armor_trim": "snout_armor_trim_smithing_template",
+  "rib_armor_trim": "rib_armor_trim_smithing_template",
+  "eye_armor_trim": "eye_armor_trim_smithing_template",
+  "spire_armor_trim": "spire_armor_trim_smithing_template",
 };
 
 /**
@@ -81,6 +90,19 @@ function normalizeMinecraftId(minecraftId: string): string {
     }
     if (mob === "skeleton" || mob === "wither") {
       return `${mob}_skeleton_skull`;
+    }
+  }
+
+  // Correção para Moldes de Ferraria
+  const trimNames = ["sentry", "vex", "wild", "coast", "dune", "wayfinder", "raiser", "shaper", "host", "ward", "silence", "tide", "snout", "rib", "eye", "spire", "bolt", "flow"];
+  if (trimNames.includes(id)) {
+    return `${id}_armor_trim_smithing_template`;
+  }
+
+  if (id.endsWith("_trim") || id.endsWith("_armor_trim")) {
+    const name = id.replace("_armor_trim", "").replace("_trim", "");
+    if (trimNames.includes(name)) {
+      return `${name}_armor_trim_smithing_template`;
     }
   }
 
