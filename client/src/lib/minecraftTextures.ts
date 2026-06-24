@@ -145,6 +145,11 @@ export function getItemTexture(minecraftId: string, customImageUrl?: string | nu
 
   const normalizedId = normalizeMinecraftId(minecraftId);
 
+  // Para poções com efeitos, usar fonte alternativa (PrismLauncher)
+  if (normalizedId.endsWith("_potion")) {
+    return `https://raw.githubusercontent.com/PrismLauncher/MC-Assets/master/Assets/minecraft/textures/item/${normalizedId}.png`;
+  }
+
   // Fonte principal: Minecraft Inventory API (S7A)
   return `https://minecraft-inventory.s7a.dev/items/${normalizedId}.png`;
 }
