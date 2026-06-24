@@ -1,11 +1,13 @@
 import { trpc } from "@/lib/trpc";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import ShopLayout from "@/components/ShopLayout";
-import { Package, ShoppingCart } from "lucide-react";
+import { Package, ShoppingCart, Plus, Minus } from "lucide-react";
 import { useState } from "react";
 import { parseProductImages } from "@/lib/productImages";
+import { useCart } from "@/contexts/CartContext";
+import { toast } from "sonner";
 
 function PixIcon() {
   return (
@@ -17,13 +19,49 @@ function PixIcon() {
 
 export default function ShopPage() {
   const [selectedCategory, setSelectedCategory] = useState<number | undefined>(undefined);
+  const [, navigate] = useLocation();
+  const { addItem } = useCart();
   const { data: categories } = trpc.shop.getCategories.useQuery();
   const { data: products, isLoading } = trpc.shop.getProducts.useQuery({
     categoryId: selectedCategory,
   });
 
+  const [quantities, setQuantities] = useState<Record<number, number>>({});
+
   const formatPrice = (price: string | number) =>
     `R$ ${parseFloat(String(price)).toFixed(2).replace(".", ",")}`;
+
+  const handleQtyChange = (productId: number, delta: number) => {
+    setQuantities((prev) => {
+      const current = prev[productId] ?? 1;
+      const next = Math.max(1, current + delta);
+      return { ...prev, [productId]: next };
+    });
+  };
+
+  const handleAddToCart = (product: any) => {
+    const qty = quantities[product.id] ?? 1;
+    const { main } = parseProductImages(product.imageUrl);
+    addItem({
+      productId: product.id,
+      name: product.name,
+      price: parseFloat(String(product.price)),
+      imageUrl: main ?? undefined,
+    }, qty);
+    toast.success(`${qty}x ${product.name} adicionado ao carrinho!`);
+  };
+
+  const handleBuyNow = (product: any) => {
+    const qty = quantities[product.id] ?? 1;
+    const { main } = parseProductImages(product.imageUrl);
+    addItem({
+      productId: product.id,
+      name: product.name,
+      price: parseFloat(String(product.price)),
+      imageUrl: main ?? undefined,
+    }, qty);
+    navigate("/checkout");
+  };
 
   return (
     <ShopLayout>
@@ -117,13 +155,44 @@ export default function ShopPage() {
 
                   <div className="text-xs text-muted-foreground mb-3">À vista no Pix</div>
 
-                  {/* Botão único → página de detalhes */}
-                  <Link href={`/produto/${product.id}`} className="block">
-                    <Button size="sm" className="w-full gap-2 font-semibold">
-                      <ShoppingCart className="h-3.5 w-3.5" />
-                      Comprar agora
+                  {/* Seletor de Quantidade */}
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="flex items-center gap-1 border border-border rounded-md bg-muted/50 p-1 shrink-0">
+                      <button 
+                        onClick={() => handleQtyChange(product.id, -1)}
+                        className="h-6 w-6 flex items-center justify-center hover:text-primary transition-colors"
+                      >
+                        <Minus className="h-3 w-3" />
+                      </button>
+                      <span className="w-6 text-center text-xs font-bold text-foreground">
+                        {quantities[product.id] ?? 1}
+                      </span>
+                      <button 
+                        onClick={() => handleQtyChange(product.id, 1)}
+                        className="h-6 w-6 flex items-center justify-center hover:text-primary transition-colors"
+                      >
+                        <Plus className="h-3 w-3" />
+                      </button>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1 h-8 text-[10px] sm:text-xs gap-1 px-1"
+                      onClick={() => handleAddToCart(product)}
+                    >
+                      <ShoppingCart className="h-3 w-3" />
+                      Carrinho
                     </Button>
-                  </Link>
+                  </div>
+
+                  {/* Botão Comprar Agora */}
+                  <Button 
+                    size="sm" 
+                    className="w-full gap-2 font-bold"
+                    onClick={() => handleBuyNow(product)}
+                  >
+                    Comprar agora
+                  </Button>
                 </CardContent>
               </Card>
             ))}
