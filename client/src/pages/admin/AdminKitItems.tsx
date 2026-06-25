@@ -495,22 +495,34 @@ function GenericOptionList({
     setQuickCreate(val);
     if (!showLevel) return;
 
-    // Parser para comandos tipo: /give @s potion 1 28
-    // Ou formato simplificado: potion 1 28
-    // Ou apenas: 28 (ID numérico)
+    // Parser para comandos tipo: /give @s potion 1 28 <valor>
+    // Ou formato simplificado: potion 1 28 <valor>
+    // Ou apenas: 28 <valor>
     const parts = val.toLowerCase().trim().split(/\s+/);
     
     let potionDataValue: number | null = null;
     let potionType: PotionType = "normal";
+    let potionPrice: string | null = null;
 
-    // Procura por um número que corresponda aos IDs de poção (geralmente o último ou penúltimo parâmetro)
-    for (const part of parts) {
+    // Lógica do Minecraft Bedrock: /give <player> <item> <amount> <dataValue>
+    // Ex: /give @s potion 1 28
+    
+    // Procura por um número que corresponda aos IDs de poção
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
       const num = parseInt(part);
+      
       if (!isNaN(num) && num > 0) {
-        // No Minecraft, IDs de poção costumam ser números específicos
-        // Se encontrarmos um número que existe no nosso PRESET_POTIONS, usamos ele
+        // Se for o ID de poção (ex: 28)
         if (PRESET_POTIONS.some(p => p.data === num)) {
           potionDataValue = num;
+          // Se houver um número DEPOIS do ID da poção, assumimos que é o PREÇO/VALOR
+          if (i + 1 < parts.length) {
+            const nextNum = parseFloat(parts[i+1]);
+            if (!isNaN(nextNum)) {
+              potionPrice = String(nextNum);
+            }
+          }
         }
       }
       if (part.includes("splash")) potionType = "splash";
@@ -534,7 +546,9 @@ function GenericOptionList({
 
         setAddId(finalId);
         setAddName(finalName);
-        setAddPrice("0");
+        if (potionPrice !== null) {
+          setAddPrice(potionPrice);
+        }
         setAddLevel("I");
       }
     }
