@@ -42,6 +42,7 @@ import {
 import { toast } from "sonner";
 import {
   ALL_ENCHANTS,
+  PRESET_POTIONS,
   type EnchantEntry,
   type ToolEnchantOption,
   type GenericOption,
@@ -442,6 +443,14 @@ function GenericOptionList({
     setAddLevel("I");
   };
 
+  const selectPreset = (id: string) => {
+    const preset = PRESET_POTIONS.find(p => p.id === id);
+    if (preset) {
+      setAddId(preset.id);
+      setAddName(`Poção de ${preset.name}`);
+    }
+  };
+
   const remove = (id: string) => onChange(options.filter((o) => o.id !== id));
 
   return (
@@ -471,6 +480,20 @@ function GenericOptionList({
         ))}
       </div>
       <div className="grid grid-cols-1 gap-2 border-t border-border pt-2">
+        {showLevel && (
+          <Select onValueChange={selectPreset}>
+            <SelectTrigger className="bg-muted border-border h-8 text-xs w-full">
+              <SelectValue placeholder="Pesquisar poção pronta..." />
+            </SelectTrigger>
+            <SelectContent className="bg-card border-border max-h-60">
+              {PRESET_POTIONS.map((p) => (
+                <SelectItem key={p.id} value={p.id} className="text-xs">
+                  {p.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
         <Input
           value={addId}
           onChange={(e) => setAddId(e.target.value)}

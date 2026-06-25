@@ -131,3 +131,25 @@ export const ARMOR_PIECES = [
   { minecraftId: "diamond_leggings",     name: "Calças Diamante" },
   { minecraftId: "diamond_boots",        name: "Botas Diamante" },
 ];
+
+export const PRESET_POTIONS = [
+  { id: "regeneration", name: "Regeneração" },
+  { id: "swiftness", name: "Velocidade" },
+  { id: "fire_resistance", name: "Resistência ao Fogo" },
+  { id: "healing", name: "Cura Instantânea" },
+  { id: "night_vision", name: "Visão Noturna" },
+  { id: "strength", name: "Força" },
+  { id: "leaping", name: "Pulo" },
+  { id: "invisibility", name: "Invisibilidade" },
+  { id: "water_breathing", name: "Respiração Aquática" },
+  { id: "poison", name: "Veneno" },
+  { id: "weakness", name: "Fraqueza" },
+  { id: "slowness", name: "Lentidão" },
+  { id: "harming", name: "Dano Instantâneo" },
+  { id: "slow_falling", name: "Queda Suave" },
+  { id: "turtle_master", name: "Mestre Tartaruga" },
+  { id: "wind_charging", name: "Carga de Vento" },
+  { id: "weaving", name: "Tecelagem" },
+  { id: "oozing", name: "Exsudação" },
+  { id: "infestation", name: "Infestação" },
+];
