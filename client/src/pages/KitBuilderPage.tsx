@@ -61,6 +61,7 @@ export default function KitBuilderPage() {
   const [toolSelectedEnchants, setToolSelectedEnchants] = useState<{ id: string; level: number }[]>([]);
   const [toolAddId, setToolAddId] = useState("");
   const [toolAddLevel, setToolAddLevel] = useState("1");
+  const [toolTier, setToolTier] = useState<"custom" | "full">("custom");
   const [selectedOptionId, setSelectedOptionId] = useState("");
 
   const filteredItems = kitItems.filter(
@@ -115,6 +116,7 @@ export default function KitBuilderPage() {
       setToolSelectedEnchants([]);
       setToolAddId(cfg.enchants.length > 0 ? cfg.enchants[0].id : "");
       setToolAddLevel("1");
+      setToolTier((cfg as any).priceFull && (cfg as any).priceFull !== "0" ? "full" : "custom");
       setPendingConfig({ type: "tool", item, enchants: cfg.enchants });
       return;
     }
