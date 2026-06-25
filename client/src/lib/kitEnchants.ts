@@ -91,6 +91,8 @@ export type ToolConfig = {
   type: "tool";
   basePrice: string;
   enchants: ToolEnchantOption[];
+  priceFull?: string;
+  enchantsFull?: EnchantEntry[];
 };
 
 export type GenericOption = { id: string; name: string; price: string };

@@ -338,7 +338,7 @@ export default function KitBuilderPage() {
 
             {selectedSlot !== null && (
               <div className="border border-border rounded-xl bg-card p-4">
-                {pendingConfig?.type === "armor" ? (
+                {(pendingConfig?.type === "armor" || (pendingConfig?.type === "tool" && (parseItemConfig(pendingConfig.item.itemConfig) as any)?.priceFull && (parseItemConfig(pendingConfig.item.itemConfig) as any)?.priceFull !== "0")) ? (
                   <div className="space-y-4">
                     <div className="flex items-center gap-2">
                       <button onClick={() => setPendingConfig(null)} className="text-muted-foreground hover:text-foreground">
@@ -346,23 +346,107 @@ export default function KitBuilderPage() {
                       </button>
                       <p className="text-sm font-semibold text-foreground">{pendingConfig.item.name} — escolha o tier</p>
                     </div>
-                    {(() => {
-                      const cfg = parseItemConfig(pendingConfig.item.itemConfig);
-                      if (cfg?.type !== "armor") return null;
-                      return (
-                        <div className="grid grid-cols-2 gap-4">
-                          <button onClick={() => setArmorTier("full")} className={`p-4 rounded-xl border-2 text-left transition-all ${armorTier === "full" ? "border-primary bg-primary/10" : "border-border bg-muted hover:border-primary/50"}`}>
-                            <p className="text-sm font-bold text-foreground mb-1">Full</p>
-                            <p className="text-xs text-primary font-bold">R$ {parseFloat(cfg.priceFull).toFixed(2).replace(".", ",")}</p>
-                          </button>
-                          <button onClick={() => setArmorTier("god")} className={`p-4 rounded-xl border-2 text-left transition-all ${armorTier === "god" ? "border-primary bg-primary/10" : "border-border bg-muted hover:border-primary/50"}`}>
-                            <p className="text-sm font-bold text-foreground mb-1">God</p>
-                            <p className="text-xs text-primary font-bold">R$ {parseFloat(cfg.priceGod).toFixed(2).replace(".", ",")}</p>
-                          </button>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      {pendingConfig.type === "armor" ? (
+                        <>
+                          {(() => {
+                            const cfg = parseItemConfig(pendingConfig.item.itemConfig);
+                            if (cfg?.type !== "armor") return null;
+                            return (
+                              <>
+                                <button onClick={() => setArmorTier("full")} className={`p-4 rounded-xl border-2 text-left transition-all ${armorTier === "full" ? "border-primary bg-primary/10" : "border-border bg-muted hover:border-primary/50"}`}>
+                                  <p className="text-sm font-bold text-foreground mb-1">Full</p>
+                                  <p className="text-xs text-primary font-bold">R$ {parseFloat(String(cfg.priceFull)).toFixed(2).replace(".", ",")}</p>
+                                </button>
+                                <button onClick={() => setArmorTier("god")} className={`p-4 rounded-xl border-2 text-left transition-all ${armorTier === "god" ? "border-primary bg-primary/10" : "border-border bg-muted hover:border-primary/50"}`}>
+                                  <p className="text-sm font-bold text-foreground mb-1">God</p>
+                                  <p className="text-xs text-primary font-bold">R$ {parseFloat(String(cfg.priceGod)).toFixed(2).replace(".", ",")}</p>
+                                </button>
+                              </>
+                            );
+                          })()}
+                        </>
+                      ) : (
+                        <>
+                          {(() => {
+                            const cfg = parseItemConfig(pendingConfig.item.itemConfig) as any;
+                            return (
+                              <>
+                                <button onClick={() => setToolTier("full")} className={`p-4 rounded-xl border-2 text-left transition-all ${toolTier === "full" ? "border-primary bg-primary/10" : "border-border bg-muted hover:border-primary/50"}`}>
+                                  <p className="text-sm font-bold text-foreground mb-1">Full</p>
+                                  <p className="text-xs text-primary font-bold">R$ {parseFloat(String(cfg.priceFull)).toFixed(2).replace(".", ",")}</p>
+                                </button>
+                                <button onClick={() => setToolTier("custom")} className={`p-4 rounded-xl border-2 text-left transition-all ${toolTier === "custom" ? "border-primary bg-primary/10" : "border-border bg-muted hover:border-primary/50"}`}>
+                                  <p className="text-sm font-bold text-foreground mb-1">Custom</p>
+                                  <p className="text-xs text-muted-foreground">Personalizar</p>
+                                </button>
+                              </>
+                            );
+                          })()}
+                        </>
+                      )}
+                    </div>
+
+                    {pendingConfig.type === "tool" && toolTier === "custom" && (
+                      <div className="space-y-4 border-t border-border pt-4 mt-2">
+                        <p className="text-xs font-medium text-muted-foreground">Encantamentos Avulsos:</p>
+                        <div className="space-y-1">
+                          {toolSelectedEnchants.map((sel) => {
+                            const meta = pendingConfig.enchants.find((e) => e.id === sel.id);
+                            if (!meta) return null;
+                            return (
+                              <div key={sel.id} className="flex items-center gap-2 bg-muted/50 rounded px-2 py-1">
+                                <span className="flex-1 text-sm text-foreground">{meta.name}</span>
+                                <Input type="number" min={1} max={meta.maxLevel} value={sel.level} onChange={(e) => {
+                                    const lv = Math.max(1, Math.min(meta.maxLevel, parseInt(e.target.value) || 1));
+                                    setToolSelectedEnchants((prev) => prev.map((s) => (s.id === sel.id ? { ...s, level: lv } : s)));
+                                  }} className="w-16 h-7 text-xs bg-muted border-border" />
+                                <button type="button" onClick={() => setToolSelectedEnchants((prev) => prev.filter((s) => s.id !== sel.id))} className="text-muted-foreground hover:text-destructive">
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </div>
+                            );
+                          })}
                         </div>
-                      );
-                    })()}
-                    <Button onClick={confirmArmor} className="w-full">Confirmar</Button>
+                        <div className="flex gap-2">
+                          <Select value={toolAddId} onValueChange={(v) => { setToolAddId(v); setToolAddLevel("1"); }}>
+                            <SelectTrigger className="bg-muted border-border h-8 text-xs flex-1">
+                              <SelectValue placeholder="Adicionar..." />
+                            </SelectTrigger>
+                            <SelectContent className="bg-card border-border max-h-60">
+                              {pendingConfig.enchants.filter(e => !toolSelectedEnchants.find(s => s.id === e.id)).map((e) => (
+                                <SelectItem key={e.id} value={e.id} className="text-xs">{e.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Button type="button" size="sm" variant="outline" disabled={!toolAddId} onClick={() => {
+                            const meta = pendingConfig.enchants.find((e) => e.id === toolAddId);
+                            if (!meta) return;
+                            setToolSelectedEnchants((prev) => [...prev, { id: meta.id, level: parseInt(toolAddLevel) || 1 }]);
+                            setToolAddId("");
+                          }} className="h-8 px-2">
+                            <Plus className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-2 mb-4">
+                      <Label className="text-xs text-muted-foreground shrink-0">Quantidade:</Label>
+                      <Input 
+                        type="number" 
+                        min={pendingConfig.item.minPerSlot} 
+                        max={pendingConfig.item.maxPerSlot} 
+                        value={quantityInput} 
+                        onChange={(e) => setQuantityInput(e.target.value)} 
+                        className="bg-muted border-border h-8 w-20 text-sm" 
+                      />
+                      <span className="text-[10px] text-muted-foreground">
+                        (Mín: {pendingConfig.item.minPerSlot}, Máx: {pendingConfig.item.maxPerSlot})
+                      </span>
+                    </div>
+                    <Button onClick={pendingConfig.type === "armor" ? confirmArmor : confirmTool} className="w-full">Confirmar</Button>
                   </div>
                 ) : pendingConfig?.type === "book" ? (
                   <div className="space-y-4">
@@ -392,65 +476,6 @@ export default function KitBuilderPage() {
                       </div>
                     </div>
                     <Button onClick={confirmBook} className="w-full">Confirmar</Button>
-                  </div>
-                ) : pendingConfig?.type === "tool" ? (
-                   <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => setPendingConfig(null)} className="text-muted-foreground hover:text-foreground">
-                        <ChevronLeft className="h-4 w-4" />
-                      </button>
-                      <p className="text-sm font-semibold text-foreground">{pendingConfig.item.name} — escolha os encantamentos</p>
-                    </div>
-                    <div className="space-y-1">
-                      {toolSelectedEnchants.map((sel) => {
-                        const meta = pendingConfig.enchants.find((e) => e.id === sel.id);
-                        if (!meta) return null;
-                        return (
-                          <div key={sel.id} className="flex items-center gap-2 bg-muted/50 rounded px-2 py-1">
-                            <span className="flex-1 text-sm text-foreground">{meta.name}</span>
-                            <Input type="number" min={1} max={meta.maxLevel} value={sel.level} onChange={(e) => {
-                                const lv = Math.max(1, Math.min(meta.maxLevel, parseInt(e.target.value) || 1));
-                                setToolSelectedEnchants((prev) => prev.map((s) => (s.id === sel.id ? { ...s, level: lv } : s)));
-                              }} className="w-16 h-7 text-xs bg-muted border-border" />
-                            <button type="button" onClick={() => setToolSelectedEnchants((prev) => prev.filter((s) => s.id !== sel.id))} className="text-muted-foreground hover:text-destructive">
-                              <X className="h-3 w-3" />
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <div className="flex gap-2">
-                      <Select value={toolAddId} onValueChange={(v) => { setToolAddId(v); setToolAddLevel("1"); }}>
-                        <SelectTrigger className="bg-muted border-border h-8 text-xs flex-1">
-                          <SelectValue placeholder="Adicionar..." />
-                        </SelectTrigger>
-                        <SelectContent className="bg-card border-border max-h-60">
-                          {pendingConfig.enchants.filter(e => !toolSelectedEnchants.find(s => s.id === e.id)).map((e) => (
-                            <SelectItem key={e.id} value={e.id} className="text-xs">{e.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button type="button" size="sm" variant="outline" disabled={!toolAddId} onClick={() => {
-                        const meta = pendingConfig.enchants.find((e) => e.id === toolAddId);
-                        if (!meta) return;
-                        setToolSelectedEnchants((prev) => [...prev, { id: meta.id, level: parseInt(toolAddLevel) || 1 }]);
-                        setToolAddId("");
-                      }} className="h-8 px-2">
-                        <Plus className="h-3 w-3" />
-                      </Button>
-                    </div>
-                    <div className="flex items-center gap-2 mb-4">
-                      <Label className="text-xs text-muted-foreground shrink-0">Quantidade:</Label>
-                      <Input 
-                        type="number" 
-                        min={pendingConfig.item.minPerSlot} 
-                        max={pendingConfig.item.maxPerSlot} 
-                        value={quantityInput} 
-                        onChange={(e) => setQuantityInput(e.target.value)} 
-                        className="bg-muted border-border h-8 w-20 text-sm" 
-                      />
-                    </div>
-                    <Button onClick={confirmTool} className="w-full">Confirmar</Button>
                   </div>
                 ) : (pendingConfig?.type === "egg" || pendingConfig?.type === "potion" || pendingConfig?.type === "trim") ? (
                   <div className="space-y-4">

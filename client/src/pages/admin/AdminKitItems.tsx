@@ -67,6 +67,8 @@ type KitItemForm = {
   armorEnchantsGod: EnchantEntry[];
   bookPricePerLevel: string;
   toolEnchants: ToolEnchantOption[];
+  toolPriceFull: string;
+  toolEnchantsFull: EnchantEntry[];
   eggOptions: GenericOption[];
   potionOptions: PotionOption[];
   trimOptions: GenericOption[];
@@ -88,6 +90,8 @@ const emptyForm: KitItemForm = {
   armorEnchantsGod: [],
   bookPricePerLevel: "0",
   toolEnchants: [],
+  toolPriceFull: "0",
+  toolEnchantsFull: [],
   eggOptions: [],
   potionOptions: [],
   trimOptions: [],
@@ -133,6 +137,8 @@ function buildItemConfig(form: KitItemForm): string | undefined {
       type: "tool",
       basePrice: form.price,
       enchants: form.toolEnchants,
+      priceFull: form.toolPriceFull,
+      enchantsFull: form.toolEnchantsFull,
     });
   }
   if (form.configType === "egg") {
@@ -190,6 +196,8 @@ function parseFormFromItem(item: KitItem): KitItemForm {
       } else if (cfg?.type === "tool") {
         base.configType = "tool";
         base.toolEnchants = cfg.enchants ?? [];
+        base.toolPriceFull = cfg.priceFull ?? "0";
+        base.toolEnchantsFull = cfg.enchantsFull ?? [];
       } else if (cfg?.type === "egg") {
         base.configType = "egg";
         base.eggOptions = cfg.options ?? [];
@@ -908,17 +916,52 @@ export default function AdminKitItems() {
             )}
 
             {form.configType === "tool" && (
-              <div className="rounded-lg border border-border p-3 space-y-3 bg-muted/30">
+              <div className="rounded-lg border border-border p-3 space-y-4 bg-muted/30">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Configuracao de Ferramenta / Arma
                 </p>
-                <p className="text-xs text-muted-foreground">
-                  Fixado em 1 por slot. O usuario escolhe os encantamentos e niveis na hora de montar o kit.
-                </p>
-                <ToolEnchantList
-                  enchants={form.toolEnchants}
-                  onChange={(v) => setF({ toolEnchants: v })}
-                />
+                
+                <Tabs defaultValue="custom">
+                  <TabsList className="bg-muted w-full">
+                    <TabsTrigger value="custom" className="flex-1">Customizável</TabsTrigger>
+                    <TabsTrigger value="full" className="flex-1">Opção "Full"</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="custom" className="space-y-3 pt-2">
+                    <p className="text-[10px] text-muted-foreground">
+                      O usuário escolhe os encantamentos e níveis um a um.
+                    </p>
+                    <ToolEnchantList
+                      enchants={form.toolEnchants}
+                      onChange={(v) => setF({ toolEnchants: v })}
+                    />
+                  </TabsContent>
+                  
+                  <TabsContent value="full" className="space-y-3 pt-2">
+                    <p className="text-[10px] text-muted-foreground">
+                      Pré-configuração de item completo (ex: Espada Full).
+                    </p>
+                    <div>
+                      <Label className="text-foreground mb-1.5 block text-xs">
+                        Preço Full (R$)
+                      </Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={form.toolPriceFull}
+                        onChange={(e) => setF({ toolPriceFull: e.target.value })}
+                        className="bg-muted border-border h-8 text-xs"
+                        placeholder="ex: 50.00"
+                      />
+                    </div>
+                    <EnchantList
+                      label="Encantamentos do Item Full"
+                      enchants={form.toolEnchantsFull}
+                      onChange={(v) => setF({ toolEnchantsFull: v })}
+                    />
+                  </TabsContent>
+                </Tabs>
               </div>
             )}
 
