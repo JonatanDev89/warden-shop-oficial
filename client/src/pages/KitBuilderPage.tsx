@@ -62,6 +62,7 @@ export default function KitBuilderPage() {
   const [toolAddId, setToolAddId] = useState("");
   const [toolAddLevel, setToolAddLevel] = useState("1");
   const [toolTier, setToolTier] = useState<"custom" | "full">("custom");
+  const [potionType, setPotionType] = useState<"normal" | "splash" | "lingering">("normal");
   const [selectedOptionId, setSelectedOptionId] = useState("");
 
   const filteredItems = kitItems.filter(
@@ -122,6 +123,9 @@ export default function KitBuilderPage() {
     }
 
     if (cfg?.type === "egg" || cfg?.type === "potion" || cfg?.type === "trim") {
+      if (cfg.type === "potion") {
+        setPotionType("normal");
+      }
       setSelectedOptionId(cfg.options.length > 0 ? cfg.options[0].id : "");
       setPendingConfig({ type: cfg.type, item } as PendingConfig);
       return;
