@@ -490,6 +490,56 @@ function GenericOptionList({
 
   const remove = (id: string) => onChange(options.filter((o) => o.id !== id));
 
+  const [quickCreate, setQuickCreate] = useState("");
+  const handleQuickCreate = (val: string) => {
+    setQuickCreate(val);
+    if (!showLevel) return;
+
+    // Parser para comandos tipo: /give @s potion 1 28
+    // Ou formato simplificado: potion 1 28
+    // Ou apenas: 28 (ID numérico)
+    const parts = val.toLowerCase().trim().split(/\s+/);
+    
+    let potionDataValue: number | null = null;
+    let potionType: PotionType = "normal";
+
+    // Procura por um número que corresponda aos IDs de poção (geralmente o último ou penúltimo parâmetro)
+    for (const part of parts) {
+      const num = parseInt(part);
+      if (!isNaN(num) && num > 0) {
+        // No Minecraft, IDs de poção costumam ser números específicos
+        // Se encontrarmos um número que existe no nosso PRESET_POTIONS, usamos ele
+        if (PRESET_POTIONS.some(p => p.data === num)) {
+          potionDataValue = num;
+        }
+      }
+      if (part.includes("splash")) potionType = "splash";
+      if (part.includes("lingering")) potionType = "lingering";
+    }
+
+    if (potionDataValue !== null) {
+      const preset = PRESET_POTIONS.find(p => p.data === potionDataValue);
+      if (preset) {
+        setAddType(potionType);
+        let finalId = `${preset.id}_potion`;
+        let finalName = `Poção de ${preset.name}`;
+        
+        if (potionType === "splash") {
+          finalId = `splash_${preset.id}_potion`;
+          finalName = `Poção Arremessável de ${preset.name}`;
+        } else if (potionType === "lingering") {
+          finalId = `lingering_${preset.id}_potion`;
+          finalName = `Poção Prolongada de ${preset.name}`;
+        }
+
+        setAddId(finalId);
+        setAddName(finalName);
+        setAddPrice("0");
+        setAddLevel("I");
+      }
+    }
+  };
+
   return (
     <div className="space-y-2">
       <Label className="text-foreground text-sm">{label}</Label>
@@ -518,7 +568,24 @@ function GenericOptionList({
       </div>
       <div className="grid grid-cols-1 gap-2 border-t border-border pt-2">
         {showLevel && (
-          <div className="flex gap-2">
+          <div className="space-y-2">
+            <div className="relative">
+              <Input
+                value={quickCreate}
+                onChange={(e) => handleQuickCreate(e.target.value)}
+                placeholder="Criação Rápida (Cole o comando /give ou ID numérico...)"
+                className="h-8 text-xs bg-primary/5 border-primary/20 placeholder:text-muted-foreground/50"
+              />
+              {quickCreate && (
+                <button 
+                  onClick={() => setQuickCreate("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+            <div className="flex gap-2">
             <Select value={addType} onValueChange={(v) => updateType(v as PotionType)}>
               <SelectTrigger className="bg-muted border-border h-8 text-xs w-32">
                 <SelectValue />
@@ -542,6 +609,7 @@ function GenericOptionList({
               </SelectContent>
             </Select>
           </div>
+        </div>
         )}
         <Input
           value={addId}
