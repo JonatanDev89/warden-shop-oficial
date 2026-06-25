@@ -416,12 +416,14 @@ function GenericOptionList({
   label,
   options,
   onChange,
+  onQuickSelect,
   idPlaceholder = "minecraft_id (ex: creeper_spawn_egg)",
   showLevel = false,
 }: {
   label: string;
   options: GenericOption[] | PotionOption[];
   onChange: (v: GenericOption[] | PotionOption[]) => void;
+  onQuickSelect?: (id: string, name: string) => void;
   idPlaceholder?: string;
   showLevel?: boolean;
 }) {
@@ -463,6 +465,9 @@ function GenericOptionList({
       
       setAddId(finalId);
       setAddName(finalName);
+      if (onQuickSelect) {
+        onQuickSelect(finalId, finalName);
+      }
     }
   };
 
@@ -485,6 +490,9 @@ function GenericOptionList({
       }
       setAddId(finalId);
       setAddName(finalName);
+      if (onQuickSelect) {
+        onQuickSelect(finalId, finalName);
+      }
     }
   };
 
@@ -550,6 +558,9 @@ function GenericOptionList({
           setAddPrice(potionPrice);
         }
         setAddLevel("I");
+        if (onQuickSelect) {
+          onQuickSelect(finalId, finalName);
+        }
       }
     }
   };
@@ -1147,6 +1158,12 @@ export default function AdminKitItems() {
                   label="Opções de Poções"
                   options={form.potionOptions}
                   onChange={(v) => setF({ potionOptions: v as PotionOption[] })}
+                  onQuickSelect={(id, name) => {
+                    // Sincroniza com os campos principais se eles estiverem vazios ou forem padrao
+                    if (!form.minecraftId || form.minecraftId === "potion" || form.minecraftId === "splash_potion" || form.minecraftId === "lingering_potion") {
+                      setF({ minecraftId: id, name: name });
+                    }
+                  }}
                   idPlaceholder="potion"
                   showLevel={true}
                 />
