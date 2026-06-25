@@ -443,11 +443,48 @@ function GenericOptionList({
     setAddLevel("I");
   };
 
+  const [addType, setAddType] = useState<PotionType>("normal");
+
   const selectPreset = (id: string) => {
     const preset = PRESET_POTIONS.find(p => p.id === id);
     if (preset) {
-      setAddId(preset.id);
-      setAddName(`Poção de ${preset.name}`);
+      let finalId = preset.id;
+      let finalName = `Poção de ${preset.name}`;
+      
+      if (addType === "splash") {
+        finalId = `splash_${preset.id}_potion`;
+        finalName = `Poção Arremessável de ${preset.name}`;
+      } else if (addType === "lingering") {
+        finalId = `lingering_${preset.id}_potion`;
+        finalName = `Poção Prolongada de ${preset.name}`;
+      } else {
+        finalId = `${preset.id}_potion`;
+      }
+      
+      setAddId(finalId);
+      setAddName(finalName);
+    }
+  };
+
+  const updateType = (type: PotionType) => {
+    setAddType(type);
+    // Se já tiver um ID de preset, atualiza ele
+    const currentBaseId = addId.replace("splash_", "").replace("lingering_", "").replace("_potion", "");
+    const preset = PRESET_POTIONS.find(p => p.id === currentBaseId);
+    if (preset) {
+      let finalId = preset.id;
+      let finalName = `Poção de ${preset.name}`;
+      if (type === "splash") {
+        finalId = `splash_${preset.id}_potion`;
+        finalName = `Poção Arremessável de ${preset.name}`;
+      } else if (type === "lingering") {
+        finalId = `lingering_${preset.id}_potion`;
+        finalName = `Poção Prolongada de ${preset.name}`;
+      } else {
+        finalId = `${preset.id}_potion`;
+      }
+      setAddId(finalId);
+      setAddName(finalName);
     }
   };
 
@@ -481,18 +518,30 @@ function GenericOptionList({
       </div>
       <div className="grid grid-cols-1 gap-2 border-t border-border pt-2">
         {showLevel && (
-          <Select onValueChange={selectPreset}>
-            <SelectTrigger className="bg-muted border-border h-8 text-xs w-full">
-              <SelectValue placeholder="Pesquisar poção pronta..." />
-            </SelectTrigger>
-            <SelectContent className="bg-card border-border max-h-60">
-              {PRESET_POTIONS.map((p) => (
-                <SelectItem key={p.id} value={p.id} className="text-xs">
-                  {p.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex gap-2">
+            <Select value={addType} onValueChange={(v) => updateType(v as PotionType)}>
+              <SelectTrigger className="bg-muted border-border h-8 text-xs w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-card border-border">
+                <SelectItem value="normal" className="text-xs">Normal</SelectItem>
+                <SelectItem value="splash" className="text-xs">Splash</SelectItem>
+                <SelectItem value="lingering" className="text-xs">Lingering</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select onValueChange={selectPreset}>
+              <SelectTrigger className="bg-muted border-border h-8 text-xs flex-1">
+                <SelectValue placeholder="Pesquisar poção..." />
+              </SelectTrigger>
+              <SelectContent className="bg-card border-border max-h-60">
+                {PRESET_POTIONS.map((p) => (
+                  <SelectItem key={p.id} value={p.id} className="text-xs">
+                    {p.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         )}
         <Input
           value={addId}

@@ -97,7 +97,8 @@ export type ToolConfig = {
 
 export type GenericOption = { id: string; name: string; price: string };
 
-export type PotionOption = { id: string; name: string; level: "I" | "II"; price: string };
+export type PotionType = "normal" | "splash" | "lingering";
+export type PotionOption = { id: string; name: string; level: "I" | "II"; price: string; potionType?: PotionType };
 
 export type EggConfig = {
   type: "egg";

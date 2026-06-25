@@ -127,10 +127,23 @@ function normalizeMinecraftId(minecraftId: string): string {
 
   // Poções com efeitos específicos (ex: strength_potion, speed_potion, etc)
   const potionEffects = ["strength", "speed", "haste", "healing", "instant_health", "night_vision", "invisibility", "resistance", "fire_resistance", "regeneration", "weakness", "poison", "slowness", "jump_boost", "water_breathing", "luck", "slow_falling", "turtle_master"];
-  if (id.endsWith("_potion")) {
-    const effect = id.replace("_potion", "");
-    if (potionEffects.includes(effect)) {
-      return id; // Já está no formato correto
+  
+  if (id.includes("_potion")) {
+    // Verifica se é splash_ ou lingering_
+    let effect = id;
+    let prefix = "";
+    
+    if (id.startsWith("splash_")) {
+      effect = id.replace("splash_", "");
+      prefix = "splash_";
+    } else if (id.startsWith("lingering_")) {
+      effect = id.replace("lingering_", "");
+      prefix = "lingering_";
+    }
+    
+    const effectName = effect.replace("_potion", "");
+    if (potionEffects.includes(effectName)) {
+      return id;
     }
   }
 
