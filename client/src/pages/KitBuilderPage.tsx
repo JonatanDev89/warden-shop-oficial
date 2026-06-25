@@ -71,7 +71,8 @@ export default function KitBuilderPage() {
 
   const totalPrice = slots.reduce((sum, s) => {
     if (!s) return sum;
-    const itemPrice = s.pricePerUnit ? parseFloat(s.unitPrice) * s.quantity : parseFloat(s.unitPrice);
+    const unitPrice = parseFloat(String(s.unitPrice)) || 0;
+    const itemPrice = s.pricePerUnit ? unitPrice * s.quantity : unitPrice;
     return sum + Math.round(itemPrice * 100) / 100;
   }, 0);
 
@@ -171,7 +172,8 @@ export default function KitBuilderPage() {
     const enchantMeta = ALL_ENCHANTS.find((e) => e.id === bookEnchantId);
     if (!enchantMeta) return;
     const level = Math.max(1, Math.min(enchantMeta.maxLevel, parseInt(bookEnchantLevel) || 1));
-    const totalEnchantPrice = (parseFloat(cfg.pricePerLevel) * level).toFixed(2);
+    const pricePerLevel = parseFloat(cfg.pricePerLevel) || parseFloat(String(pendingConfig.item.price)) || 0;
+    const totalEnchantPrice = (pricePerLevel * level).toFixed(2);
     placeItem(pendingConfig.item, totalEnchantPrice, false, `${enchantMeta.id} ${level}`, `${enchantMeta.name} ${level}`);
   }
 
@@ -182,9 +184,11 @@ export default function KitBuilderPage() {
     const enchantCost = toolSelectedEnchants.reduce((sum, sel) => {
       const meta = pendingConfig.enchants.find((e) => e.id === sel.id);
       if (!meta) return sum;
-      return sum + parseFloat(meta.price) * sel.level;
+      const pricePerLevel = parseFloat(meta.price) || 0;
+      return sum + pricePerLevel * sel.level;
     }, 0);
-    const total = (parseFloat(cfg.basePrice) + enchantCost).toFixed(2);
+    const basePrice = parseFloat(cfg.basePrice) || parseFloat(String(pendingConfig.item.price)) || 0;
+    const total = (basePrice + enchantCost).toFixed(2);
     const label =
       toolSelectedEnchants.length > 0
         ? toolSelectedEnchants
@@ -227,11 +231,12 @@ export default function KitBuilderPage() {
       Math.min(pendingConfig.item.maxPerSlot, parseInt(quantityInput) || pendingConfig.item.minPerSlot)
     );
     const next = [...slots];
+    const unitPrice = parseFloat(opt.price) || parseFloat(String(pendingConfig.item.price)) || 0;
     next[selectedSlot] = {
       minecraftId: opt.id,
       name: opt.name,
       quantity: qty,
-      unitPrice: opt.price,
+      unitPrice: unitPrice.toString(),
       pricePerUnit: true,
       imageUrl: undefined,
       configLabel: undefined,
