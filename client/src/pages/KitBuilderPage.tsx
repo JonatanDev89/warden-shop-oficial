@@ -338,55 +338,60 @@ export default function KitBuilderPage() {
 
             {selectedSlot !== null && (
               <div className="border border-border rounded-xl bg-card p-4">
-                {(pendingConfig?.type === "armor" || (pendingConfig?.type === "tool" && (parseItemConfig(pendingConfig.item.itemConfig) as any)?.priceFull && (parseItemConfig(pendingConfig.item.itemConfig) as any)?.priceFull !== "0")) ? (
+                {(pendingConfig?.type === "armor" || pendingConfig?.type === "tool") ? (
                   <div className="space-y-4">
                     <div className="flex items-center gap-2">
                       <button onClick={() => setPendingConfig(null)} className="text-muted-foreground hover:text-foreground">
                         <ChevronLeft className="h-4 w-4" />
                       </button>
-                      <p className="text-sm font-semibold text-foreground">{pendingConfig.item.name} — escolha o tier</p>
+                      <p className="text-sm font-semibold text-foreground">
+                        {pendingConfig.item.name} — {pendingConfig.type === "armor" || (parseItemConfig(pendingConfig.item.itemConfig) as any)?.priceFull ? "escolha o tier" : "escolha os encantamentos"}
+                      </p>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-4">
-                      {pendingConfig.type === "armor" ? (
-                        <>
-                          {(() => {
-                            const cfg = parseItemConfig(pendingConfig.item.itemConfig);
-                            if (cfg?.type !== "armor") return null;
-                            return (
-                              <>
-                                <button onClick={() => setArmorTier("full")} className={`p-4 rounded-xl border-2 text-left transition-all ${armorTier === "full" ? "border-primary bg-primary/10" : "border-border bg-muted hover:border-primary/50"}`}>
-                                  <p className="text-sm font-bold text-foreground mb-1">Full</p>
-                                  <p className="text-xs text-primary font-bold">R$ {parseFloat(String(cfg.priceFull)).toFixed(2).replace(".", ",")}</p>
-                                </button>
-                                <button onClick={() => setArmorTier("god")} className={`p-4 rounded-xl border-2 text-left transition-all ${armorTier === "god" ? "border-primary bg-primary/10" : "border-border bg-muted hover:border-primary/50"}`}>
-                                  <p className="text-sm font-bold text-foreground mb-1">God</p>
-                                  <p className="text-xs text-primary font-bold">R$ {parseFloat(String(cfg.priceGod)).toFixed(2).replace(".", ",")}</p>
-                                </button>
-                              </>
-                            );
-                          })()}
-                        </>
-                      ) : (
-                        <>
-                          {(() => {
-                            const cfg = parseItemConfig(pendingConfig.item.itemConfig) as any;
-                            return (
-                              <>
-                                <button onClick={() => setToolTier("full")} className={`p-4 rounded-xl border-2 text-left transition-all ${toolTier === "full" ? "border-primary bg-primary/10" : "border-border bg-muted hover:border-primary/50"}`}>
-                                  <p className="text-sm font-bold text-foreground mb-1">Full</p>
-                                  <p className="text-xs text-primary font-bold">R$ {parseFloat(String(cfg.priceFull)).toFixed(2).replace(".", ",")}</p>
-                                </button>
-                                <button onClick={() => setToolTier("custom")} className={`p-4 rounded-xl border-2 text-left transition-all ${toolTier === "custom" ? "border-primary bg-primary/10" : "border-border bg-muted hover:border-primary/50"}`}>
-                                  <p className="text-sm font-bold text-foreground mb-1">Custom</p>
-                                  <p className="text-xs text-muted-foreground">Personalizar</p>
-                                </button>
-                              </>
-                            );
-                          })()}
-                        </>
-                      )}
-                    </div>
+                    {(pendingConfig.type === "armor" || (parseItemConfig(pendingConfig.item.itemConfig) as any)?.priceFull) && (
+                      <div className="grid grid-cols-2 gap-4">
+                        {pendingConfig.type === "armor" ? (
+                          <>
+                            {(() => {
+                              const cfg = parseItemConfig(pendingConfig.item.itemConfig);
+                              if (cfg?.type !== "armor") return null;
+                              return (
+                                <>
+                                  <button onClick={() => setArmorTier("full")} className={`p-4 rounded-xl border-2 text-left transition-all ${armorTier === "full" ? "border-primary bg-primary/10" : "border-border bg-muted hover:border-primary/50"}`}>
+                                    <p className="text-sm font-bold text-foreground mb-1">Full</p>
+                                    <p className="text-xs text-primary font-bold">R$ {parseFloat(String(cfg.priceFull)).toFixed(2).replace(".", ",")}</p>
+                                  </button>
+                                  <button onClick={() => setArmorTier("god")} className={`p-4 rounded-xl border-2 text-left transition-all ${armorTier === "god" ? "border-primary bg-primary/10" : "border-border bg-muted hover:border-primary/50"}`}>
+                                    <p className="text-sm font-bold text-foreground mb-1">God</p>
+                                    <p className="text-xs text-primary font-bold">R$ {parseFloat(String(cfg.priceGod)).toFixed(2).replace(".", ",")}</p>
+                                  </button>
+                                </>
+                              );
+                            })()}
+                          </>
+                        ) : (
+                          <>
+                            {(() => {
+                              const cfg = parseItemConfig(pendingConfig.item.itemConfig) as any;
+                              if (!cfg?.priceFull) return null;
+                              return (
+                                <>
+                                  <button onClick={() => setToolTier("full")} className={`p-4 rounded-xl border-2 text-left transition-all ${toolTier === "full" ? "border-primary bg-primary/10" : "border-border bg-muted hover:border-primary/50"}`}>
+                                    <p className="text-sm font-bold text-foreground mb-1">Full</p>
+                                    <p className="text-xs text-primary font-bold">R$ {parseFloat(String(cfg.priceFull)).toFixed(2).replace(".", ",")}</p>
+                                  </button>
+                                  <button onClick={() => setToolTier("custom")} className={`p-4 rounded-xl border-2 text-left transition-all ${toolTier === "custom" ? "border-primary bg-primary/10" : "border-border bg-muted hover:border-primary/50"}`}>
+                                    <p className="text-sm font-bold text-foreground mb-1">Custom</p>
+                                    <p className="text-xs text-muted-foreground">Personalizar</p>
+                                  </button>
+                                </>
+                              );
+                            })()}
+                          </>
+                        )}
+                      </div>
+                    )}
 
                     {pendingConfig.type === "tool" && toolTier === "custom" && (
                       <div className="space-y-4 border-t border-border pt-4 mt-2">
