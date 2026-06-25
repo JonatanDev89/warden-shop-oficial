@@ -95,10 +95,10 @@ export type ToolConfig = {
   enchantsFull?: EnchantEntry[];
 };
 
-export type GenericOption = { id: string; name: string; price: string };
+export type GenericOption = { id: string; name: string; price: string; imageUrl?: string };
 
 export type PotionType = "normal" | "splash" | "lingering";
-export type PotionOption = { id: string; name: string; level: "I" | "II"; price: string; potionType?: PotionType };
+export type PotionOption = { id: string; name: string; level: "I" | "II"; price: string; potionType?: PotionType; imageUrl?: string };
 
 export type EggConfig = {
   type: "egg";

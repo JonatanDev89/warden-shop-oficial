@@ -244,9 +244,9 @@ export default function KitBuilderPage() {
       quantity: qty,
       unitPrice: unitPrice.toString(),
       pricePerUnit: true,
-      imageUrl: undefined,
+      imageUrl: (opt as any).imageUrl || undefined,
       configLabel: undefined,
-      displayLabel: undefined,
+      displayLabel: (opt as any).level ? `Nível ${(opt as any).level}` : undefined,
     };
     setSlots(next);
     setSelectedSlot(null);

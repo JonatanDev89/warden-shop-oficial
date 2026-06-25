@@ -431,6 +431,7 @@ function GenericOptionList({
   const [addName, setAddName] = useState("");
   const [addPrice, setAddPrice] = useState("0");
   const [addLevel, setAddLevel] = useState<"I" | "II">("I");
+  const [addImageUrl, setAddImageUrl] = useState("");
 
   const add = () => {
     if (!addId || !addName) return;
@@ -438,11 +439,15 @@ function GenericOptionList({
     if (showLevel) {
       newOption.level = addLevel;
     }
+    if (addImageUrl) {
+      newOption.imageUrl = addImageUrl;
+    }
     onChange([...options, newOption]);
     setAddId("");
     setAddName("");
     setAddPrice("0");
     setAddLevel("I");
+    setAddImageUrl("");
   };
 
   const [addType, setAddType] = useState<PotionType>("normal");
@@ -572,7 +577,7 @@ function GenericOptionList({
         {options.map((o) => (
           <div key={o.id} className="flex items-center gap-2 bg-muted/50 rounded px-2 py-1">
             <div className="h-6 w-6 shrink-0 flex items-center justify-center">
-               <img src={itemTexture(o.id)} alt="" className="h-5 w-5 object-contain" />
+               <img src={itemTexture(o.id, (o as any).imageUrl)} alt="" className="h-5 w-5 object-contain" />
             </div>
             <span className="flex-1 text-sm text-foreground truncate">
               {o.name}
@@ -681,6 +686,12 @@ function GenericOptionList({
             <Plus className="h-3 w-3" />
           </Button>
         </div>
+        <Input
+          value={addImageUrl}
+          onChange={(e) => setAddImageUrl(e.target.value)}
+          placeholder="URL da Imagem personalizada (opcional)"
+          className="h-8 text-xs bg-muted border-border"
+        />
       </div>
     </div>
   );
