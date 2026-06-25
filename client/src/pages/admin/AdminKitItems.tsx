@@ -636,29 +636,39 @@ function GenericOptionList({
           </div>
         </div>
         )}
-        <Input
-          value={addId}
-          onChange={(e) => setAddId(e.target.value)}
-          placeholder={idPlaceholder}
-          className="h-8 text-xs bg-muted border-border"
-        />
-        <div className="flex gap-2">
+        {!showLevel && (
           <Input
-            value={addName}
-            onChange={(e) => setAddName(e.target.value)}
-            placeholder="Nome (ex: Poção de Força)"
-            className="h-8 text-xs bg-muted border-border flex-1"
+            value={addId}
+            onChange={(e) => setAddId(e.target.value)}
+            placeholder={idPlaceholder}
+            className="h-8 text-xs bg-muted border-border"
           />
+        )}
+        <div className="flex gap-2">
+          {!showLevel && (
+            <Input
+              value={addName}
+              onChange={(e) => setAddName(e.target.value)}
+              placeholder="Nome (ex: Poção de Força)"
+              className="h-8 text-xs bg-muted border-border flex-1"
+            />
+          )}
           {showLevel && (
-            <Select value={addLevel} onValueChange={(v) => setAddLevel(v as "I" | "II")}>
-              <SelectTrigger className="bg-muted border-border h-8 text-xs w-16">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-card border-border">
-                <SelectItem value="I" className="text-xs">Nível I</SelectItem>
-                <SelectItem value="II" className="text-xs">Nível II</SelectItem>
-              </SelectContent>
-            </Select>
+            <>
+              <div className="flex-1 flex items-center gap-2 bg-muted/30 rounded px-2 h-8 border border-border overflow-hidden">
+                <span className="text-[10px] text-muted-foreground uppercase font-bold shrink-0">ID:</span>
+                <span className="text-xs text-foreground truncate">{addId || "---"}</span>
+              </div>
+              <Select value={addLevel} onValueChange={(v) => setAddLevel(v as "I" | "II")}>
+                <SelectTrigger className="bg-muted border-border h-8 text-xs w-16">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-card border-border">
+                  <SelectItem value="I" className="text-xs">Nível I</SelectItem>
+                  <SelectItem value="II" className="text-xs">Nível II</SelectItem>
+                </SelectContent>
+              </Select>
+            </>
           )}
           <Input
             type="number"
@@ -667,7 +677,7 @@ function GenericOptionList({
             onChange={(e) => setAddPrice(e.target.value)}
             className="h-8 text-xs bg-muted border-border w-20"
           />
-          <Button type="button" size="sm" variant="outline" onClick={add} className="h-8 px-2">
+          <Button type="button" size="sm" variant="outline" onClick={add} className="h-8 px-2" disabled={!addId}>
             <Plus className="h-3 w-3" />
           </Button>
         </div>
