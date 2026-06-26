@@ -458,10 +458,11 @@ export async function getDashboardStats() {
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   
   for (const o of allOrders) {
-    const isApproved = o.paymentStatus === "approved" || o.status === "delivered" || o.status === "game_pending";
+    // Apenas pedidos com pagamento aprovado entram no ranking
+    const isPaid = o.paymentStatus === "approved";
     const isThisMonth = o.createdAt >= startOfMonth;
     
-    if (isApproved && isThisMonth) {
+    if (isPaid && isThisMonth) {
       buyerMap[o.minecraftNickname] = (buyerMap[o.minecraftNickname] || 0) + parseFloat(String(o.total));
     }
   }
