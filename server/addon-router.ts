@@ -336,6 +336,9 @@ export const addonRouter = router({
         const db = await getDb();
         if (!db) return { success: true, orders: [] };
 
+        const { kitItems: kitItemsTable } = await import("../drizzle/schema");
+        const allKitItems = await db.select().from(kitItemsTable);
+
         // Kit orders have orderNumber starting with #KIT and status game_pending
         const kitOrders = await db
           .select()
@@ -350,8 +353,24 @@ export const addonRouter = router({
             const match = item.productName.match(/^\[SLOT (\d+)\] (\d+)x (.+?) \[([^\]]+)\](?:\s*\{([^}]*)\})?$/);
             if (!match) return null;
             const configLabel = match[5] ?? null;
-            // Parse enchants from configLabel, e.g. "Afiação 5" or "Eficiência 3, Resistência 2"
-            const enchants: { id: string; level: number }[] = [];
+            const minecraftId = match[4]!;
+            
+            let enchants: { id: string; level: number }[] = [];
+            
+            // Reconstruct enchants for Full/God tiers from itemConfig
+            if (configLabel === "Full" || configLabel === "God") {
+              const kitItem = allKitItems.find(ki => ki.minecraftId === minecraftId);
+              if (kitItem?.itemConfig) {
+                try {
+                  const cfg = JSON.parse(kitItem.itemConfig);
+                  const targetEnchants = configLabel === "Full" ? cfg.enchantsFull : cfg.enchantsGod;
+                  if (Array.isArray(targetEnchants)) {
+                    enchants = targetEnchants.map(e => ({ id: e.id, level: e.level }));
+                  }
+                } catch (e) {}
+              }
+            }
+
             if (configLabel && configLabel !== "Full" && configLabel !== "God" && configLabel !== "Sem encantamentos") {
               for (const part of configLabel.split(",")) {
                 const m = part.trim().match(/^(.+?)\s+(\d+)$/);

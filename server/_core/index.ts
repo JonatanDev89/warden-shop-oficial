@@ -212,6 +212,9 @@ async function startServer() {
       const keyResult = await db.select().from(apiKeys).where(eq(apiKeys.keyHash, keyHash)).limit(1);
       if (keyResult.length === 0 || !keyResult[0].active) return res.status(401).json({ error: 'Invalid API Key' });
 
+      const { kitItems: kitItemsTable } = await import("../../drizzle/schema");
+      const allKitItems = await db.select().from(kitItemsTable);
+
       // Buscar pedidos de kit (orderNumber começa com #KIT) com status game_pending
       const kitOrders = await db.select().from(orders)
         .where(and(eq(orders.status, 'game_pending'), like(orders.orderNumber, '#KIT%')));
@@ -223,7 +226,23 @@ async function startServer() {
           const match = item.productName.match(/^\[SLOT (\d+)\] (\d+)x (.+?) \[([^\]]+)\](?:\s*\{([^}]*)\})?$/);
           if (!match) return null;
           const configLabel = match[5] ?? null;
-          const enchants: { id: string; level: number }[] = [];
+          const minecraftId = match[4]!;
+          let enchants: { id: string; level: number }[] = [];
+
+          // Reconstruct enchants for Full/God tiers from itemConfig
+          if (configLabel === "Full" || configLabel === "God") {
+            const kitItem = allKitItems.find(ki => ki.minecraftId === minecraftId);
+            if (kitItem?.itemConfig) {
+              try {
+                const cfg = JSON.parse(kitItem.itemConfig);
+                const targetEnchants = configLabel === "Full" ? cfg.enchantsFull : cfg.enchantsGod;
+                if (Array.isArray(targetEnchants)) {
+                  enchants = targetEnchants.map((e: any) => ({ id: e.id, level: e.level }));
+                }
+              } catch (e) {}
+            }
+          }
+
           if (configLabel && configLabel !== "Full" && configLabel !== "God" && configLabel !== "Sem encantamentos") {
             for (const part of configLabel.split(",")) {
               const m = part.trim().match(/^(.+?)\s+(\d+)$/);

@@ -185,22 +185,36 @@ export default function KitBuilderPage() {
 
   function confirmTool() {
     if (!pendingConfig || pendingConfig.type !== "tool") return;
-    const cfg = parseItemConfig(pendingConfig.item.itemConfig);
+    const cfg = parseItemConfig(pendingConfig.item.itemConfig) as any;
     if (cfg?.type !== "tool") return;
-    const enchantCost = toolSelectedEnchants.reduce((sum, sel) => {
-      const meta = pendingConfig.enchants.find((e) => e.id === sel.id);
-      if (!meta) return sum;
-      const pricePerLevel = parseFloat(meta.price) || 0;
-      return sum + pricePerLevel * sel.level;
-    }, 0);
-    const basePrice = parseFloat(cfg.basePrice) || parseFloat(String(pendingConfig.item.price)) || 0;
-    const total = (basePrice + enchantCost).toFixed(2);
-    const label =
-      toolSelectedEnchants.length > 0
-        ? toolSelectedEnchants
-            .map((sel) => `${sel.id} ${sel.level}`)
-            .join(", ")
+
+    let total = "0";
+    let configLabel = "";
+    let displayLabel = "";
+
+    if (toolTier === "full" && cfg.priceFull) {
+      total = parseFloat(String(cfg.priceFull)).toFixed(2);
+      configLabel = "Full";
+      displayLabel = "Full (Encantamentos Máximos)";
+    } else {
+      const enchantCost = toolSelectedEnchants.reduce((sum, sel) => {
+        const meta = pendingConfig.enchants.find((e) => e.id === sel.id);
+        if (!meta) return sum;
+        const pricePerLevel = parseFloat(meta.price) || 0;
+        return sum + pricePerLevel * sel.level;
+      }, 0);
+      const basePrice = parseFloat(cfg.basePrice) || parseFloat(String(pendingConfig.item.price)) || 0;
+      total = (basePrice + enchantCost).toFixed(2);
+      configLabel = toolSelectedEnchants.length > 0
+        ? toolSelectedEnchants.map((sel) => `${sel.id} ${sel.level}`).join(", ")
         : "Sem encantamentos";
+      displayLabel = toolSelectedEnchants.length > 0
+        ? toolSelectedEnchants.map((sel) => {
+            const meta = pendingConfig.enchants.find((e) => e.id === sel.id);
+            return `${meta?.name ?? sel.id} ${sel.level}`;
+          }).join(", ")
+        : "Sem encantamentos";
+    }
     
     if (selectedSlot === null) return;
     const next = [...slots];
@@ -211,13 +225,8 @@ export default function KitBuilderPage() {
       unitPrice: total,
       pricePerUnit: false,
       imageUrl: pendingConfig.item.imageUrl,
-      configLabel: label,
-      displayLabel: toolSelectedEnchants.length > 0
-        ? toolSelectedEnchants.map((sel) => {
-            const meta = pendingConfig.enchants.find((e) => e.id === sel.id);
-            return `${meta?.name ?? sel.id} ${sel.level}`;
-          }).join(", ")
-        : "Sem encantamentos",
+      configLabel: configLabel,
+      displayLabel: displayLabel,
     };
     setSlots(next);
     setSelectedSlot(null);
