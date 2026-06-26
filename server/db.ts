@@ -452,17 +452,23 @@ export async function getDashboardStats() {
     }
   }
 
-  // Top buyers — only count delivered orders
+  // Top buyers — count approved payments from the current month
   const buyerMap: Record<string, number> = {};
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  
   for (const o of allOrders) {
-    if (o.status === "delivered") {
+    const isApproved = o.paymentStatus === "approved" || o.status === "delivered" || o.status === "game_pending";
+    const isThisMonth = o.createdAt >= startOfMonth;
+    
+    if (isApproved && isThisMonth) {
       buyerMap[o.minecraftNickname] = (buyerMap[o.minecraftNickname] || 0) + parseFloat(String(o.total));
     }
   }
   const topBuyers = Object.entries(buyerMap)
     .map(([nickname, total]) => ({ nickname, total }))
     .sort((a, b) => b.total - a.total)
-    .slice(0, 5);
+    .slice(0, 10); // Aumentado para 10 para garantir o pódio e reserva
 
   return {
     totalOrders: allOrders.length,
