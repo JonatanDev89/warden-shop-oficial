@@ -126,19 +126,27 @@ function normalizeMinecraftId(minecraftId: string): string {
   }
 
   // Poções com efeitos específicos (ex: strength_potion, speed_potion, etc)
-  const potionEffects = ["strength", "speed", "haste", "healing", "instant_health", "night_vision", "invisibility", "resistance", "fire_resistance", "regeneration", "weakness", "poison", "slowness", "jump_boost", "water_breathing", "luck", "slow_falling", "turtle_master"];
+  const potionEffects = ["strength", "speed", "haste", "healing", "instant_health", "night_vision", "invisibility", "resistance", "fire_resistance", "regeneration", "weakness", "poison", "slowness", "jump_boost", "water_breathing", "luck", "slow_falling", "turtle_master", "swiftness", "leaping", "harming", "wind_charging", "weaving", "oozing", "infestation"];
   
   if (id.includes("_potion")) {
-    // Verifica se é splash_ ou lingering_
+    // Caso especial: swiftness -> speed no Java
+    if (id.includes("swiftness")) {
+      return id.replace("swiftness", "speed");
+    }
+    // Caso especial: leaping -> jump_boost no Java
+    if (id.includes("leaping")) {
+      return id.replace("leaping", "jump_boost");
+    }
+    // Caso especial: harming -> instant_damage no Java
+    if (id.includes("harming")) {
+      return id.replace("harming", "instant_damage");
+    }
+
     let effect = id;
-    let prefix = "";
-    
     if (id.startsWith("splash_")) {
       effect = id.replace("splash_", "");
-      prefix = "splash_";
     } else if (id.startsWith("lingering_")) {
       effect = id.replace("lingering_", "");
-      prefix = "lingering_";
     }
     
     const effectName = effect.replace("_potion", "");
@@ -159,7 +167,7 @@ export function getItemTexture(minecraftId: string, customImageUrl?: string | nu
   const normalizedId = normalizeMinecraftId(minecraftId);
 
   // Para poções com efeitos, usar fonte alternativa (PrismLauncher)
-  if (normalizedId.endsWith("_potion")) {
+  if (normalizedId.includes("_potion")) {
     return `https://raw.githubusercontent.com/PrismLauncher/MC-Assets/master/Assets/minecraft/textures/item/${normalizedId}.png`;
   }
 

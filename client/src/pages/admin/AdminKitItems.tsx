@@ -48,6 +48,7 @@ import {
   type GenericOption,
   type PotionOption,
 } from "@/lib/kitEnchants";
+import { getItemTexture, getItemTextureFallback, getGenericFallback } from "@/lib/minecraftTextures";
 
 type KitItem = NonNullable<ReturnType<typeof trpc.admin.getKitItems.useQuery>["data"]>[0];
 type ConfigType = "none" | "armor" | "book" | "tool" | "egg" | "potion" | "trim";
@@ -99,18 +100,7 @@ const emptyForm: KitItemForm = {
 };
 
 function itemTexture(minecraftId: string, imageUrl?: string | null) {
-  if (imageUrl) return imageUrl;
-  
-  // Normalização de IDs para busca de textura (Bedrock -> Java naming style)
-  let id = minecraftId.toLowerCase();
-  if (id === "elytra") id = "elytra";
-  if (id === "totem_of_undying" || id === "totem") id = "totem_of_undying";
-  if (id.includes("spawn_egg")) {
-    // Se for um spawn egg genérico sem o mob no nome, usa o ícone padrão
-    if (id === "spawn_egg") id = "spawn_egg";
-  }
-
-  return `https://minecraft-inventory.s7a.dev/items/${id}.png`;
+  return getItemTexture(minecraftId, imageUrl);
 }
 
 function formatPrice(v: string | number) {
@@ -577,7 +567,20 @@ function GenericOptionList({
         {options.map((o) => (
           <div key={o.id} className="flex items-center gap-2 bg-muted/50 rounded px-2 py-1">
             <div className="h-6 w-6 shrink-0 flex items-center justify-center">
-               <img src={itemTexture(o.id, (o as any).imageUrl)} alt="" className="h-5 w-5 object-contain" />
+               <img 
+                 src={itemTexture(o.id, (o as any).imageUrl)} 
+                 alt="" 
+                 className="h-5 w-5 object-contain" 
+                 style={{ imageRendering: "pixelated" }}
+                 onError={(e) => {
+                   const img = e.target as HTMLImageElement;
+                   if (img.src !== getItemTextureFallback(o.id)) {
+                     img.src = getItemTextureFallback(o.id);
+                   } else {
+                     img.src = getGenericFallback();
+                   }
+                 }}
+               />
             </div>
             <span className="flex-1 text-sm text-foreground truncate">
               {o.name}
