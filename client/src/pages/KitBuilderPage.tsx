@@ -188,14 +188,21 @@ export default function KitBuilderPage() {
     const cfg = parseItemConfig(pendingConfig.item.itemConfig) as any;
     if (cfg?.type !== "tool") return;
 
-    let total = "0";
-    let configLabel = "";
-    let displayLabel = "";
+    let total = "0.00";
+    let label = "Sem encantamentos";
+    let displayLabel = "Sem encantamentos";
 
     if (toolTier === "full" && cfg.priceFull) {
       total = parseFloat(String(cfg.priceFull)).toFixed(2);
-      configLabel = "Full";
-      displayLabel = "Full (Encantamentos Máximos)";
+      // Se for modo FULL, usamos os encantamentos pré-definidos no config do item
+      const fullEnchants = (cfg as any).enchantsFull || [];
+      if (fullEnchants.length > 0) {
+        label = fullEnchants.map((e: any) => `${e.id} ${e.level}`).join(", ");
+        displayLabel = "Full (" + fullEnchants.map((e: any) => `${e.name || e.id} ${e.level}`).join(", ") + ")";
+      } else {
+        label = "Full";
+        displayLabel = "Full (Encantamentos Máximos)";
+      }
     } else {
       const enchantCost = toolSelectedEnchants.reduce((sum, sel) => {
         const meta = pendingConfig.enchants.find((e) => e.id === sel.id);
@@ -205,15 +212,14 @@ export default function KitBuilderPage() {
       }, 0);
       const basePrice = parseFloat(cfg.basePrice) || parseFloat(String(pendingConfig.item.price)) || 0;
       total = (basePrice + enchantCost).toFixed(2);
-      configLabel = toolSelectedEnchants.length > 0
-        ? toolSelectedEnchants.map((sel) => `${sel.id} ${sel.level}`).join(", ")
-        : "Sem encantamentos";
-      displayLabel = toolSelectedEnchants.length > 0
-        ? toolSelectedEnchants.map((sel) => {
-            const meta = pendingConfig.enchants.find((e) => e.id === sel.id);
-            return `${meta?.name ?? sel.id} ${sel.level}`;
-          }).join(", ")
-        : "Sem encantamentos";
+      
+      if (toolSelectedEnchants.length > 0) {
+        label = toolSelectedEnchants.map((sel) => `${sel.id} ${sel.level}`).join(", ");
+        displayLabel = toolSelectedEnchants.map((sel) => {
+          const meta = pendingConfig.enchants.find((e) => e.id === sel.id);
+          return `${meta?.name ?? sel.id} ${sel.level}`;
+        }).join(", ");
+      }
     }
     
     if (selectedSlot === null) return;
@@ -225,7 +231,7 @@ export default function KitBuilderPage() {
       unitPrice: total,
       pricePerUnit: false,
       imageUrl: pendingConfig.item.imageUrl,
-      configLabel: configLabel,
+      configLabel: label,
       displayLabel: displayLabel,
     };
     setSlots(next);
