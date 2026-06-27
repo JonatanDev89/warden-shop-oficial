@@ -535,7 +535,7 @@ export default function KitBuilderPage() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
                           {cfg.options.map((opt) => (
                             <button key={opt.id} onClick={() => setSelectedOptionId(opt.id)} className={`flex items-center gap-3 p-2 rounded-lg border-2 text-left transition-all ${selectedOptionId === opt.id ? "border-primary bg-primary/10" : "border-border bg-muted hover:border-primary/50"}`}>
-                              <img src={getItemTexture(opt.id)} alt="" className="h-8 w-8 object-contain shrink-0" style={{ imageRendering: "pixelated" }} onError={(e) => {
+                              <img src={getItemTexture(opt.id, (opt as any).imageUrl)} alt="" className="h-8 w-8 object-contain shrink-0" style={{ imageRendering: "pixelated" }} onError={(e) => {
                                   const img = e.target as HTMLImageElement;
                                   if (img.src !== getItemTextureFallback(opt.id)) {
                                     img.src = getItemTextureFallback(opt.id);
