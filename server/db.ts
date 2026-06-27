@@ -429,9 +429,19 @@ export async function getDashboardStats() {
   const db = await getDb();
   if (!db) return null;
   const allOrders = await db.select().from(orders);
-  const totalRevenue = allOrders.reduce((sum, o) => sum + parseFloat(String(o.total)), 0);
+  
+  // Receita Total: Apenas pedidos pagos (approved)
+  const totalRevenue = allOrders
+    .filter(o => o.paymentStatus === "approved")
+    .reduce((sum, o) => sum + parseFloat(String(o.total)), 0);
+
   const statusCounts = { pending_approval: 0, game_pending: 0, delivered: 0, cancelled: 0 };
-  for (const o of allOrders) statusCounts[o.status]++;
+  for (const o of allOrders) {
+    if (statusCounts.hasOwnProperty(o.status)) {
+      statusCounts[o.status as keyof typeof statusCounts]++;
+    }
+  }
+
   const productCount = await db.select({ count: sql<number>`count(*)` }).from(products).where(eq(products.active, true));
   const categoryCount = await db.select({ count: sql<number>`count(*)` }).from(categories);
 
@@ -446,6 +456,7 @@ export async function getDashboardStats() {
   for (const o of allOrders) {
     const key = o.createdAt.toISOString().split("T")[0]!;
     if (trend[key]) {
+      // Consideramos "game_pending" ou "delivered" como vendas confirmadas na tendência
       if (o.status === "delivered" || o.status === "game_pending") trend[key]!.game_pending++;
       else if (o.status === "cancelled") trend[key]!.cancelled++;
       else trend[key]!.pending_approval++;
@@ -469,7 +480,7 @@ export async function getDashboardStats() {
   const topBuyers = Object.entries(buyerMap)
     .map(([nickname, total]) => ({ nickname, total }))
     .sort((a, b) => b.total - a.total)
-    .slice(0, 10); // Aumentado para 10 para garantir o pódio e reserva
+    .slice(0, 10);
 
   return {
     totalOrders: allOrders.length,
