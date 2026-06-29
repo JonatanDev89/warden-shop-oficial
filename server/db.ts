@@ -913,6 +913,18 @@ export async function runMigrations() {
     // Garantir que registros antigos tenham delivered = false
     await db.execute(sql`UPDATE "order_items" SET "delivered" = false WHERE "delivered" IS NULL`);
 
+    // ─── Novas colunas de Promoção e Desconto ─────────────────────────────────
+    await db.execute(sql`ALTER TABLE "categories" ADD COLUMN IF NOT EXISTS "showCouponDiscount" boolean NOT NULL DEFAULT false`);
+    await db.execute(sql`ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "originalPrice" decimal(10, 2)`);
+    await db.execute(sql`ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "discountBadge" varchar(64)`);
+    await db.execute(sql`ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "showPixPrice" boolean NOT NULL DEFAULT true`);
+    
+    // ─── Novas colunas de Badge para Kit Items ────────────────────────────────
+    await db.execute(sql`ALTER TABLE "kit_items" ADD COLUMN IF NOT EXISTS "badgeText" varchar(64)`);
+    await db.execute(sql`ALTER TABLE "kit_items" ADD COLUMN IF NOT EXISTS "badgeColor" varchar(7) DEFAULT '#FF6B6B'`);
+    await db.execute(sql`ALTER TABLE "kit_items" ADD COLUMN IF NOT EXISTS "badgeTextColor" varchar(7) DEFAULT '#FFFFFF'`);
+    await db.execute(sql`ALTER TABLE "kit_items" ADD COLUMN IF NOT EXISTS "badgeEnabled" boolean NOT NULL DEFAULT false`);
+
     console.log("[DB] Migrations applied.");
   } catch (e) {
     console.error("[DB] Migration error:", e);
