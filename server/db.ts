@@ -140,14 +140,14 @@ export async function getCategoryById(id: number) {
   return result[0];
 }
 
-export async function createCategory(data: { name: string; description?: string }) {
+export async function createCategory(data: { name: string; description?: string; showCouponDiscount?: boolean }) {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
   const result = await db.insert(categories).values(data);
   return result[0];
 }
 
-export async function updateCategory(id: number, data: { name?: string; description?: string }) {
+export async function updateCategory(id: number, data: { name?: string; description?: string; showCouponDiscount?: boolean }) {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
   await db.update(categories).set(data).where(eq(categories.id, id));
@@ -214,10 +214,18 @@ export async function createProduct(data: {
   stock?: number;
   imageUrl?: string;
   active?: boolean;
+  originalPrice?: string;
+  discountBadge?: string;
+  showPixPrice?: boolean;
 }) {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
-  await db.insert(products).values({ ...data, stock: data.stock ?? -1, active: data.active ?? true });
+  await db.insert(products).values({ 
+    ...data, 
+    stock: data.stock ?? -1, 
+    active: data.active ?? true,
+    showPixPrice: data.showPixPrice ?? true
+  });
 }
 
 export async function updateProduct(
@@ -231,6 +239,9 @@ export async function updateProduct(
     stock?: number;
     imageUrl?: string;
     active?: boolean;
+    originalPrice?: string;
+    discountBadge?: string;
+    showPixPrice?: boolean;
   }
 ) {
   const db = await getDb();

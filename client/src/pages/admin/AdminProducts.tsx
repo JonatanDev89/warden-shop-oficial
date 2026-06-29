@@ -50,6 +50,9 @@ type ProductForm = {
   kitImages: string[];   // fotos do kit (thumbnails)
   commands: string;
   active: boolean;
+  originalPrice: string;
+  discountBadge: string;
+  showPixPrice: boolean;
 };
 
 const emptyForm: ProductForm = {
@@ -63,6 +66,9 @@ const emptyForm: ProductForm = {
   kitImages: [],
   commands: "",
   active: true,
+  originalPrice: "",
+  discountBadge: "",
+  showPixPrice: true,
 };
 
 type Product = NonNullable<ReturnType<typeof trpc.admin.getProducts.useQuery>["data"]>[0];
@@ -234,6 +240,9 @@ export default function AdminProducts() {
       kitImages: kitImgs,
       commands: cmdArr.join("\n"),
       active: p.active,
+      originalPrice: p.originalPrice ? String(p.originalPrice) : "",
+      discountBadge: p.discountBadge ?? "",
+      showPixPrice: p.showPixPrice ?? true,
     });
     setDialogOpen(true);
   };
@@ -265,6 +274,9 @@ export default function AdminProducts() {
         imageUrl,
         commands: commandsJson,
         active: form.active,
+        originalPrice: form.originalPrice || undefined,
+        discountBadge: form.discountBadge || undefined,
+        showPixPrice: form.showPixPrice,
       });
     } else {
       createProduct.mutate({
@@ -277,6 +289,9 @@ export default function AdminProducts() {
         imageUrl,
         commands: commandsJson,
         active: form.active,
+        originalPrice: form.originalPrice || undefined,
+        discountBadge: form.discountBadge || undefined,
+        showPixPrice: form.showPixPrice,
       });
     }
   };
@@ -481,6 +496,43 @@ export default function AdminProducts() {
                   value={form.stock}
                   onChange={(e) => setForm({ ...form, stock: e.target.value })}
                   className="bg-muted border-border"
+                />
+              </div>
+            </div>
+
+            <div className="p-3 rounded-lg border border-primary/20 bg-primary/5 space-y-3">
+              <h4 className="text-xs font-bold text-primary uppercase tracking-wider">Promoção e Desconto</h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-foreground mb-1.5 block text-xs">Preço Original (Riscado)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={form.originalPrice}
+                    onChange={(e) => setForm({ ...form, originalPrice: e.target.value })}
+                    className="bg-muted border-border h-8 text-sm"
+                    placeholder="Ex: 120,00"
+                  />
+                </div>
+                <div>
+                  <Label className="text-foreground mb-1.5 block text-xs">Badge de Desconto</Label>
+                  <Input
+                    value={form.discountBadge}
+                    onChange={(e) => setForm({ ...form, discountBadge: e.target.value })}
+                    className="bg-muted border-border h-8 text-sm"
+                    placeholder="Ex: -17%"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <Label className="text-foreground text-xs cursor-pointer" htmlFor="showPixPrice">
+                  Exibir "À vista no Pix"
+                </Label>
+                <Switch
+                  id="showPixPrice"
+                  checked={form.showPixPrice}
+                  onCheckedChange={(v) => setForm({ ...form, showPixPrice: v })}
                 />
               </div>
             </div>

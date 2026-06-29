@@ -228,6 +228,28 @@ export default function AdminCategories() {
                 </div>
               )}
             </div>
+
+            <div className="p-4 rounded-lg border border-primary/20 bg-primary/5 space-y-3">
+              <div className="flex items-center gap-2 mb-1">
+                <Percent className="h-4 w-4 text-primary" />
+                <h4 className="text-sm font-bold text-primary uppercase tracking-wider">Promoção Automática</h4>
+              </div>
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-1">
+                  <Label className="text-foreground text-sm cursor-pointer" htmlFor="showCouponDiscount">
+                    Exibir desconto de cupom
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Se ativado, os itens desta categoria exibirão automaticamente o desconto do maior cupom ativo disponível para ela.
+                  </p>
+                </div>
+                <Switch
+                  id="showCouponDiscount"
+                  checked={showCouponDiscount}
+                  onCheckedChange={setShowCouponDiscount}
+                />
+              </div>
+            </div>
             <div className="flex gap-2">
               <Button type="submit" disabled={createCategory.isPending || updateCategory.isPending} className="flex-1">
                 {editingId ? "Salvar" : "Criar"}

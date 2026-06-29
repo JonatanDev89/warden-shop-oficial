@@ -3,7 +3,7 @@ import { Link, useParams, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import ShopLayout from "@/components/ShopLayout";
-import { ChevronRight, Package, ShoppingCart, Plus, Minus } from "lucide-react";
+import { ChevronRight, Package, ShoppingCart, Plus, Minus, TrendingDown } from "lucide-react";
 import { parseProductImages } from "@/lib/productImages";
 import { getItemTexture, getItemTextureFallback, getGenericFallback } from "@/lib/minecraftTextures";
 import { useState } from "react";
@@ -26,10 +26,23 @@ export default function CategoryPage() {
 
   const { data: categories } = trpc.shop.getCategories.useQuery();
   const { data: products, isLoading } = trpc.shop.getProducts.useQuery({ categoryId });
+  // Buscar cupons para lógica de desconto automático na categoria
+  const { data: coupons } = trpc.admin.getCoupons.useQuery(undefined, {
+    enabled: !!categories?.find(c => c.id === categoryId)?.showCouponDiscount
+  });
 
   const [quantities, setQuantities] = useState<Record<number, number>>({});
 
   const category = categories?.find((c) => c.id === categoryId);
+
+  // Lógica para encontrar o melhor desconto de cupom para esta categoria
+  const categoryCoupon = coupons?.filter(c => 
+    c.active && (c.categoryId === null || c.categoryId === categoryId)
+  ).sort((a, b) => {
+    const valA = a.discountType === "percent" ? parseFloat(String(a.discountValue)) : 0;
+    const valB = b.discountType === "percent" ? parseFloat(String(b.discountValue)) : 0;
+    return valB - valA;
+  })[0];
 
   const formatPrice = (price: string | number) =>
     `R$ ${parseFloat(String(price)).toFixed(2).replace(".", ",")}`;
@@ -167,16 +180,38 @@ export default function CategoryPage() {
                     {product.description}
                   </p>
 
-                  <div className="flex items-center justify-between mb-1 gap-1">
-                    <span className="text-base sm:text-xl font-bold text-primary whitespace-nowrap">
-                      {formatPrice(product.price)}
-                    </span>
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-                      <PixIcon />
+                  <div className="flex flex-col mb-3">
+                    {/* Preço original riscado e Badge de desconto */}
+                    <div className="flex items-center gap-2 mb-1">
+                      {(product.originalPrice || (category?.showCouponDiscount && categoryCoupon)) && (
+                        <span className="text-sm text-muted-foreground line-through decoration-muted-foreground/50">
+                          {formatPrice(product.originalPrice || product.price)}
+                        </span>
+                      )}
+                      
+                      {/* Badge de desconto (Manual ou Automático por cupom) */}
+                      {(product.discountBadge || (category?.showCouponDiscount && categoryCoupon?.discountType === "percent")) && (
+                        <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-orange-500/10 border border-orange-500/20 text-orange-500 text-[10px] font-bold">
+                          <TrendingDown className="h-3 w-3" />
+                          {product.discountBadge || `-${parseFloat(String(categoryCoupon?.discountValue))}%`}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between gap-1">
+                      <div className="flex flex-col">
+                        <span className="text-xl sm:text-2xl font-bold text-orange-500 whitespace-nowrap leading-none">
+                          {formatPrice(product.price)}
+                        </span>
+                        {product.showPixPrice !== false && (
+                          <span className="text-[10px] sm:text-xs text-muted-foreground mt-1">À vista no Pix</span>
+                        )}
+                      </div>
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                        <PixIcon />
+                      </div>
                     </div>
                   </div>
-
-                  <div className="text-xs text-muted-foreground mb-3">À vista no Pix</div>
 
                   {/* Seletor de Quantidade */}
                   <div className="flex items-center gap-2 mb-3">

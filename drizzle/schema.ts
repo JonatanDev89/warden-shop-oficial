@@ -42,6 +42,7 @@ export const categories = pgTable("categories", {
   description: text("description"),
   imageUrl: text("imageUrl"),
   sortOrder: integer("sortOrder").default(0).notNull(),
+  showCouponDiscount: boolean("showCouponDiscount").default(false).notNull(), // Ativar qnd a categoria tiver cupom
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
@@ -62,6 +63,10 @@ export const products = pgTable("products", {
   commands: text("commands"),
   active: boolean("active").default(true).notNull(),
   sortOrder: integer("sortOrder").default(0).notNull(),
+  // Campos de promoção/desconto
+  originalPrice: decimal("originalPrice", { precision: 10, scale: 2 }), // Preço riscado (opcional)
+  discountBadge: varchar("discountBadge", { length: 64 }),              // Texto do badge (ex: "-17%")
+  showPixPrice: boolean("showPixPrice").default(true).notNull(),       // Se deve mostrar "À vista no Pix"
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });

@@ -567,6 +567,9 @@ const adminRouter = router({
         imageUrl: z.string().optional(),
         commands: z.string().optional(),
         active: z.boolean().optional(),
+        originalPrice: z.string().optional(),
+        discountBadge: z.string().optional(),
+        showPixPrice: z.boolean().optional(),
       })
     )
     .mutation(({ input }) => createProduct(input)),
@@ -583,6 +586,9 @@ const adminRouter = router({
         imageUrl: z.string().optional(),
         commands: z.string().optional(),
         active: z.boolean().optional(),
+        originalPrice: z.string().optional(),
+        discountBadge: z.string().optional(),
+        showPixPrice: z.boolean().optional(),
       })
     )
     .mutation(({ input }) => {
@@ -599,10 +605,10 @@ const adminRouter = router({
   // Categories
   getCategories: adminProcedure.query(() => getCategories()),
   createCategory: adminProcedure
-    .input(z.object({ name: z.string().min(1), description: z.string().optional(), imageUrl: z.string().optional() }))
+    .input(z.object({ name: z.string().min(1), description: z.string().optional(), imageUrl: z.string().optional(), showCouponDiscount: z.boolean().optional() }))
     .mutation(({ input }) => createCategory(input)),
   updateCategory: adminProcedure
-    .input(z.object({ id: z.number(), name: z.string().optional(), description: z.string().optional(), imageUrl: z.string().optional() }))
+    .input(z.object({ id: z.number(), name: z.string().optional(), description: z.string().optional(), imageUrl: z.string().optional(), showCouponDiscount: z.boolean().optional() }))
     .mutation(({ input }) => {
       const { id, ...data } = input;
       return updateCategory(id, data);
