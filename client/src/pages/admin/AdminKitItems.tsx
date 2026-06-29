@@ -74,6 +74,10 @@ type KitItemForm = {
   eggOptions: GenericOption[];
   potionOptions: PotionOption[];
   trimOptions: GenericOption[];
+  badgeText: string;
+  badgeColor: string;
+  badgeTextColor: string;
+  badgeEnabled: boolean;
 };
 
 const emptyForm: KitItemForm = {
@@ -97,6 +101,10 @@ const emptyForm: KitItemForm = {
   eggOptions: [],
   potionOptions: [],
   trimOptions: [],
+  badgeText: "",
+  badgeColor: "#FF6B6B",
+  badgeTextColor: "#FFFFFF",
+  badgeEnabled: false,
 };
 
 function itemTexture(minecraftId: string, imageUrl?: string | null) {
@@ -171,6 +179,12 @@ function parseFormFromItem(item: KitItem): KitItemForm {
     bookPricePerLevel: "0",
     toolEnchants: [],
     eggOptions: [],
+    potionOptions: [],
+    trimOptions: [],
+    badgeText: (item as any).badgeText ?? "",
+    badgeColor: (item as any).badgeColor ?? "#FF6B6B",
+    badgeTextColor: (item as any).badgeTextColor ?? "#FFFFFF",
+    badgeEnabled: (item as any).badgeEnabled ?? false,
   };
   if (item.itemConfig) {
     try {
@@ -748,6 +762,10 @@ export default function AdminKitItems() {
       imageUrl: form.imageUrl.trim() || undefined,
       itemConfig: buildItemConfig(form),
       active: form.active,
+      badgeText: form.badgeEnabled ? form.badgeText : undefined,
+      badgeColor: form.badgeEnabled ? form.badgeColor : undefined,
+      badgeTextColor: form.badgeEnabled ? form.badgeTextColor : undefined,
+      badgeEnabled: form.badgeEnabled,
     });
   };
 
@@ -1210,6 +1228,81 @@ export default function AdminKitItems() {
                 />
               </div>
             )}
+
+            {/* Selo Promocional */}
+            <div className="rounded-lg border border-border p-3 space-y-3 bg-muted/30">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Selo Promocional (Badge)
+              </p>
+              <div className="flex items-center gap-3">
+                <Switch
+                  checked={form.badgeEnabled}
+                  onCheckedChange={(v) => setF({ badgeEnabled: v })}
+                />
+                <Label className="text-foreground text-sm">Ativar selo</Label>
+              </div>
+              {form.badgeEnabled && (
+                <>
+                  <div>
+                    <Label className="text-foreground mb-1.5 block text-sm">Texto do Selo</Label>
+                    <Input
+                      value={form.badgeText}
+                      onChange={(e) => setF({ badgeText: e.target.value })}
+                      className="bg-muted border-border"
+                      placeholder="ex: 10% OFF, PROMO, NOVO"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-foreground mb-1.5 block text-sm">Cor de Fundo</Label>
+                      <div className="flex gap-2 items-center">
+                        <input
+                          type="color"
+                          value={form.badgeColor}
+                          onChange={(e) => setF({ badgeColor: e.target.value })}
+                          className="h-10 w-16 rounded border border-border cursor-pointer"
+                        />
+                        <Input
+                          value={form.badgeColor}
+                          onChange={(e) => setF({ badgeColor: e.target.value })}
+                          className="bg-muted border-border flex-1 font-mono text-xs"
+                          placeholder="#FF6B6B"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-foreground mb-1.5 block text-sm">Cor do Texto</Label>
+                      <div className="flex gap-2 items-center">
+                        <input
+                          type="color"
+                          value={form.badgeTextColor}
+                          onChange={(e) => setF({ badgeTextColor: e.target.value })}
+                          className="h-10 w-16 rounded border border-border cursor-pointer"
+                        />
+                        <Input
+                          value={form.badgeTextColor}
+                          onChange={(e) => setF({ badgeTextColor: e.target.value })}
+                          className="bg-muted border-border flex-1 font-mono text-xs"
+                          placeholder="#FFFFFF"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-2 rounded bg-muted/50 border border-border">
+                    <p className="text-xs text-muted-foreground mb-2">Pré-visualização:</p>
+                    <div
+                      className="inline-block px-3 py-1 rounded-full text-sm font-bold"
+                      style={{
+                        backgroundColor: form.badgeColor,
+                        color: form.badgeTextColor,
+                      }}
+                    >
+                      {form.badgeText || "Selo"}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
 
             <div className="flex items-center gap-3">
               <Switch

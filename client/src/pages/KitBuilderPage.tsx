@@ -31,6 +31,9 @@ type SlotItem = {
   imageUrl?: string | null;
   configLabel?: string;
   displayLabel?: string;
+  badgeText?: string;
+  badgeColor?: string;
+  badgeTextColor?: string;
 };
 
 type PendingConfig =
@@ -99,6 +102,10 @@ export default function KitBuilderPage() {
   function selectItem(item: KitItem) {
     if (selectedSlot === null) return;
     const cfg = parseItemConfig(item.itemConfig);
+    const badgeEnabled = (item as any).badgeEnabled;
+    const badgeText = (item as any).badgeText;
+    const badgeColor = (item as any).badgeColor;
+    const badgeTextColor = (item as any).badgeTextColor;
 
     if (cfg?.type === "armor") {
       setArmorTier("full");
@@ -146,6 +153,7 @@ export default function KitBuilderPage() {
       item.minPerSlot,
       Math.min(item.maxPerSlot, parseInt(quantityInput) || item.minPerSlot)
     );
+    const badgeEnabled = (item as any).badgeEnabled;
     const next = [...slots];
     next[selectedSlot] = {
       minecraftId: item.minecraftId,
@@ -156,6 +164,9 @@ export default function KitBuilderPage() {
       imageUrl: item.imageUrl,
       configLabel,
       displayLabel: displayLabel ?? configLabel,
+      badgeText: badgeEnabled ? (item as any).badgeText : undefined,
+      badgeColor: badgeEnabled ? (item as any).badgeColor : undefined,
+      badgeTextColor: badgeEnabled ? (item as any).badgeTextColor : undefined,
     };
     setSlots(next);
     setSelectedSlot(null);
@@ -342,6 +353,18 @@ export default function KitBuilderPage() {
                             }
                           }}
                         />
+                        {slot.badgeText && slot.badgeColor && slot.badgeTextColor && (
+                          <div
+                            className="absolute top-0.5 right-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold leading-none"
+                            style={{
+                              backgroundColor: slot.badgeColor,
+                              color: slot.badgeTextColor,
+                              boxShadow: "0 2px 4px rgba(0,0,0,0.3)",
+                            }}
+                          >
+                            {slot.badgeText}
+                          </div>
+                        )}
                         <span className="absolute bottom-0 right-0.5 text-white text-[10px] font-bold leading-none drop-shadow-[0_1px_1px_rgba(0,0,0,1)]">
                           {slot.quantity}
                         </span>

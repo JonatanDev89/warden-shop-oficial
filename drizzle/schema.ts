@@ -200,6 +200,11 @@ export const kitItems = pgTable("kit_items", {
   // Armor: { type:"armor", priceFull:"3.00", priceGod:"5.00", enchantsFull:[{id,name,level}], enchantsGod:[{id,name,level}] }
   // Book:  { type:"book", enchants:[{id,name,maxLevel,price}] }
   itemConfig: text("itemConfig"),
+  // Selo promocional (badge/label)
+  badgeText: varchar("badgeText", { length: 64 }), // ex: "10% OFF", "PROMO", "NOVO"
+  badgeColor: varchar("badgeColor", { length: 7 }).default("#FF6B6B"), // cor hex do selo
+  badgeTextColor: varchar("badgeTextColor", { length: 7 }).default("#FFFFFF"), // cor do texto do selo
+  badgeEnabled: boolean("badgeEnabled").default(false).notNull(), // se o selo está ativo
   active: boolean("active").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),

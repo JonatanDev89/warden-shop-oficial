@@ -668,6 +668,10 @@ export async function upsertKitItem(data: {
   imageUrl?: string | null;
   itemConfig?: string | null;
   active?: boolean;
+  badgeText?: string | null;
+  badgeColor?: string;
+  badgeTextColor?: string;
+  badgeEnabled?: boolean;
 }) {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
@@ -680,8 +684,8 @@ export async function upsertKitItem(data: {
   const query = `
     INSERT INTO "kit_items" (
       "minecraftId", "name", "price", "minPerSlot", "maxPerSlot", 
-      "pricePerUnit", "imageUrl", "itemConfig", "active", "updatedAt"
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+      "pricePerUnit", "imageUrl", "itemConfig", "active", "badgeText", "badgeColor", "badgeTextColor", "badgeEnabled", "updatedAt"
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())
     ON CONFLICT ("minecraftId") DO UPDATE SET
       "name" = EXCLUDED."name",
       "price" = EXCLUDED."price",
@@ -691,6 +695,10 @@ export async function upsertKitItem(data: {
       "imageUrl" = EXCLUDED."imageUrl",
       "itemConfig" = EXCLUDED."itemConfig",
       "active" = EXCLUDED."active",
+      "badgeText" = EXCLUDED."badgeText",
+      "badgeColor" = EXCLUDED."badgeColor",
+      "badgeTextColor" = EXCLUDED."badgeTextColor",
+      "badgeEnabled" = EXCLUDED."badgeEnabled",
       "updatedAt" = NOW()
   `;
 
@@ -703,7 +711,11 @@ export async function upsertKitItem(data: {
     Boolean(data.pricePerUnit ?? false),
     data.imageUrl || null,
     data.itemConfig || null,
-    Boolean(data.active ?? true)
+    Boolean(data.active ?? true),
+    data.badgeText || null,
+    data.badgeColor || '#FF6B6B',
+    data.badgeTextColor || '#FFFFFF',
+    Boolean(data.badgeEnabled ?? false)
   ];
 
   await pool.query(query, params);

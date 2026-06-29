@@ -720,6 +720,10 @@ const adminRouter = router({
       imageUrl: z.string().optional().nullable(),
       itemConfig: z.string().optional().nullable(),
       active: z.boolean().optional(),
+      badgeText: z.string().optional(),
+      badgeColor: z.string().optional(),
+      badgeTextColor: z.string().optional(),
+      badgeEnabled: z.boolean().optional(),
     }))
     .mutation(({ input }) => {
       console.log('[upsertKitItem] Input recebido:', JSON.stringify(input));
@@ -733,6 +737,10 @@ const adminRouter = router({
         active: input.active ?? true,
         imageUrl: (input.imageUrl && String(input.imageUrl).trim() !== '') ? String(input.imageUrl).trim() : null,
         itemConfig: (input.itemConfig && String(input.itemConfig).trim() !== '') ? String(input.itemConfig).trim() : null,
+        badgeText: (input.badgeText && String(input.badgeText).trim() !== '') ? String(input.badgeText).trim() : null,
+        badgeColor: (input.badgeColor && String(input.badgeColor).trim() !== '') ? String(input.badgeColor).trim() : '#FF6B6B',
+        badgeTextColor: (input.badgeTextColor && String(input.badgeTextColor).trim() !== '') ? String(input.badgeTextColor).trim() : '#FFFFFF',
+        badgeEnabled: !!input.badgeEnabled,
       };
       
       console.log('[upsertKitItem] Data processado:', JSON.stringify(data));
