@@ -79,7 +79,7 @@ export default function KitBuilderPage() {
     if (!s) return sum;
     const unitPrice = parseFloat(String(s.unitPrice)) || 0;
     const itemPrice = s.pricePerUnit ? unitPrice * s.quantity : unitPrice;
-    return sum + Math.round(itemPrice * 100) / 100;
+    return sum + itemPrice;
   }, 0);
 
   const filledSlots = slots.filter(Boolean).length;
@@ -139,7 +139,7 @@ export default function KitBuilderPage() {
       return;
     }
 
-    placeItem(item, String(item.price), false, undefined);
+    placeItem(item, String(item.price), item.pricePerUnit, undefined);
   }
 
   function placeItem(
@@ -612,7 +612,10 @@ export default function KitBuilderPage() {
                             }} />
                           <div className="min-w-0">
                             <p className="text-xs font-medium text-foreground truncate">{item.name}</p>
-                            <p className="text-xs text-primary font-bold">R$ {parseFloat(String(item.price)).toFixed(2).replace(".", ",")}</p>
+                            <p className="text-xs text-primary font-bold">
+                              R$ {parseFloat(String(item.price)).toFixed(2).replace(".", ",")}
+                              {item.pricePerUnit && <span className="text-[10px] font-normal ml-0.5">/un</span>}
+                            </p>
                           </div>
                         </button>
                       ))}
