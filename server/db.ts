@@ -645,6 +645,7 @@ export async function updateStoreCustomization(data: {
   bannerColor?: string;
   primaryColor?: string;
   secondaryColor?: string;
+  priceColor?: string;
   logoUrl?: string;
 }) {
   const db = await getDb();
@@ -924,6 +925,9 @@ export async function runMigrations() {
     await db.execute(sql`ALTER TABLE "kit_items" ADD COLUMN IF NOT EXISTS "badgeColor" varchar(7) DEFAULT '#FF6B6B'`);
     await db.execute(sql`ALTER TABLE "kit_items" ADD COLUMN IF NOT EXISTS "badgeTextColor" varchar(7) DEFAULT '#FFFFFF'`);
     await db.execute(sql`ALTER TABLE "kit_items" ADD COLUMN IF NOT EXISTS "badgeEnabled" boolean NOT NULL DEFAULT false`);
+
+    // ─── Novas colunas de Customização ────────────────────────────────────────
+    await db.execute(sql`ALTER TABLE "store_customization" ADD COLUMN IF NOT EXISTS "priceColor" varchar(7) DEFAULT '#f97316'`);
 
     console.log("[DB] Migrations applied.");
   } catch (e) {

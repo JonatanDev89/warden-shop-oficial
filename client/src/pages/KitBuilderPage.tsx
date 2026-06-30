@@ -48,6 +48,7 @@ type KitItem = NonNullable<ReturnType<typeof trpc.shop.getKitItems.useQuery>["da
 
 export default function KitBuilderPage() {
   const [, navigate] = useLocation();
+  const { data: settings } = trpc.shop.getStoreCustomization.useQuery();
   const { data: kitItems = [] } = trpc.shop.getKitItems.useQuery();
   const { addItem, clearCart } = useCart();
 
@@ -647,7 +648,12 @@ export default function KitBuilderPage() {
               <div className="border-t border-border pt-4 space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Total:</span>
-                  <span className="text-xl font-bold text-primary">R$ {totalPrice.toFixed(2).replace(".", ",")}</span>
+                  <span 
+                    className="text-xl font-bold"
+                    style={{ color: settings?.priceColor || '#f97316' }}
+                  >
+                    R$ {totalPrice.toFixed(2).replace(".", ",")}
+                  </span>
                 </div>
                 <Button onClick={buyKitNow} className="w-full" disabled={filledSlots === 0}>Comprar Agora</Button>
                 <Button onClick={addKitToCart} variant="outline" className="w-full" disabled={filledSlots === 0}>Adicionar ao Carrinho</Button>

@@ -21,6 +21,7 @@ export default function ShopPage() {
   const [selectedCategory, setSelectedCategory] = useState<number | undefined>(undefined);
   const [, navigate] = useLocation();
   const { addItem } = useCart();
+  const { data: settings } = trpc.shop.getStoreCustomization.useQuery();
   const { data: categories } = trpc.shop.getCategories.useQuery();
   const { data: products, isLoading } = trpc.shop.getProducts.useQuery({
     categoryId: selectedCategory,
@@ -175,7 +176,14 @@ export default function ShopPage() {
                             )}
                             
                             {hasBadge && (
-                              <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-orange-500/10 border border-orange-500/20 text-orange-500 text-[10px] font-bold">
+                              <div 
+                                className="flex items-center gap-1 px-2 py-0.5 rounded-md border text-[10px] font-bold"
+                                style={{ 
+                                  backgroundColor: `${settings?.priceColor || '#f97316'}1a`, 
+                                  borderColor: `${settings?.priceColor || '#f97316'}33`,
+                                  color: settings?.priceColor || '#f97316' 
+                                }}
+                              >
                                 <TrendingDown className="h-3 w-3" />
                                 {product.discountBadge || `-${parseFloat(String(catCoupon?.discountValue))}%`}
                               </div>
@@ -184,7 +192,10 @@ export default function ShopPage() {
 
                           <div className="flex items-center justify-between gap-1">
                             <div className="flex flex-col">
-                              <span className="text-xl sm:text-2xl font-bold text-orange-500 whitespace-nowrap leading-none">
+                              <span 
+                                className="text-xl sm:text-2xl font-bold whitespace-nowrap leading-none"
+                                style={{ color: settings?.priceColor || '#f97316' }}
+                              >
                                 {formatPrice(product.price)}
                               </span>
                               {product.showPixPrice !== false && (

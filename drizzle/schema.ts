@@ -184,6 +184,7 @@ export const storeCustomization = pgTable("store_customization", {
   bannerColor: varchar("bannerColor", { length: 7 }),
   primaryColor: varchar("primaryColor", { length: 7 }),
   secondaryColor: varchar("secondaryColor", { length: 7 }),
+  priceColor: varchar("priceColor", { length: 7 }).default("#f97316"), // Cor do preço (padrão laranja)
   logoUrl: text("logoUrl"),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });

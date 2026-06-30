@@ -295,6 +295,7 @@ export default function AdminCustomization() {
   const [backgroundColor, setBackgroundColor] = useState("#1a1f2e");
   const [cardColor, setCardColor] = useState("#222840");
   const [glowColor, setGlowColor] = useState("#00c8c8");
+  const [priceColor, setPriceColor] = useState("#f97316");
   const [glowIntensity, setGlowIntensity] = useState("0.4");
   const [borderRadius, setBorderRadius] = useState("0.5rem");
   const [fontFamily, setFontFamily] = useState("'Inter', sans-serif");
@@ -331,6 +332,7 @@ export default function AdminCustomization() {
     setBackgroundColor(settings.backgroundColor ?? "#1a1f2e");
     setCardColor(settings.cardColor ?? "#222840");
     setGlowColor(settings.glowColor ?? "#00c8c8");
+    setPriceColor(settings.priceColor ?? "#f97316");
     setGlowIntensity(settings.glowIntensity ?? "0.4");
     setBorderRadius(settings.borderRadius ?? "0.5rem");
     setFontFamily(settings.fontFamily ?? "'Inter', sans-serif");
@@ -367,7 +369,7 @@ export default function AdminCustomization() {
       heroTitle, heroSubtitle, heroBgUrl, wardenGifUrl,
       announcementText, announcementCoupon,
       primaryColor, backgroundColor, cardColor, glowColor,
-      glowIntensity, borderRadius, fontFamily,
+      priceColor, glowIntensity, borderRadius, fontFamily,
       discordUrl, discordTicketsUrl, monthlyGoalTarget, monthlyGoalLabel,
       // Feature flags
       featureSearch: String(featureSearch),
@@ -511,6 +513,9 @@ export default function AdminCustomization() {
 
                 <ColorPicker label="Cor do Glow" value={glowColor} onChange={setGlowColor}
                   hint="Brilho ao redor das imagens de categorias." />
+
+                <ColorPicker label="Cor dos Preços e Badges" value={priceColor} onChange={setPriceColor}
+                  hint="Cor usada nos preços dos produtos e nos badges de desconto." showQuickColors />
               </CardContent>
             </Card>
 

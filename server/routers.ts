@@ -702,6 +702,7 @@ const adminRouter = router({
         bannerColor: z.string().optional(),
         primaryColor: z.string().optional(),
         secondaryColor: z.string().optional(),
+        priceColor: z.string().optional(),
         logoUrl: z.string().optional(),
       })
     )

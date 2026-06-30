@@ -27,6 +27,7 @@ export default function ProductPage() {
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
 
+  const { data: settings } = trpc.shop.getStoreCustomization.useQuery();
   const { data: product, isLoading } = trpc.shop.getProduct.useQuery({ id: productId });
   const { data: categories } = trpc.shop.getCategories.useQuery();
   // Buscar cupons para lógica de desconto automático
@@ -199,7 +200,14 @@ export default function ProductPage() {
                   
                   {/* Badge de desconto (Manual ou Automático por cupom) */}
                   {(product.discountBadge || (category?.showCouponDiscount && categoryCoupon?.discountType === "percent")) && (
-                    <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-orange-500/10 border border-orange-500/20 text-orange-500 text-xs font-bold">
+                    <div 
+                      className="flex items-center gap-1 px-2 py-0.5 rounded-md border text-xs font-bold"
+                      style={{ 
+                        backgroundColor: `${settings?.priceColor || '#f97316'}1a`, 
+                        borderColor: `${settings?.priceColor || '#f97316'}33`,
+                        color: settings?.priceColor || '#f97316' 
+                      }}
+                    >
                       <TrendingDown className="h-3 w-3" />
                       {product.discountBadge || `-${parseFloat(String(categoryCoupon?.discountValue))}%`}
                     </div>
@@ -207,7 +215,10 @@ export default function ProductPage() {
                 </div>
 
                 <div className="flex flex-col">
-                  <span className="text-4xl font-bold text-orange-500 leading-none">
+                  <span 
+                    className="text-4xl font-bold leading-none"
+                    style={{ color: settings?.priceColor || '#f97316' }}
+                  >
                     {formatPrice(product.price)}
                   </span>
                   {product.showPixPrice !== false && (
