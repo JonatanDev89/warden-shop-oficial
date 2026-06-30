@@ -48,7 +48,7 @@ type KitItem = NonNullable<ReturnType<typeof trpc.shop.getKitItems.useQuery>["da
 
 export default function KitBuilderPage() {
   const [, navigate] = useLocation();
-  const { data: settings } = trpc.shop.getStoreCustomization.useQuery();
+  const { data: settings } = trpc.shop.getSettings.useQuery();
   const { data: kitItems = [] } = trpc.shop.getKitItems.useQuery();
   const { addItem, clearCart } = useCart();
 

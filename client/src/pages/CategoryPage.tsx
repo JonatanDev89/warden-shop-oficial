@@ -24,7 +24,7 @@ export default function CategoryPage() {
   const [, navigate] = useLocation();
   const { addItem } = useCart();
 
-  const { data: settings } = trpc.shop.getStoreCustomization.useQuery();
+  const { data: settings } = trpc.shop.getSettings.useQuery();
   const { data: categories } = trpc.shop.getCategories.useQuery();
   const { data: products, isLoading } = trpc.shop.getProducts.useQuery({ categoryId });
   // Buscar cupons para lógica de desconto automático na categoria

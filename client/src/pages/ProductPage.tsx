@@ -27,7 +27,7 @@ export default function ProductPage() {
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
 
-  const { data: settings } = trpc.shop.getStoreCustomization.useQuery();
+  const { data: settings } = trpc.shop.getSettings.useQuery();
   const { data: product, isLoading } = trpc.shop.getProduct.useQuery({ id: productId });
   const { data: categories } = trpc.shop.getCategories.useQuery();
   // Buscar cupons para lógica de desconto automático
