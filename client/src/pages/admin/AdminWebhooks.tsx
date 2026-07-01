@@ -337,6 +337,14 @@ function WebhookForm({ webhook, onClose }: { webhook?: any; onClose: () => void 
           Personalize as mensagens ou deixe vazio para usar o padrão. Use as variáveis abaixo para inserir dados dinâmicos.
         </p>
 
+        <Alert className="bg-primary/10 border-primary/20 mb-4">
+          <Sparkles className="h-4 w-4 text-primary" />
+          <AlertDescription className="text-xs text-foreground">
+            <strong>Dica de Emojis:</strong> Para usar emojis personalizados do seu servidor, use o formato <code>{`<:nome:id>`}</code>. 
+            Para descobrir o ID, digite <code>\</code> antes do emoji no Discord (ex: <code>\:Member:</code>).
+          </AlertDescription>
+        </Alert>
+
         <div className="space-y-4">
           {/* Variáveis disponíveis */}
           <div className="flex flex-wrap gap-1.5 p-3 rounded-lg bg-muted/50 border border-border">
