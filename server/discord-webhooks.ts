@@ -82,18 +82,28 @@ function applyVariables(template: string, order: any): string {
     }).format(now);
   }
   
-  return template
-    .replace(/\{nick\}/g, order.minecraftNickname ?? '')
-    .replace(/\{pedido\}/g, order.orderNumber ?? '')
-    .replace(/\{total\}/g, `R$ ${total.toFixed(2).replace('.', ',')}`)
-    .replace(/\{email\}/g, order.email ?? '')
-    .replace(/\{data\}/g, formattedDate)
-    .replace(/\{status\}/g, order.status ?? '')
-    .replace(/\{itens\}/g, itemsList || 'Nenhum item')
-    .replace(/\{quantidade\}/g, String(totalQuantity))
-    .replace(/\{cupom\}/g, order.couponCode ?? 'Nenhum')
-    .replace(/\{desconto\}/g, desconto > 0 ? `R$ ${desconto.toFixed(2).replace('.', ',')}` : 'R$ 0,00')
-    .replace(/\{subtotal\}/g, `R$ ${subtotal.toFixed(2).replace('.', ',')}`);
+  let result = template;
+  
+  const replacements: Record<string, string> = {
+    '{nick}': order.minecraftNickname ?? '',
+    '{pedido}': order.orderNumber ?? '',
+    '{total}': `R$ ${total.toFixed(2).replace('.', ',')}`,
+    '{email}': order.email ?? '',
+    '{data}': formattedDate,
+    '{status}': order.status ?? '',
+    '{itens}': itemsList || 'Nenhum item',
+    '{quantidade}': String(totalQuantity),
+    '{cupom}': order.couponCode ?? 'Nenhum',
+    '{desconto}': desconto > 0 ? `R$ ${desconto.toFixed(2).replace('.', ',')}` : 'R$ 0,00',
+    '{subtotal}': `R$ ${subtotal.toFixed(2).replace('.', ',')}`,
+  };
+
+  for (const [key, value] of Object.entries(replacements)) {
+    // Usar split/join em vez de regex para evitar problemas com caracteres especiais
+    result = result.split(key).join(value);
+  }
+
+  return result;
 }
 
 export async function notifyPendingOrder(order: any) {
