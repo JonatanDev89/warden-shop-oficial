@@ -77,11 +77,13 @@ export async function markOrderAsDelivered(orderId: number) {
       .where(eq(orders.id, orderId));
     
     // Enviar notificação de entrega
-    const { notifyOrderDelivered, sendDeliveryReceipt } = await import("./discord-webhooks");
-    const order = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1);
-    if (order[0]) {
-      await notifyOrderDelivered(order[0]);
-      await sendDeliveryReceipt(order[0]);
+    const { getOrderWithItems } = await import("./db");
+    const orderWithItems = await getOrderWithItems(orderId);
+    
+    if (orderWithItems) {
+      const { notifyOrderDelivered, sendDeliveryReceipt } = await import("./discord-webhooks");
+      await notifyOrderDelivered(orderWithItems);
+      await sendDeliveryReceipt(orderWithItems);
     }
     
     return true;

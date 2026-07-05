@@ -305,11 +305,13 @@ async function startServer() {
       await db.update(orders).set({ status: 'delivered' }).where(eq(orders.id, orderId));
       
       // Buscar dados completos do pedido para enviar comprovante e notificação
-      const updatedOrder = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1);
-      if (updatedOrder.length > 0) {
+      const { getOrderWithItems } = await import('../db');
+      const orderWithItems = await getOrderWithItems(orderId);
+      
+      if (orderWithItems) {
         const { sendDeliveryReceipt, notifyOrderDelivered } = await import('../discord-webhooks');
-        await notifyOrderDelivered(updatedOrder[0]);
-        await sendDeliveryReceipt(updatedOrder[0]);
+        await notifyOrderDelivered(orderWithItems);
+        await sendDeliveryReceipt(orderWithItems);
       }
       
       return res.json({ success: true, message: 'Order marked as delivered' });
