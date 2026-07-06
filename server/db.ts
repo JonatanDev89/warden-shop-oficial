@@ -273,11 +273,14 @@ export async function getCoupons() {
 export async function getCouponByCode(code: string) {
   const db = await getDb();
   if (!db) return undefined;
+  const upperCode = code.toUpperCase();
+  console.log(`[DB] getCouponByCode: searching for "${upperCode}"`);
   const result = await db
     .select()
     .from(coupons)
-    .where(and(eq(coupons.code, code.toUpperCase()), eq(coupons.active, true)))
+    .where(and(eq(coupons.code, upperCode), eq(coupons.active, true)))
     .limit(1);
+  console.log(`[DB] getCouponByCode result:`, result.length > 0 ? "Found" : "Not Found");
   return result[0];
 }
 

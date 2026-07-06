@@ -268,8 +268,13 @@ const shopRouter = router({
       categoryIds: z.array(z.number()).optional()
     }))
     .query(async ({ input }) => {
+      console.log(`[Coupon] Validating: "${input.code}" for user: "${input.nickname}"`);
       const coupon = await getCouponByCode(input.code);
-      if (!coupon) throw new TRPCError({ code: "NOT_FOUND", message: "Cupom inválido ou expirado." });
+      if (!coupon) {
+        console.log(`[Coupon] Not found or inactive: "${input.code}"`);
+        throw new TRPCError({ code: "NOT_FOUND", message: "Cupom inválido ou expirado." });
+      }
+      console.log(`[Coupon] Found:`, JSON.stringify(coupon));
       
       // 1. Validar Primeira Compra
       if (coupon.isFirstPurchase && input.nickname) {
