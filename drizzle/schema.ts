@@ -84,6 +84,7 @@ export const coupons = pgTable("coupons", {
   usageCount: integer("usageCount").default(0).notNull(),
   categoryId: integer("categoryId"), // null = todas as categorias
   isFirstPurchase: boolean("isFirstPurchase").default(false).notNull(),
+  allowOnKit: boolean("allowOnKit").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });

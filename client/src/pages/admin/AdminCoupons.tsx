@@ -28,6 +28,7 @@ type CouponForm = {
   discountValue: string;
   categoryId: number | null;
   isFirstPurchase: boolean;
+  allowOnKit: boolean;
   active: boolean;
 };
 
@@ -37,6 +38,7 @@ const emptyForm: CouponForm = {
   discountValue: "",
   categoryId: null,
   isFirstPurchase: false,
+  allowOnKit: true,
   active: true,
 };
 
@@ -88,6 +90,7 @@ export default function AdminCoupons() {
       discountValue: String(c.discountValue),
       categoryId: c.categoryId ?? null,
       isFirstPurchase: c.isFirstPurchase,
+      allowOnKit: (c as any).allowOnKit ?? true,
       active: c.active,
     });
     setDialogOpen(true);
@@ -101,6 +104,7 @@ export default function AdminCoupons() {
       discountValue: form.discountValue,
       categoryId: form.categoryId,
       isFirstPurchase: form.isFirstPurchase,
+      allowOnKit: form.allowOnKit,
       active: form.active,
     };
     if (editingId) {
@@ -264,6 +268,14 @@ export default function AdminCoupons() {
                   onCheckedChange={(v) => setForm({ ...form, isFirstPurchase: v })}
                 />
                 <Label className="text-foreground">Apenas para primeira compra</Label>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Switch
+                  checked={form.allowOnKit}
+                  onCheckedChange={(v) => setForm({ ...form, allowOnKit: v })}
+                />
+                <Label className="text-foreground">Permitir no Monte seu Kit</Label>
               </div>
 
               <div className="flex items-center gap-3">

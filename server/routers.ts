@@ -197,6 +197,11 @@ const shopRouter = router({
       if (input.couponCode) {
         const coupon = await getCouponByCode(input.couponCode);
         if (coupon) {
+          // Validar se permite no Monte seu Kit
+          if (hasKitSlots && !coupon.allowOnKit) {
+            throw new TRPCError({ code: "BAD_REQUEST", message: "Este cupom não é válido para o Monte seu Kit." });
+          }
+
           // Validar Primeira Compra
           if (coupon.isFirstPurchase) {
             const orderCount = await countUserOrders(input.minecraftNickname);
@@ -265,16 +270,19 @@ const shopRouter = router({
     .input(z.object({ 
       code: z.string(), 
       nickname: z.string().optional(),
-      categoryIds: z.array(z.number()).optional()
+      categoryIds: z.array(z.number()).optional(),
+      isKit: z.boolean().optional()
     }))
     .query(async ({ input }) => {
-      console.log(`[Coupon] Validating: "${input.code}" for user: "${input.nickname}"`);
       const coupon = await getCouponByCode(input.code);
       if (!coupon) {
-        console.log(`[Coupon] Not found or inactive: "${input.code}"`);
         throw new TRPCError({ code: "NOT_FOUND", message: "Cupom inválido ou expirado." });
       }
-      console.log(`[Coupon] Found:`, JSON.stringify(coupon));
+
+      // 0. Validar se permite no Monte seu Kit
+      if (input.isKit && !coupon.allowOnKit) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Este cupom não é válido para o Monte seu Kit." });
+      }
       
       // 1. Validar Primeira Compra
       if (coupon.isFirstPurchase && input.nickname) {
@@ -635,6 +643,7 @@ const adminRouter = router({
         discountValue: z.string(),
         categoryId: z.number().optional().nullable(),
         isFirstPurchase: z.boolean().optional(),
+        allowOnKit: z.boolean().optional(),
         active: z.boolean().optional(),
       })
     )
@@ -648,6 +657,7 @@ const adminRouter = router({
         discountValue: z.string().optional(),
         categoryId: z.number().optional().nullable(),
         isFirstPurchase: z.boolean().optional(),
+        allowOnKit: z.boolean().optional(),
         active: z.boolean().optional(),
       })
     )

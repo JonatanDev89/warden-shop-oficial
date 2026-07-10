@@ -197,9 +197,7 @@ export default function CheckoutPage() {
       const result = await utils.shop.validateCoupon.fetch({ 
         code: couponInput.trim(),
         nickname: nickname.trim() || undefined,
-        // O backend precisará saber as categorias dos itens no carrinho
-        // Vamos buscar isso de forma mais robusta no backend durante a criação do pedido
-        // Para a validação visual, vamos apenas tentar validar o código
+        isKit: kitItems.length > 0
       });
       setAppliedCoupon({ code: result.code, discountType: result.discountType, discountValue: String(result.discountValue) });
       toast.success(`Cupom "${result.code}" aplicado!`);

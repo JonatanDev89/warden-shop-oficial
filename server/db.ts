@@ -910,6 +910,7 @@ export async function runMigrations() {
     // ─── Coupons — categorias e primeira compra ──────────────────────────────
     await db.execute(sql`ALTER TABLE "coupons" ADD COLUMN IF NOT EXISTS "categoryId" integer`);
     await db.execute(sql`ALTER TABLE "coupons" ADD COLUMN IF NOT EXISTS "isFirstPurchase" boolean NOT NULL DEFAULT false`);
+    await db.execute(sql`ALTER TABLE "coupons" ADD COLUMN IF NOT EXISTS "allowOnKit" boolean NOT NULL DEFAULT true`);
 
     // ─── order_items.delivered ────────────────────────────────────────────────
     await db.execute(sql`ALTER TABLE "order_items" ADD COLUMN IF NOT EXISTS "delivered" boolean NOT NULL DEFAULT false`);
