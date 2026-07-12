@@ -351,15 +351,20 @@ class WardenShop {
         try {
             const commands = item.commands ?? [];
             if (commands.length === 0) return false;
+            
+            // Repetir a entrega baseada na quantidade (item.quantity)
+            const quantity = item.quantity ?? 1;
+            let totalExecuted = 0;
 
-            let executed = 0;
-            for (const command of commands) {
-                try {
-                    world.getDimension('overworld').runCommand(command.replace(/{player}/g, player.name));
-                    executed++;
-                } catch (_) {}
+            for (let i = 0; i < quantity; i++) {
+                for (const command of commands) {
+                    try {
+                        world.getDimension('overworld').runCommand(command.replace(/{player}/g, player.name));
+                        totalExecuted++;
+                    } catch (_) {}
+                }
             }
-            return executed > 0;
+            return totalExecuted > 0;
         } catch (_) { return false; }
     }
 

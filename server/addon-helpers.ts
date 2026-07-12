@@ -44,7 +44,10 @@ export async function getPendingOrdersForAddon() {
           try {
             const cmds = JSON.parse(product[0].commands);
             if (Array.isArray(cmds)) {
-              allCommands.push(...cmds);
+              // Multiplicar comandos pela quantidade do item
+              for (let i = 0; i < item.quantity; i++) {
+                allCommands.push(...cmds);
+              }
             }
           } catch (e) {
             // Ignorar JSON inválido
@@ -130,7 +133,10 @@ export async function getOrderForAddon(orderId: number) {
       try {
         const cmds = JSON.parse(product[0].commands);
         if (Array.isArray(cmds)) {
-          allCommands.push(...cmds);
+          // Multiplicar comandos pela quantidade do item
+          for (let i = 0; i < item.quantity; i++) {
+            allCommands.push(...cmds);
+          }
         }
       } catch (e) {
         // Ignorar JSON inválido
