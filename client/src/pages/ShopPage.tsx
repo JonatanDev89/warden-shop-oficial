@@ -53,29 +53,37 @@ export default function ShopPage() {
     });
   };
 
-  const handleAddToCart = (product: any) => {
-    const qty = quantities[product.id] ?? 1;
-    const { main } = parseProductImages(product.imageUrl);
-    addItem({
-      productId: product.id,
-      name: product.name,
-      price: parseFloat(String(product.price)),
-      imageUrl: main ?? undefined,
-    }, qty);
-    toast.success(`${qty}x ${product.name} adicionado ao carrinho!`);
-  };
-
-  const handleBuyNow = (product: any) => {
-    const qty = quantities[product.id] ?? 1;
-    const { main } = parseProductImages(product.imageUrl);
-    addItem({
-      productId: product.id,
-      name: product.name,
-      price: parseFloat(String(product.price)),
-      imageUrl: main ?? undefined,
-    }, qty);
-    navigate("/checkout");
-  };
+	  const getEffectivePrice = (product: any) => {
+	    const cat = categories?.find(c => c.id === product.categoryId);
+	    if (cat?.overridePriceEnabled && cat.overridePrice) {
+	      return parseFloat(String(cat.overridePrice));
+	    }
+	    return parseFloat(String(product.price));
+	  };
+	
+	  const handleAddToCart = (product: any) => {
+	    const qty = quantities[product.id] ?? 1;
+	    const { main } = parseProductImages(product.imageUrl);
+	    addItem({
+	      productId: product.id,
+	      name: product.name,
+	      price: getEffectivePrice(product),
+	      imageUrl: main ?? undefined,
+	    }, qty);
+	    toast.success(`${qty}x ${product.name} adicionado ao carrinho!`);
+	  };
+	
+	  const handleBuyNow = (product: any) => {
+	    const qty = quantities[product.id] ?? 1;
+	    const { main } = parseProductImages(product.imageUrl);
+	    addItem({
+	      productId: product.id,
+	      name: product.name,
+	      price: getEffectivePrice(product),
+	      imageUrl: main ?? undefined,
+	    }, qty);
+	    navigate("/checkout");
+	  };
 
   return (
     <ShopLayout>
@@ -192,12 +200,12 @@ export default function ShopPage() {
 
                           <div className="flex items-center justify-between gap-1">
                             <div className="flex flex-col">
-                              <span 
-                                className="text-xl sm:text-2xl font-bold whitespace-nowrap leading-none"
-                                style={{ color: settings?.priceColor || '#f97316' }}
-                              >
-                                {formatPrice(product.price)}
-                              </span>
+	                              <span 
+	                                className="text-xl sm:text-2xl font-bold whitespace-nowrap leading-none"
+	                                style={{ color: settings?.priceColor || '#f97316' }}
+	                              >
+	                                {formatPrice(getEffectivePrice(product))}
+	                              </span>
                               {product.showPixPrice !== false && (
                                 <span className="text-[10px] sm:text-xs text-muted-foreground mt-1">À vista no Pix</span>
                               )}

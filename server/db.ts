@@ -920,6 +920,8 @@ export async function runMigrations() {
 
     // ─── Novas colunas de Promoção e Desconto ─────────────────────────────────
     await db.execute(sql`ALTER TABLE "categories" ADD COLUMN IF NOT EXISTS "showCouponDiscount" boolean NOT NULL DEFAULT false`);
+    await db.execute(sql`ALTER TABLE "categories" ADD COLUMN IF NOT EXISTS "overridePrice" decimal(10, 2)`);
+    await db.execute(sql`ALTER TABLE "categories" ADD COLUMN IF NOT EXISTS "overridePriceEnabled" boolean NOT NULL DEFAULT false`);
     await db.execute(sql`ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "originalPrice" decimal(10, 2)`);
     await db.execute(sql`ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "discountBadge" varchar(64)`);
     await db.execute(sql`ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "showPixPrice" boolean NOT NULL DEFAULT true`);

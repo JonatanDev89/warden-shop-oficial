@@ -43,6 +43,8 @@ export const categories = pgTable("categories", {
   imageUrl: text("imageUrl"),
   sortOrder: integer("sortOrder").default(0).notNull(),
   showCouponDiscount: boolean("showCouponDiscount").default(false).notNull(), // Ativar qnd a categoria tiver cupom
+  overridePrice: decimal("overridePrice", { precision: 10, scale: 2 }),
+  overridePriceEnabled: boolean("overridePriceEnabled").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });

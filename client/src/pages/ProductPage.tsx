@@ -46,13 +46,21 @@ export default function ProductPage() {
     return valB - valA;
   })[0];
 
+  const getEffectivePrice = () => {
+    if (!product) return 0;
+    if (category?.overridePriceEnabled && category.overridePrice) {
+      return parseFloat(String(category.overridePrice));
+    }
+    return parseFloat(String(product.price));
+  };
+
   const handleAddToCart = () => {
     if (!product) return;
     const { main } = parseProductImages(product.imageUrl);
     addItem({
       productId: product.id,
       name: product.name,
-      price: parseFloat(String(product.price)),
+      price: getEffectivePrice(),
       imageUrl: main ?? undefined,
     }, qty);
     toast.success(`${product.name} adicionado ao carrinho!`);
@@ -66,7 +74,7 @@ export default function ProductPage() {
     addItem({
       productId: product.id,
       name: product.name,
-      price: parseFloat(String(product.price)),
+      price: getEffectivePrice(),
       imageUrl: main ?? undefined,
     }, qty);
     navigate("/checkout");
@@ -219,7 +227,7 @@ export default function ProductPage() {
                     className="text-4xl font-bold leading-none"
                     style={{ color: settings?.priceColor || '#f97316' }}
                   >
-                    {formatPrice(product.price)}
+                    {formatPrice(getEffectivePrice())}
                   </span>
                   {product.showPixPrice !== false && (
                     <p className="text-sm text-muted-foreground mt-2 flex items-center gap-1.5">

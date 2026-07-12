@@ -412,12 +412,22 @@ const shopRouter = router({
         unitPrice: string;
       }> = [];
       let subtotal = 0;
+      const allCategories = await getCategories();
+      const catMap = new Map(allCategories.map(c => [c.id, c]));
+
       for (const item of input.items) {
         const product = await getProductById(item.productId);
         if (!product || !product.active) {
           throw new TRPCError({ code: "BAD_REQUEST", message: `Produto #${item.productId} não encontrado.` });
         }
-        const price = parseFloat(String(product.price));
+        
+        // Verificar override de preço por categoria
+        let price = parseFloat(String(product.price));
+        const cat = catMap.get(product.categoryId);
+        if (cat?.overridePriceEnabled && cat.overridePrice) {
+          price = parseFloat(String(cat.overridePrice));
+        }
+
         subtotal += price * item.quantity;
         resolvedItems.push({
           productId: product.id,
@@ -618,10 +628,25 @@ const adminRouter = router({
   // Categories
   getCategories: adminProcedure.query(() => getCategories()),
   createCategory: adminProcedure
-    .input(z.object({ name: z.string().min(1), description: z.string().optional(), imageUrl: z.string().optional(), showCouponDiscount: z.boolean().optional() }))
+    .input(z.object({ 
+      name: z.string().min(1), 
+      description: z.string().optional(), 
+      imageUrl: z.string().optional(),
+      showCouponDiscount: z.boolean().optional(),
+      overridePrice: z.string().optional().nullable(),
+      overridePriceEnabled: z.boolean().optional()
+    }))
     .mutation(({ input }) => createCategory(input)),
   updateCategory: adminProcedure
-    .input(z.object({ id: z.number(), name: z.string().optional(), description: z.string().optional(), imageUrl: z.string().optional(), showCouponDiscount: z.boolean().optional() }))
+    .input(z.object({ 
+      id: z.number(), 
+      name: z.string().optional(), 
+      description: z.string().optional(), 
+      imageUrl: z.string().optional(),
+      showCouponDiscount: z.boolean().optional(),
+      overridePrice: z.string().optional().nullable(),
+      overridePriceEnabled: z.boolean().optional()
+    }))
     .mutation(({ input }) => {
       const { id, ...data } = input;
       return updateCategory(id, data);

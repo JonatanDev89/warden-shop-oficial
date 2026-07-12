@@ -29,7 +29,16 @@ import { Loader2, Plus, Pencil, Trash2, Tag, GripVertical } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-type Category = { id: number; name: string; description?: string | null; imageUrl?: string | null; createdAt: Date };
+type Category = { 
+  id: number; 
+  name: string; 
+  description?: string | null; 
+  imageUrl?: string | null; 
+  showCouponDiscount: boolean;
+  overridePrice?: string | null;
+  overridePriceEnabled: boolean;
+  createdAt: Date 
+};
 
 function SortableCategory({
   cat,
@@ -90,6 +99,9 @@ export default function AdminCategories() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const [showCouponDiscount, setShowCouponDiscount] = useState(false);
+  const [overridePrice, setOverridePrice] = useState("");
+  const [overridePriceEnabled, setOverridePriceEnabled] = useState(false);
 
   const createCategory = trpc.admin.createCategory.useMutation({
     onSuccess: () => {
@@ -147,6 +159,9 @@ export default function AdminCategories() {
     setName("");
     setDescription("");
     setImageUrl("");
+    setShowCouponDiscount(false);
+    setOverridePrice("");
+    setOverridePriceEnabled(false);
     setDialogOpen(true);
   };
 
@@ -155,15 +170,26 @@ export default function AdminCategories() {
     setName(c.name);
     setDescription(c.description ?? "");
     setImageUrl(c.imageUrl ?? "");
+    setShowCouponDiscount(c.showCouponDiscount);
+    setOverridePrice(c.overridePrice ? String(c.overridePrice) : "");
+    setOverridePriceEnabled(c.overridePriceEnabled);
     setDialogOpen(true);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const payload = { 
+      name, 
+      description: description || undefined, 
+      imageUrl: imageUrl || undefined,
+      showCouponDiscount,
+      overridePrice: overridePriceEnabled ? overridePrice : null,
+      overridePriceEnabled
+    };
     if (editingId) {
-      updateCategory.mutate({ id: editingId, name, description: description || undefined, imageUrl: imageUrl || undefined });
+      updateCategory.mutate({ id: editingId, ...payload });
     } else {
-      createCategory.mutate({ name, description: description || undefined, imageUrl: imageUrl || undefined });
+      createCategory.mutate(payload);
     }
   };
 
@@ -231,7 +257,7 @@ export default function AdminCategories() {
 
             <div className="p-4 rounded-lg border border-primary/20 bg-primary/5 space-y-3">
               <div className="flex items-center gap-2 mb-1">
-                <Percent className="h-4 w-4 text-primary" />
+                <Tag className="h-4 w-4 text-primary" />
                 <h4 className="text-sm font-bold text-primary uppercase tracking-wider">Promoção Automática</h4>
               </div>
               <div className="flex items-start justify-between gap-4">
@@ -249,6 +275,44 @@ export default function AdminCategories() {
                   onCheckedChange={setShowCouponDiscount}
                 />
               </div>
+            </div>
+
+            <div className="p-4 rounded-lg border border-blue-500/20 bg-blue-500/5 space-y-3">
+              <div className="flex items-center gap-2 mb-1">
+                <Tag className="h-4 w-4 text-blue-500" />
+                <h4 className="text-sm font-bold text-blue-500 uppercase tracking-wider">Preço Único (Override)</h4>
+              </div>
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-1">
+                  <Label className="text-foreground text-sm cursor-pointer" htmlFor="overridePriceEnabled">
+                    Ativar preço único para todos os itens
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Se ativado, todos os produtos desta categoria ignorarão seus preços originais e custarão o valor abaixo.
+                  </p>
+                </div>
+                <Switch
+                  id="overridePriceEnabled"
+                  checked={overridePriceEnabled}
+                  onCheckedChange={setOverridePriceEnabled}
+                />
+              </div>
+              {overridePriceEnabled && (
+                <div className="pt-2">
+                  <Label className="text-foreground text-xs mb-1.5 block">Valor do Preço Único (ex: 0.50)</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">R$</span>
+                    <Input 
+                      type="number" 
+                      step="0.01" 
+                      value={overridePrice} 
+                      onChange={(e) => setOverridePrice(e.target.value)} 
+                      className="bg-muted border-border pl-9" 
+                      placeholder="0,50"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
             <div className="flex gap-2">
               <Button type="submit" disabled={createCategory.isPending || updateCategory.isPending} className="flex-1">

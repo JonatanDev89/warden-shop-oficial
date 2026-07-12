@@ -56,13 +56,20 @@ export default function CategoryPage() {
     });
   };
 
+  const getEffectivePrice = (product: any) => {
+    if (category?.overridePriceEnabled && category.overridePrice) {
+      return parseFloat(String(category.overridePrice));
+    }
+    return parseFloat(String(product.price));
+  };
+
   const handleAddToCart = (product: any) => {
     const qty = quantities[product.id] ?? 1;
     const { main } = parseProductImages(product.imageUrl);
     addItem({
       productId: product.id,
       name: product.name,
-      price: parseFloat(String(product.price)),
+      price: getEffectivePrice(product),
       imageUrl: main ?? undefined,
     }, qty);
     toast.success(`${qty}x ${product.name} adicionado ao carrinho!`);
@@ -74,7 +81,7 @@ export default function CategoryPage() {
     addItem({
       productId: product.id,
       name: product.name,
-      price: parseFloat(String(product.price)),
+      price: getEffectivePrice(product),
       imageUrl: main ?? undefined,
     }, qty);
     navigate("/checkout");
@@ -212,7 +219,7 @@ export default function CategoryPage() {
                           className="text-xl sm:text-2xl font-bold whitespace-nowrap leading-none"
                           style={{ color: settings?.priceColor || '#f97316' }}
                         >
-                          {formatPrice(product.price)}
+                          {formatPrice(getEffectivePrice(product))}
                         </span>
                         {product.showPixPrice !== false && (
                           <span className="text-[10px] sm:text-xs text-muted-foreground mt-1">À vista no Pix</span>
