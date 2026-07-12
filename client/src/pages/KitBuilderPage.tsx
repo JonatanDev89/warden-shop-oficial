@@ -190,8 +190,15 @@ export default function KitBuilderPage() {
     const enchantMeta = ALL_ENCHANTS.find((e) => e.id === bookEnchantId);
     if (!enchantMeta) return;
     const level = Math.max(1, Math.min(enchantMeta.maxLevel, parseInt(bookEnchantLevel) || 1));
-    const pricePerLevel = parseFloat(cfg.pricePerLevel) || parseFloat(String(pendingConfig.item.price)) || 0;
-    const totalEnchantPrice = (pricePerLevel * level).toFixed(2);
+    let totalEnchantPrice = "0.00";
+    
+    if ((cfg as any).useFixedPrice) {
+      totalEnchantPrice = parseFloat((cfg as any).fixedPrice || "0").toFixed(2);
+    } else {
+      const pricePerLevel = parseFloat(cfg.pricePerLevel) || parseFloat(String(pendingConfig.item.price)) || 0;
+      totalEnchantPrice = (pricePerLevel * level).toFixed(2);
+    }
+    
     placeItem(pendingConfig.item, totalEnchantPrice, false, `${enchantMeta.id} ${level}`, `${enchantMeta.name} ${level}`);
   }
 

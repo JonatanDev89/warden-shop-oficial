@@ -68,6 +68,8 @@ type KitItemForm = {
   armorEnchantsFull: EnchantEntry[];
   armorEnchantsGod: EnchantEntry[];
   bookPricePerLevel: string;
+  bookUseFixedPrice: boolean;
+  bookFixedPrice: string;
   toolEnchants: ToolEnchantOption[];
   toolPriceFull: string;
   toolEnchantsFull: EnchantEntry[];
@@ -95,6 +97,8 @@ const emptyForm: KitItemForm = {
   armorEnchantsFull: [],
   armorEnchantsGod: [],
   bookPricePerLevel: "0",
+  bookUseFixedPrice: false,
+  bookFixedPrice: "0",
   toolEnchants: [],
   toolPriceFull: "0",
   toolEnchantsFull: [],
@@ -129,6 +133,8 @@ function buildItemConfig(form: KitItemForm): string | undefined {
     return JSON.stringify({
       type: "book",
       pricePerLevel: form.bookPricePerLevel,
+      useFixedPrice: form.bookUseFixedPrice,
+      fixedPrice: form.bookFixedPrice,
     });
   }
   if (form.configType === "tool") {
@@ -177,6 +183,8 @@ function parseFormFromItem(item: KitItem): KitItemForm {
     armorEnchantsFull: [],
     armorEnchantsGod: [],
     bookPricePerLevel: "0",
+    bookUseFixedPrice: false,
+    bookFixedPrice: "0",
     toolEnchants: [],
     eggOptions: [],
     potionOptions: [],
@@ -198,6 +206,8 @@ function parseFormFromItem(item: KitItem): KitItemForm {
       } else if (cfg?.type === "book") {
         base.configType = "book";
         base.bookPricePerLevel = cfg.pricePerLevel ?? "0";
+        base.bookUseFixedPrice = cfg.useFixedPrice ?? false;
+        base.bookFixedPrice = cfg.fixedPrice ?? "0";
       } else if (cfg?.type === "tool") {
         base.configType = "tool";
         base.toolEnchants = cfg.enchants ?? [];
@@ -1102,23 +1112,51 @@ export default function AdminKitItems() {
                   O comprador escolhe qualquer encantamento na hora de montar o kit.
                   Defina o preco cobrado por nivel de encantamento.
                 </p>
-                <div>
-                  <Label className="text-foreground mb-1.5 block text-sm">
-                    Preco por nivel (R$)
-                  </Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={form.bookPricePerLevel}
-                    onChange={(e) => setF({ bookPricePerLevel: e.target.value })}
-                    className="bg-muted border-border w-40"
-                    placeholder="ex: 2.50"
+                <div className="flex items-center justify-between gap-4 p-2 rounded bg-primary/5 border border-primary/10">
+                  <div className="space-y-0.5">
+                    <Label className="text-sm font-medium">Usar Preço Fixo</Label>
+                    <p className="text-[10px] text-muted-foreground">Independente do nível do encantamento</p>
+                  </div>
+                  <Switch 
+                    checked={form.bookUseFixedPrice} 
+                    onCheckedChange={(v) => setF({ bookUseFixedPrice: v })} 
                   />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Exemplo: Afiacao V = 5 niveis x R$ {parseFloat(form.bookPricePerLevel || "0").toFixed(2)} = R$ {(5 * parseFloat(form.bookPricePerLevel || "0")).toFixed(2)}
-                  </p>
                 </div>
+
+                {form.bookUseFixedPrice ? (
+                  <div>
+                    <Label className="text-foreground mb-1.5 block text-sm">
+                      Preço Fixo do Livro (R$)
+                    </Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={form.bookFixedPrice}
+                      onChange={(e) => setF({ bookFixedPrice: e.target.value })}
+                      className="bg-muted border-border w-40"
+                      placeholder="ex: 0.50"
+                    />
+                  </div>
+                ) : (
+                  <div>
+                    <Label className="text-foreground mb-1.5 block text-sm">
+                      Preco por nivel (R$)
+                    </Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={form.bookPricePerLevel}
+                      onChange={(e) => setF({ bookPricePerLevel: e.target.value })}
+                      className="bg-muted border-border w-40"
+                      placeholder="ex: 0.10"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Exemplo: Afiacao V = 5 niveis x R$ {parseFloat(form.bookPricePerLevel || "0").toFixed(2)} = R$ {(5 * parseFloat(form.bookPricePerLevel || "0")).toFixed(2)}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
