@@ -302,16 +302,30 @@ async function startServer() {
       }
       
       // Atualizar status do pedido para delivered
-      await db.update(orders).set({ status: 'delivered' }).where(eq(orders.id, orderId));
-      
-      // Buscar dados completos do pedido para enviar comprovante e notificação
-      const { getOrderWithItems } = await import('../db');
-      const orderWithItems = await getOrderWithItems(orderId);
-      
-      if (orderWithItems) {
-        const { sendDeliveryReceipt, notifyOrderDelivered } = await import('../discord-webhooks');
-        await notifyOrderDelivered(orderWithItems);
-        await sendDeliveryReceipt(orderWithItems);
+      // Marcar todos os orderItems associados a este pedido como entregues
+      await db.update(orderItems).set({ delivered: true }).where(eq(orderItems.orderId, orderId));
+
+      // Verificar se todos os orderItems do pedido foram entregues
+      const pendingItems = await db.select({ id: orderItems.id }).from(orderItems).where(
+        and(
+          eq(orderItems.orderId, orderId),
+          eq(orderItems.delivered, false)
+        )
+      );
+
+      // Se não há mais items pendentes, marca o pedido como delivered
+      if (pendingItems.length === 0) {
+        await db.update(orders).set({ status: 'delivered', updatedAt: new Date() }).where(eq(orders.id, orderId));
+        
+        // Buscar dados completos do pedido para enviar comprovante e notificação
+        const { getOrderWithItems } = await import('../db');
+        const orderWithItems = await getOrderWithItems(orderId);
+        
+        if (orderWithItems) {
+          const { sendDeliveryReceipt, notifyOrderDelivered } = await import('../discord-webhooks');
+          await notifyOrderDelivered(orderWithItems);
+          await sendDeliveryReceipt(orderWithItems);
+        }
       }
       
       return res.json({ success: true, message: 'Order marked as delivered' });

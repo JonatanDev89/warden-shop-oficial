@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { Route, Switch as WouterSwitch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { CartProvider } from "./contexts/CartContext";
@@ -36,7 +36,7 @@ import KitBuilderPage from "./pages/KitBuilderPage";
 
 function Router() {
   return (
-    <Switch>
+    <WouterSwitch>
       {/* Public routes */}
       <Route path="/" component={Home} />
       <Route path="/loja" component={ShopPage} />
@@ -66,7 +66,7 @@ function Router() {
       {/* Fallback */}
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
-    </Switch>
+    </WouterSwitch>
   );
 }
 

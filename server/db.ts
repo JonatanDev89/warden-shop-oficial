@@ -140,14 +140,14 @@ export async function getCategoryById(id: number) {
   return result[0];
 }
 
-export async function createCategory(data: { name: string; description?: string; showCouponDiscount?: boolean }) {
+export async function createCategory(data: { name: string; description?: string; imageUrl?: string; showCouponDiscount?: boolean }) {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
   const result = await db.insert(categories).values(data);
   return result[0];
 }
 
-export async function updateCategory(id: number, data: { name?: string; description?: string; showCouponDiscount?: boolean }) {
+export async function updateCategory(id: number, data: { name?: string; description?: string; imageUrl?: string; showCouponDiscount?: boolean }) {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
   await db.update(categories).set(data).where(eq(categories.id, id));
