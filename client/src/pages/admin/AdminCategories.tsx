@@ -28,6 +28,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { Loader2, Plus, Pencil, Trash2, Tag, GripVertical } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Switch } from "@/components/ui/switch";
 
 type Category = { 
   id: number; 
