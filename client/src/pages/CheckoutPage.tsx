@@ -239,7 +239,7 @@ export default function CheckoutPage() {
     // Limpa o carrinho imediatamente
     clearCart();
     // Força a limpeza do localStorage diretamente para garantir
-    localStorage.removeItem("warden_cart");
+    safeStorage.removeItem("warden_cart");
     setTimeout(() => navigate(`/pedido-confirmado?orderNumber=${encodeURIComponent(pixData!.orderNumber)}&payment=success`), 1500);
   };
 

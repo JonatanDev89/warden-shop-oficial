@@ -28,6 +28,16 @@
 
   <body>
     <div id="root"></div>
+    <script>
+      window.addEventListener('error', function (event) {
+        if (event.error && event.error.name === 'SecurityError' && event.error.message.includes('localStorage')) {
+          console.error('Caught SecurityError related to localStorage:', event.error);
+          event.preventDefault();
+          // Optionally, display a user-friendly message or redirect
+          // alert('Houve um problema de segurança com o armazenamento local. Por favor, tente novamente ou verifique as configurações do seu navegador.');
+        }
+      });
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 

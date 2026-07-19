@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { safeStorage } from "@/lib/storage";
 import { trpc } from "@/lib/trpc";
 
 interface RedemptionContextType {
@@ -28,13 +29,13 @@ export function RedemptionProvider({ children }: { children: ReactNode }) {
     
     if (orderNum) {
       setOrderNumber(orderNum);
-      localStorage.setItem("lastOrderNumber", orderNum);
+      safeStorage.setItem("lastOrderNumber", orderNum);
       console.log("[RedemptionContext] OrderNumber definido da URL:", orderNum);
       return;
     }
 
     // Se não encontrou na URL, verificar localStorage
-    const savedOrderNumber = localStorage.getItem("lastOrderNumber");
+    const savedOrderNumber = safeStorage.getItem("lastOrderNumber");
     if (savedOrderNumber) {
       setOrderNumber(savedOrderNumber);
       console.log("[RedemptionContext] OrderNumber definido do localStorage:", savedOrderNumber);
@@ -81,7 +82,7 @@ export function RedemptionProvider({ children }: { children: ReactNode }) {
     setShowDialog(open);
     // Se fechando e pedido foi aprovado, limpar do localStorage
     if (!open && isApproved) {
-      localStorage.removeItem("lastOrderNumber");
+      safeStorage.removeItem("lastOrderNumber");
       setOrderNumber(null);
       console.log("[RedemptionContext] Limpando orderNumber após resgate");
     }

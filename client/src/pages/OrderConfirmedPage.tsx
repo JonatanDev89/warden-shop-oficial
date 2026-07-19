@@ -1,4 +1,5 @@
 import { Link, useSearch } from "wouter";
+import { safeStorage } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import ShopLayout from "@/components/ShopLayout";
 import {
@@ -37,7 +38,7 @@ export default function OrderConfirmedPage() {
   useEffect(() => {
     if (orderNumber) {
       clearCart();
-      localStorage.removeItem("warden_cart");
+      safeStorage.removeItem("warden_cart");
     }
   }, [orderNumber]);
 
