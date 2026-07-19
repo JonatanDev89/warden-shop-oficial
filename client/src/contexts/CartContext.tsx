@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { safeStorage } from "@/lib/storage";
 
 export interface KitSlot {
   slot: number;
@@ -37,7 +38,7 @@ const STORAGE_KEY = "warden_cart";
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>(() => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
+      const stored = safeStorage.getItem(STORAGE_KEY);
       return stored ? JSON.parse(stored) : [];
     } catch {
       return [];
@@ -45,7 +46,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   });
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    safeStorage.setItem(STORAGE_KEY, JSON.stringify(items));
   }, [items]);
 
   const addItem = (item: Omit<CartItem, "quantity">, qty = 1) => {
@@ -100,7 +101,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const clearCart = () => {
     setItems([]);
-    localStorage.removeItem(STORAGE_KEY);
+    safeStorage.removeItem(STORAGE_KEY);
   };
 
   const totalItems = items.reduce((s, i) => s + i.quantity, 0);
