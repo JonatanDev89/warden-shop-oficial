@@ -758,6 +758,13 @@ export async function markOrderPaid(
 ) {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
+
+  const order = await db.select().from(orders).where(eq(orders.orderNumber, orderNumber)).limit(1);
+  if (!order[0]) return;
+
+  // Evitar duplicidade se já estiver pago
+  if (order[0].paymentStatus === "approved") return;
+
   await db
     .update(orders)
     .set({
@@ -769,6 +776,14 @@ export async function markOrderPaid(
       updatedAt: new Date(),
     })
     .where(eq(orders.orderNumber, orderNumber));
+
+  // Registrar na carteira
+  await addWalletTransaction({
+    amount: String(order[0].total),
+    type: "sale",
+    description: `Venda #${orderNumber}`,
+    orderId: order[0].id,
+  });
 }
 
 export async function markOrderPaymentFailed(
@@ -935,6 +950,25 @@ export async function runMigrations() {
     // ─── Novas colunas de Customização ────────────────────────────────────────
     await db.execute(sql`ALTER TABLE "store_customization" ADD COLUMN IF NOT EXISTS "priceColor" varchar(7) DEFAULT '#f97316'`);
 
+    // ─── Wallet Transactions ───────────────────────────────────────────────────
+    await db.execute(sql`
+      DO $$ BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'transaction_type') THEN
+          CREATE TYPE transaction_type AS ENUM ('sale', 'withdrawal', 'adjustment');
+        END IF;
+      END $$
+    `);
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS "wallet_transactions" (
+        "id" serial PRIMARY KEY NOT NULL,
+        "amount" numeric(10, 2) NOT NULL,
+        "type" transaction_type NOT NULL,
+        "description" text,
+        "orderId" integer,
+        "createdAt" timestamp NOT NULL DEFAULT now()
+      )
+    `);
+
     console.log("[DB] Migrations applied.");
   } catch (e) {
     console.error("[DB] Migration error:", e);
@@ -1052,4 +1086,49 @@ export async function getProductCommands(productId: number): Promise<string[]> {
   } catch {
     return product[0].commands.trim() ? [product[0].commands] : [];
   }
+}
+
+// ─── Wallet Helpers ──────────────────────────────────────────────────────────
+export async function getWalletStats() {
+  const db = await getDb();
+  if (!db) return { balance: 0, totalSales: 0, totalWithdrawals: 0 };
+
+  const transactions = await db.select().from(walletTransactions);
+  
+  const stats = transactions.reduce((acc, t) => {
+    const amt = parseFloat(String(t.amount));
+    if (t.type === "sale" || (t.type === "adjustment" && amt > 0)) {
+      acc.totalSales += Math.abs(amt);
+      acc.balance += amt;
+    } else if (t.type === "withdrawal" || (t.type === "adjustment" && amt < 0)) {
+      acc.totalWithdrawals += Math.abs(amt);
+      acc.balance += amt;
+    }
+    return acc;
+  }, { balance: 0, totalSales: 0, totalWithdrawals: 0 });
+
+  return stats;
+}
+
+export async function getWalletTransactions() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(walletTransactions).orderBy(desc(walletTransactions.createdAt));
+}
+
+export async function addWalletTransaction(data: {
+  amount: string;
+  type: "sale" | "withdrawal" | "adjustment";
+  description?: string;
+  orderId?: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  
+  return db.insert(walletTransactions).values({
+    amount: data.amount,
+    type: data.type,
+    description: data.description,
+    orderId: data.orderId,
+  }).returning();
 }

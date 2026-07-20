@@ -195,6 +195,21 @@ export const storeCustomization = pgTable("store_customization", {
 export type StoreCustomization = typeof storeCustomization.$inferSelect;
 export type InsertStoreCustomization = typeof storeCustomization.$inferInsert;
 
+// ─── Wallet Transactions ───────────────────────────────────────────────────────
+export const transactionTypeEnum = pgEnum("transaction_type", ["sale", "withdrawal", "adjustment"]);
+
+export const walletTransactions = pgTable("wallet_transactions", {
+  id: serial("id").primaryKey(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  type: transactionTypeEnum("type").notNull(),
+  description: text("description"),
+  orderId: integer("orderId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type WalletTransaction = typeof walletTransactions.$inferSelect;
+export type InsertWalletTransaction = typeof walletTransactions.$inferInsert;
+
 // ─── Kit Items (for "Monte seu Kit" feature) ───────────────────────────────────
 export const kitItems = pgTable("kit_items", {
   id: serial("id").primaryKey(),

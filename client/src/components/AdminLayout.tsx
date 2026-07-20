@@ -18,6 +18,7 @@ import {
   X,
   LogOut,
   ChevronRight,
+  Wallet,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -29,6 +30,7 @@ const navItems = [
   { href: "/admin/kit-items", label: "Itens do Kit", icon: Sword },
   { href: "/admin/categorias", label: "Categorias", icon: Tag },
   { href: "/admin/cupons", label: "Cupons", icon: Ticket },
+  { href: "/admin/carteira", label: "Carteira", icon: Wallet },
   { href: "/admin/webhooks", label: "Webhooks Discord", icon: Webhook },
   { href: "/admin/personalizacao", label: "Personalização", icon: Palette },
   { href: "/admin/api-keys", label: "API Keys", icon: Key },

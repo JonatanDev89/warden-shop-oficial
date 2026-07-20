@@ -32,6 +32,7 @@ import AdminCustomization from "./pages/admin/AdminCustomization";
 import AdminApiKeys from "./pages/admin/AdminApiKeys";
 import AdminAdmins from "./pages/admin/AdminAdmins";
 import AdminKitItems from "./pages/admin/AdminKitItems";
+import { AdminWallet } from "./pages/admin/AdminWallet";
 import KitBuilderPage from "./pages/KitBuilderPage";
 
 function Router() {
@@ -62,6 +63,7 @@ function Router() {
       <Route path="/admin/api-keys" component={AdminApiKeys} />
       <Route path="/admin/admins" component={AdminAdmins} />
       <Route path="/admin/kit-items" component={AdminKitItems} />
+      <Route path="/admin/carteira" component={AdminWallet} />
 
       {/* Fallback */}
       <Route path="/404" component={NotFound} />

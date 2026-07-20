@@ -53,6 +53,9 @@ import {
   getKitItems,
   upsertKitItem,
   deleteKitItem,
+  getWalletStats,
+  getWalletTransactions,
+  addWalletTransaction,
 } from "./db";
 import { initiatePayment, initiatePixPayment } from "./payment/payment.service";
 import { getPendingOrdersForAddon } from "./addon-helpers";
@@ -753,6 +756,28 @@ const adminRouter = router({
   saveSettings: adminProcedure
     .input(z.record(z.string(), z.string()))
     .mutation(({ input }) => setSiteSettings(input)),
+
+  // Wallet
+  getWalletStats: adminProcedure.query(() => getWalletStats()),
+  getWalletTransactions: adminProcedure.query(() => getWalletTransactions()),
+  addWalletTransaction: adminProcedure
+    .input(z.object({
+      amount: z.string(),
+      type: z.enum(["withdrawal", "adjustment"]),
+      description: z.string().optional(),
+    }))
+    .mutation(({ input }) => {
+      // Se for retirada, garante que o valor seja negativo
+      const finalAmount = input.type === "withdrawal" 
+        ? (parseFloat(input.amount) > 0 ? `-${input.amount}` : input.amount)
+        : input.amount;
+        
+      return addWalletTransaction({
+        amount: finalAmount,
+        type: input.type,
+        description: input.description,
+      });
+    }),
 
   // Kit Items
   getKitItems: adminProcedure.query(() => getKitItems()),
