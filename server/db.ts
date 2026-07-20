@@ -984,20 +984,38 @@ export async function runMigrations() {
       )
     `);
 
-    // ─── Sincronizar vendas passadas ───────────────────────────────────────────
-    // Insere na carteira todos os pedidos 'approved' que ainda não estão lá
-    await db.execute(sql`
-      INSERT INTO "wallet_transactions" ("amount", "type", "description", "orderId", "createdAt")
-      SELECT 
-        o."total", 
-        'sale'::transaction_type, 
-        'Venda #' || o."orderNumber", 
-        o."id", 
-        o."paidAt"
-      FROM "orders" o
-      WHERE o."payment_status" = 'approved'
-      AND o."id" NOT IN (SELECT "orderId" FROM "wallet_transactions" WHERE "orderId" IS NOT NULL)
-    `);
+    // ─── Sincronizar vendas passadas (Executa apenas uma vez) ──────────────────
+    const syncCheck = await db.select().from(siteSettings).where(eq(siteSettings.key, "wallet_initial_sync_done")).limit(1);
+    
+    if (syncCheck.length === 0) {
+      console.log("[DB] Executando sincronização inicial da carteira...");
+      
+      // Corrigindo a query: a coluna no banco é "payment_status", mas no Drizzle usamos paymentStatus
+      // O SQL bruto deve usar o nome real da coluna no Postgres: "payment_status"
+      await db.execute(sql`
+        INSERT INTO "wallet_transactions" ("amount", "type", "description", "orderId", "createdAt")
+        SELECT 
+          o."total", 
+          'sale'::transaction_type, 
+          'Venda #' || o."orderNumber", 
+          o."id", 
+          COALESCE(o."paidAt", o."createdAt")
+        FROM "orders" o
+        WHERE o."payment_status" = 'approved'
+        AND o."id" NOT IN (SELECT "orderId" FROM "wallet_transactions" WHERE "orderId" IS NOT NULL)
+      `);
+
+      await db.insert(siteSettings).values({
+        key: "wallet_initial_sync_done",
+        value: "true",
+        updatedAt: new Date()
+      }).onConflictDoUpdate({
+        target: siteSettings.key,
+        set: { value: "true", updatedAt: new Date() }
+      });
+      
+      console.log("[DB] Sincronização inicial da carteira concluída.");
+    }
 
     console.log("[DB] Migrations and wallet sync applied.");
   } catch (e) {
