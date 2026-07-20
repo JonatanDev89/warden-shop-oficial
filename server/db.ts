@@ -14,6 +14,7 @@ import {
   storeCustomization,
   users,
   kitItems,
+  walletTransactions,
 } from "../drizzle/schema";
 import { sql, eq, and, or, like, desc, asc } from "drizzle-orm";
 import { ENV } from "./_core/env";
