@@ -405,15 +405,30 @@ export async function updateOrderStatus(id: number, status: "pending_approval" |
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
   
-  await db.update(orders).set({ status, updatedAt: new Date() }).where(eq(orders.id, id));
+  const order = await db.select().from(orders).where(eq(orders.id, id)).limit(1);
+  if (!order[0]) return;
+
+  // Se o status estiver mudando para algo que indique pagamento aprovado (game_pending ou delivered)
+  // e o pagamento ainda não estiver como approved, atualizamos o pagamento também.
+  const isApproving = (status === "game_pending" || status === "delivered") && order[0].paymentStatus !== "approved";
+
+  await db.update(orders).set({ 
+    status, 
+    updatedAt: new Date(),
+    ...(isApproving ? { paymentStatus: "approved", paidAt: new Date() } : {})
+  }).where(eq(orders.id, id));
+
+  // Se aprovou agora, registra na carteira
+  if (isApproving) {
+    await addWalletTransaction({
+      amount: String(order[0].total),
+      type: "sale",
+      description: `Venda #${order[0].orderNumber} (Aprovação Manual)`,
+      orderId: order[0].id,
+    });
+  }
   
   console.log(`[DB] updateOrderStatus - Status atualizado com sucesso`);
-  
-  // Verificar se realmente foi atualizado
-  const updated = await db.select().from(orders).where(eq(orders.id, id)).limit(1);
-  if (updated.length > 0) {
-    console.log(`[DB] updateOrderStatus - Status verificado: ${updated[0].status}`);
-  }
 }
 
 export async function updateOrderNotes(id: number, notes: string) {
@@ -969,7 +984,22 @@ export async function runMigrations() {
       )
     `);
 
-    console.log("[DB] Migrations applied.");
+    // ─── Sincronizar vendas passadas ───────────────────────────────────────────
+    // Insere na carteira todos os pedidos 'approved' que ainda não estão lá
+    await db.execute(sql`
+      INSERT INTO "wallet_transactions" ("amount", "type", "description", "orderId", "createdAt")
+      SELECT 
+        o."total", 
+        'sale'::transaction_type, 
+        'Venda #' || o."orderNumber", 
+        o."id", 
+        o."paidAt"
+      FROM "orders" o
+      WHERE o."payment_status" = 'approved'
+      AND o."id" NOT IN (SELECT "orderId" FROM "wallet_transactions" WHERE "orderId" IS NOT NULL)
+    `);
+
+    console.log("[DB] Migrations and wallet sync applied.");
   } catch (e) {
     console.error("[DB] Migration error:", e);
   }
