@@ -37,13 +37,17 @@ export function AdminWallet() {
   });
 
   const handleAddTransaction = () => {
-    if (!amount || parseFloat(amount) <= 0) {
+    const val = parseFloat(amount);
+    if (!amount || val <= 0) {
       toast.error("Digite um valor válido");
       return;
     }
 
+    // Se for retirada, o valor deve ser negativo no banco
+    const finalAmount = transactionType === "withdrawal" ? -Math.abs(val) : val;
+
     addTransaction.mutate({
-      amount,
+      amount: String(finalAmount),
       type: transactionType,
       description: description || undefined,
     });

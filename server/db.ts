@@ -1146,13 +1146,20 @@ export async function getWalletStats() {
   
   const stats = transactions.reduce((acc, t) => {
     const amt = parseFloat(String(t.amount));
-    if (t.type === "sale" || (t.type === "adjustment" && amt > 0)) {
+    
+    // O saldo (balance) é afetado por tudo
+    acc.balance += amt;
+
+    // Total de Vendas (Bruto) é afetado APENAS por transações do tipo 'sale'
+    if (t.type === "sale") {
       acc.totalSales += Math.abs(amt);
-      acc.balance += amt;
-    } else if (t.type === "withdrawal" || (t.type === "adjustment" && amt < 0)) {
+    } 
+    // Total de Retiradas é afetado APENAS por transações do tipo 'withdrawal'
+    else if (t.type === "withdrawal") {
       acc.totalWithdrawals += Math.abs(amt);
-      acc.balance += amt;
     }
+    // Ajustes (type === 'adjustment') afetam apenas o balance (já somado acima)
+    
     return acc;
   }, { balance: 0, totalSales: 0, totalWithdrawals: 0 });
 
