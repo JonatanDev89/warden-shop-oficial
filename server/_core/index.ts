@@ -8,6 +8,7 @@ import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import { normalizePathname } from "./url-normalization";
 import { runMigrations } from "../db";
 import { handleMpWebhook } from "../payment/webhook.controller";
 
@@ -33,6 +34,30 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   const server = createServer(app);
+
+  // Navegadores móveis e webviews podem abrir links com barras duplicadas
+  // (por exemplo, `https://dominio.com//`). O fallback da SPA devolve o
+  // index.html, mas o roteador do cliente não reconhece `//` como `/` e
+  // acaba exibindo a página 404. Canonicalizar antes de registrar as rotas
+  // garante que a página inicial seja carregada corretamente.
+  app.use((req, res, next) => {
+    if (req.method !== "GET" && req.method !== "HEAD") {
+      return next();
+    }
+
+    const normalizedPathname = normalizePathname(req.path);
+    if (normalizedPathname === req.path) {
+      return next();
+    }
+
+    const queryStart = req.originalUrl.indexOf("?");
+    const search = queryStart >= 0 ? req.originalUrl.slice(queryStart) : "";
+
+    return res
+      .set("Cache-Control", "no-store")
+      .redirect(302, `${normalizedPathname}${search}`);
+  });
+
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
