@@ -1,4 +1,5 @@
 import { and, asc, desc, eq, like, or, sql } from "drizzle-orm";
+
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import {
@@ -16,7 +17,7 @@ import {
   kitItems,
   walletTransactions,
 } from "../drizzle/schema";
-import { sql, eq, and, or, like, desc, asc } from "drizzle-orm";
+
 import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -445,6 +446,26 @@ export async function deleteOrder(id: number) {
   await db.delete(orders).where(eq(orders.id, id));
 }
 
+
+
+export async function decrementProductStock(productId: number, quantity: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+
+  await db.update(products)
+    .set({ stock: sql`${products.stock} - ${quantity}` })
+    .where(eq(products.id, productId));
+}
+
+export async function decrementKitItemStock(minecraftId: string, quantity: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+
+  await db.update(kitItems)
+    .set({ stock: sql`${kitItems.stock} - ${quantity}` })
+    .where(eq(kitItems.minecraftId, minecraftId));
+}
+
 export async function countUserOrders(nickname: string) {
   const db = await getDb();
   if (!db) return 0;
@@ -680,6 +701,13 @@ export async function updateStoreCustomization(data: {
 }
 
 // ─── Kit Items ─────────────────────────────────────────────────────────────────
+export async function getKitItemByMinecraftId(minecraftId: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(kitItems).where(eq(kitItems.minecraftId, minecraftId)).limit(1);
+  return result[0];
+}
+
 export async function getKitItems(onlyActive = false) {
   const db = await getDb();
   if (!db) return [];

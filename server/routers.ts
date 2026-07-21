@@ -56,6 +56,9 @@ import {
   getWalletStats,
   getWalletTransactions,
   addWalletTransaction,
+  decrementProductStock,
+  decrementKitItemStock,
+  getKitItemByMinecraftId,
 } from "./db";
 import { initiatePayment, initiatePixPayment } from "./payment/payment.service";
 import { getPendingOrdersForAddon } from "./addon-helpers";
@@ -163,22 +166,38 @@ const shopRouter = router({
       if (hasNormalItems) {
         for (const item of input.items!) {
           const product = await getProductById(item.productId);
-          if (product && product.active) {
-            const price = parseFloat(String(product.price));
-            subtotal += price * item.quantity;
-            orderItemsToCreate.push({
-              productId: product.id,
-              productName: product.name,
-              quantity: item.quantity,
-              unitPrice: price.toFixed(2),
-            });
+          if (!product || !product.active) {
+            throw new TRPCError({ code: "NOT_FOUND", message: `Produto ${item.productId} não encontrado ou inativo.` });
           }
+
+          // Validar estoque para produtos com stock > 0
+          if (product.stock > 0 && item.quantity > product.stock) {
+            throw new TRPCError({ code: "BAD_REQUEST", message: `Estoque insuficiente para ${product.name}. Disponível: ${product.stock}` });
+          }
+
+          const price = parseFloat(String(product.price));
+          subtotal += price * item.quantity;
+          orderItemsToCreate.push({
+            productId: product.id,
+            productName: product.name,
+            quantity: item.quantity,
+            unitPrice: price.toFixed(2),
+          });
         }
       }
 
       // 2. Processar slots do kit
       let kitSummary = "";
       if (hasKitSlots) {
+        for (const s of input.slots!) {
+          const kitItem = await getKitItemByMinecraftId(s.minecraftId);
+          if (!kitItem) {
+            throw new TRPCError({ code: "NOT_FOUND", message: `Item de kit ${s.name} não encontrado.` });
+          }
+          if (kitItem.stock !== null && kitItem.stock !== -1 && s.quantity > kitItem.stock) {
+            throw new TRPCError({ code: "BAD_REQUEST", message: `Estoque insuficiente para o item de kit ${s.name}. Disponível: ${kitItem.stock}` });
+          }
+        }
         kitSummary = input.slots!.map(s => `${s.quantity}x ${s.name}`).join(", ");
         for (const s of input.slots!) {
           const price = parseFloat(s.unitPrice);
@@ -256,6 +275,20 @@ const shopRouter = router({
         },
         orderItemsToCreate
       );
+
+      // Decrementar estoque dos produtos
+      for (const item of orderItemsToCreate) {
+        if (item.productId > 0) { // Apenas para produtos normais (não itens de kit personalizado)
+          await decrementProductStock(item.productId, item.quantity);
+        }
+      }
+
+      // Decrementar estoque dos itens de kit
+      if (hasKitSlots) {
+        for (const s of input.slots!) {
+          await decrementKitItemStock(s.minecraftId, s.quantity);
+        }
+      }
 
       // Notificação Discord
       const orderWithItems = await getOrderWithItemsByNumber(orderNumber);
