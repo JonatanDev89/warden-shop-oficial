@@ -2,8 +2,9 @@ import { trpc } from "@/lib/trpc";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import ShopLayout from "@/components/ShopLayout";
-import { Package, ShoppingCart, Plus, Minus, TrendingDown } from "lucide-react";
+import { Package, ShoppingCart, Plus, Minus, TrendingDown, Infinity } from "lucide-react";
 import { useState } from "react";
 import { parseProductImages } from "@/lib/productImages";
 import { useCart } from "@/contexts/CartContext";
@@ -165,6 +166,18 @@ export default function ShopPage() {
                   <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
                     {product.description}
                   </p>
+
+                  <div className="mb-3 flex items-center gap-2">
+                    <Badge variant="outline" className="text-[10px] h-5 border-border text-muted-foreground font-medium">
+                      {product.stock === -1 ? (
+                        <span className="flex items-center gap-1">
+                          <Infinity className="h-3 w-3" /> em estoque
+                        </span>
+                      ) : (
+                        `${product.stock} em estoque`
+                      )}
+                    </Badge>
+                  </div>
 
                   <div className="flex flex-col mb-3">
                     {/* Preço original riscado e Badge de desconto */}
