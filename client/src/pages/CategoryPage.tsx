@@ -72,6 +72,7 @@ export default function CategoryPage() {
       name: product.name,
       price: getEffectivePrice(product),
       imageUrl: main ?? undefined,
+      stock: product.stock,
     }, qty);
     toast.success(`${qty}x ${product.name} adicionado ao carrinho!`);
   };
@@ -84,6 +85,7 @@ export default function CategoryPage() {
       name: product.name,
       price: getEffectivePrice(product),
       imageUrl: main ?? undefined,
+      stock: product.stock,
     }, qty);
     navigate("/checkout");
   };

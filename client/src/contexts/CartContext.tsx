@@ -17,6 +17,7 @@ export interface CartItem {
   price: number;
   imageUrl?: string;
   quantity: number;
+  stock?: number;
   // Kit personalizado — slots salvos para criar o pedido depois
   kitSlots?: KitSlot[];
 }

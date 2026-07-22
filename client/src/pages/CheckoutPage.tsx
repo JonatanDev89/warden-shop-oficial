@@ -2,10 +2,11 @@ import { trpc } from "@/lib/trpc";
 import { Link, useSearch, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import ShopLayout from "@/components/ShopLayout";
 import {
   ChevronRight, Loader2, ShieldCheck, Copy, Check,
-  Zap, RefreshCw, Clock, ShoppingCart, Lock, Minus, Plus, X,
+  Zap, RefreshCw, Clock, ShoppingCart, Lock, Minus, Plus, X, Infinity,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
@@ -406,7 +407,20 @@ export default function CheckoutPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-foreground truncate">{item.name}</p>
-                        <p className="text-xs text-muted-foreground">{fmt(item.price)}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs text-muted-foreground">{fmt(item.price)}</p>
+                          {item.stock !== undefined && (
+                            <Badge variant="outline" className="text-[9px] h-4 border-border text-muted-foreground px-1 font-normal">
+                              {item.stock === -1 ? (
+                                <span className="flex items-center gap-0.5">
+                                  <Infinity className="h-2 w-2" /> estoque
+                                </span>
+                              ) : (
+                                `${item.stock} estoque`
+                              )}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                       {/* Controles */}
                       <div className="flex items-center gap-1.5 shrink-0">
