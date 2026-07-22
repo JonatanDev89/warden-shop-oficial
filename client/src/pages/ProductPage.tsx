@@ -23,7 +23,7 @@ export default function ProductPage() {
   const params = useParams<{ id: string }>();
   const productId = parseInt(params.id ?? "0");
   const [, navigate] = useLocation();
-  const { addItem } = useCart();
+  const { addItem, clearCart } = useCart();
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
 
@@ -72,6 +72,7 @@ export default function ProductPage() {
   const handleBuyNow = () => {
     if (!product) return;
     const { main } = parseProductImages(product.imageUrl);
+    clearCart();
     addItem({
       productId: product.id,
       name: product.name,

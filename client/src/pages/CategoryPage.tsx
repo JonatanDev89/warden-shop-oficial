@@ -23,7 +23,7 @@ export default function CategoryPage() {
   const params = useParams<{ id: string }>();
   const categoryId = parseInt(params.id ?? "0");
   const [, navigate] = useLocation();
-  const { addItem } = useCart();
+  const { addItem, clearCart } = useCart();
 
   const { data: settings } = trpc.shop.getSettings.useQuery();
   const { data: categories } = trpc.shop.getCategories.useQuery();
@@ -80,6 +80,7 @@ export default function CategoryPage() {
   const handleBuyNow = (product: any) => {
     const qty = quantities[product.id] ?? 1;
     const { main } = parseProductImages(product.imageUrl);
+    clearCart();
     addItem({
       productId: product.id,
       name: product.name,

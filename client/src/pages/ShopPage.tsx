@@ -21,7 +21,7 @@ function PixIcon() {
 export default function ShopPage() {
   const [selectedCategory, setSelectedCategory] = useState<number | undefined>(undefined);
   const [, navigate] = useLocation();
-  const { addItem } = useCart();
+  const { addItem, clearCart } = useCart();
   const { data: settings } = trpc.shop.getSettings.useQuery();
   const { data: categories } = trpc.shop.getCategories.useQuery();
   const { data: products, isLoading } = trpc.shop.getProducts.useQuery({
@@ -78,6 +78,9 @@ export default function ShopPage() {
   const handleBuyNow = (product: any) => {
     const qty = quantities[product.id] ?? 1;
     const { main } = parseProductImages(product.imageUrl);
+    // Limpar o carrinho antes de "Comprar Agora" garante que os dados (como o estoque) sejam os mais recentes
+    clearCart();
+    
     addItem({
       productId: product.id,
       name: product.name,

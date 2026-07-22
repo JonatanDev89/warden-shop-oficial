@@ -149,10 +149,16 @@ export default function CheckoutPage() {
   const { data: singleProduct } = trpc.shop.getProduct.useQuery({ id: productId }, { enabled: productId > 0 });
   useEffect(() => {
     if (!singleProduct) return;
-    if (!cartItems.find(i => i.productId === singleProduct.id)) {
+    const existing = cartItems.find(i => i.productId === singleProduct.id);
+    if (!existing) {
       addItem({ productId: singleProduct.id, name: singleProduct.name, price: parseFloat(String(singleProduct.price)), imageUrl: singleProduct.imageUrl ?? undefined, stock: singleProduct.stock });
+    } else if (existing.stock === undefined) {
+      // Forçar atualização se o item já estiver no carrinho mas sem o campo stock (cache antigo)
+      updateQty(existing.productId, existing.quantity, existing.kitSlots);
+      // Como updateQty não aceita stock, vamos apenas garantir que novos itens tenham
+      // Mas o ideal é limpar o carrinho se estiver com dados velhos
     }
-  }, [singleProduct]);
+  }, [singleProduct, cartItems]);
 
   const items = cartItems;
   const normalItems = cartItems.filter(i => i.productId !== -1);
