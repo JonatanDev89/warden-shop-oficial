@@ -150,7 +150,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (!singleProduct) return;
     if (!cartItems.find(i => i.productId === singleProduct.id)) {
-      addItem({ productId: singleProduct.id, name: singleProduct.name, price: parseFloat(String(singleProduct.price)), imageUrl: singleProduct.imageUrl ?? undefined });
+      addItem({ productId: singleProduct.id, name: singleProduct.name, price: parseFloat(String(singleProduct.price)), imageUrl: singleProduct.imageUrl ?? undefined, stock: singleProduct.stock });
     }
   }, [singleProduct]);
 
