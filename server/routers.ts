@@ -189,11 +189,34 @@ const shopRouter = router({
       // 2. Processar slots do kit
       let kitSummary = "";
       if (hasKitSlots) {
+        // Cache de itens de kit para evitar múltiplas queries e resolver itens configuráveis
+        const allKitItems = await getKitItems(true);
+
         for (const s of input.slots!) {
-          const kitItem = await getKitItemByMinecraftId(s.minecraftId);
+          // Tenta encontrar o item pelo ID direto ou dentro das configurações de itens configuráveis (ovos, poções, etc)
+          let kitItem = allKitItems.find(ki => ki.minecraftId === s.minecraftId);
+
+          if (!kitItem) {
+            // Se não encontrou pelo ID direto, procura nos itens que têm opções configuráveis
+            kitItem = allKitItems.find(ki => {
+              if (!ki.itemConfig) return false;
+              try {
+                const cfg = JSON.parse(ki.itemConfig);
+                if (cfg && Array.isArray(cfg.options)) {
+                  return cfg.options.some((opt: any) => opt.id === s.minecraftId);
+                }
+                return false;
+              } catch {
+                return false;
+              }
+            });
+          }
+
           if (!kitItem) {
             throw new TRPCError({ code: "NOT_FOUND", message: `Item de kit ${s.name} não encontrado.` });
           }
+
+          // Se for um item configurável, o estoque é gerenciado pelo item "pai"
           if (kitItem.stock !== null && kitItem.stock !== -1 && s.quantity > kitItem.stock) {
             throw new TRPCError({ code: "BAD_REQUEST", message: `Estoque insuficiente para o item de kit ${s.name}. Disponível: ${kitItem.stock}` });
           }
@@ -285,8 +308,24 @@ const shopRouter = router({
 
       // Decrementar estoque dos itens de kit
       if (hasKitSlots) {
+        const allKitItems = await getKitItems(true);
         for (const s of input.slots!) {
-          await decrementKitItemStock(s.minecraftId, s.quantity);
+          let kitItem = allKitItems.find(ki => ki.minecraftId === s.minecraftId);
+          
+          // Se não for o item pai, busca o pai para decrementar o estoque dele
+          if (!kitItem) {
+            kitItem = allKitItems.find(ki => {
+              if (!ki.itemConfig) return false;
+              try {
+                const cfg = JSON.parse(ki.itemConfig);
+                return cfg && Array.isArray(cfg.options) && cfg.options.some((opt: any) => opt.id === s.minecraftId);
+              } catch { return false; }
+            });
+          }
+
+          if (kitItem) {
+            await decrementKitItemStock(kitItem.minecraftId, s.quantity);
+          }
         }
       }
 
