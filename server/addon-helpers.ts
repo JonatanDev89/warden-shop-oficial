@@ -74,6 +74,12 @@ export async function markOrderAsDelivered(orderId: number) {
   if (!db) return false;
 
   try {
+    // Marcar todos os itens do pedido como entregues
+    await db
+      .update(orderItems)
+      .set({ delivered: true })
+      .where(eq(orderItems.orderId, orderId));
+
     await db
       .update(orders)
       .set({ status: "delivered", updatedAt: new Date() })

@@ -303,16 +303,18 @@ async function startServer() {
   // Marcar pedido como entregue
   app.post('/api/addon/mark-delivered', async (req, res) => {
     try {
-      const { apiKey, orderId } = req.body;
-      if (!apiKey || !orderId) {
-        return res.status(400).json({ error: 'API Key and orderId required' });
+      const { apiKey } = req.body;
+      const orderId = Number(req.body.orderId);
+      
+      if (!apiKey || isNaN(orderId)) {
+        return res.status(400).json({ error: 'API Key and valid orderId required' });
       }
       
       // Validar API Key
       const crypto = await import('crypto');
       const { getDb } = await import('../db');
-      const { apiKeys, orders } = await import('../../drizzle/schema');
-      const { eq } = await import('drizzle-orm');
+      const { apiKeys, orders, orderItems } = await import('../../drizzle/schema');
+      const { eq, and } = await import('drizzle-orm');
       
       const db = await getDb();
       if (!db) {
@@ -330,27 +332,19 @@ async function startServer() {
       // Marcar todos os orderItems associados a este pedido como entregues
       await db.update(orderItems).set({ delivered: true }).where(eq(orderItems.orderId, orderId));
 
-      // Verificar se todos os orderItems do pedido foram entregues
-      const pendingItems = await db.select({ id: orderItems.id }).from(orderItems).where(
-        and(
-          eq(orderItems.orderId, orderId),
-          eq(orderItems.delivered, false)
-        )
-      );
-
-      // Se não há mais items pendentes, marca o pedido como delivered
-      if (pendingItems.length === 0) {
-        await db.update(orders).set({ status: 'delivered', updatedAt: new Date() }).where(eq(orders.id, orderId));
-        
-        // Buscar dados completos do pedido para enviar comprovante e notificação
-        const { getOrderWithItems } = await import('../db');
-        const orderWithItems = await getOrderWithItems(orderId);
-        
-        if (orderWithItems) {
-          const { sendDeliveryReceipt, notifyOrderDelivered } = await import('../discord-webhooks');
-          await notifyOrderDelivered(orderWithItems);
-          await sendDeliveryReceipt(orderWithItems);
-        }
+      // Marcar o pedido como entregue
+      await db.update(orders).set({ status: 'delivered', updatedAt: new Date() }).where(eq(orders.id, orderId));
+      
+      // Buscar dados completos do pedido para enviar comprovante e notificação
+      const { getOrderWithItems } = await import('../db');
+      const orderWithItems = await getOrderWithItems(orderId);
+      
+      if (orderWithItems) {
+        const { sendDeliveryReceipt, notifyOrderDelivered } = await import('../discord-webhooks');
+        // Garantir que o status esteja correto no objeto enviado ao webhook
+        const orderToNotify = { ...orderWithItems, status: 'delivered' as const };
+        await notifyOrderDelivered(orderToNotify);
+        await sendDeliveryReceipt(orderToNotify);
       }
       
       return res.json({ success: true, message: 'Order marked as delivered' });
@@ -421,9 +415,11 @@ async function startServer() {
   // Marcar item individual como entregue
   app.post('/api/addon/mark-item-delivered', async (req, res) => {
     try {
-      const { apiKey, itemId } = req.body;
-      if (!apiKey || !itemId) {
-        return res.status(400).json({ error: 'API Key and itemId required' });
+      const { apiKey } = req.body;
+      const itemId = Number(req.body.itemId);
+      
+      if (!apiKey || isNaN(itemId)) {
+        return res.status(400).json({ error: 'API Key and valid itemId required' });
       }
       
       // Validar API Key

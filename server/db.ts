@@ -1137,9 +1137,8 @@ export async function markOrderItemDelivered(itemId: number) {
       // Enviar webhooks de entrega
       console.log(`[DB] Enviando webhooks de entrega para pedido ${item[0].orderId}`);
       const { notifyOrderDelivered, sendDeliveryReceipt } = await import("./discord-webhooks");
-      const { getOrderWithItems } = await import("./db");
       
-      // Buscar pedido completo com itens
+      // Buscar pedido completo com itens (usando a função local)
       const orderWithItems = await getOrderWithItems(item[0].orderId);
       
       if (orderWithItems) {
