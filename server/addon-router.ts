@@ -19,7 +19,7 @@ import crypto from "crypto";
  * Compara o hash SHA-256 da chave fornecida com as chaves armazenadas
  */
 async function validateAddonApiKey(apiKey: string): Promise<boolean> {
-  if (!apiKey || !apiKey.startsWith("warden_")) {
+  if (!apiKey || (!apiKey.startsWith("warden_") && !apiKey.startsWith("wsk_"))) {
     return false;
   }
 
