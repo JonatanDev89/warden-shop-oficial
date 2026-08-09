@@ -461,9 +461,13 @@ export async function decrementKitItemStock(minecraftId: string, quantity: numbe
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
 
+  // Só decrementa se o estoque não for ilimitado (-1)
   await db.update(kitItems)
     .set({ stock: sql`${kitItems.stock} - ${quantity}` })
-    .where(eq(kitItems.minecraftId, minecraftId));
+    .where(and(
+      eq(kitItems.minecraftId, minecraftId),
+      sql`${kitItems.stock} <> -1`
+    ));
 }
 
 export async function countUserOrders(nickname: string) {
@@ -990,6 +994,8 @@ export async function runMigrations() {
     
     // ─── Coluna stock para Kit Items (controle de estoque) ──────────────────────
     await db.execute(sql`ALTER TABLE "kit_items" ADD COLUMN IF NOT EXISTS "stock" integer NOT NULL DEFAULT -1`);
+    // Resetar estoques que ficaram negativos devido ao bug anterior para ilimitado (-1)
+    await db.execute(sql`UPDATE "kit_items" SET "stock" = -1 WHERE "stock" < -1`);
 
     // ─── Novas colunas de Badge para Kit Items ────────────────────────────────
     await db.execute(sql`ALTER TABLE "kit_items" ADD COLUMN IF NOT EXISTS "badgeText" varchar(64)`);
