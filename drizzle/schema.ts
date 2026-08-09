@@ -225,6 +225,7 @@ export const kitItems = pgTable("kit_items", {
   // Book:  { type:"book", enchants:[{id,name,maxLevel,price}] }
   itemConfig: text("itemConfig"),
   // Selo promocional (badge/label)
+  stock: integer("stock").default(-1).notNull(),              // -1 = ilimitado, 0+ = estoque controlado
   badgeText: varchar("badgeText", { length: 64 }), // ex: "10% OFF", "PROMO", "NOVO"
   badgeColor: varchar("badgeColor", { length: 7 }).default("#FF6B6B"), // cor hex do selo
   badgeTextColor: varchar("badgeTextColor", { length: 7 }).default("#FFFFFF"), // cor do texto do selo

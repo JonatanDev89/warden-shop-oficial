@@ -721,6 +721,7 @@ export async function upsertKitItem(data: {
   minecraftId: string;
   name: string;
   price: string;
+  stock?: number;
   minPerSlot?: number;
   maxPerSlot?: number;
   pricePerUnit?: boolean;
@@ -742,12 +743,13 @@ export async function upsertKitItem(data: {
 
   const query = `
     INSERT INTO "kit_items" (
-      "minecraftId", "name", "price", "minPerSlot", "maxPerSlot", 
+      "minecraftId", "name", "price", "stock", "minPerSlot", "maxPerSlot", 
       "pricePerUnit", "imageUrl", "itemConfig", "active", "badgeText", "badgeColor", "badgeTextColor", "badgeEnabled", "updatedAt"
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW())
     ON CONFLICT ("minecraftId") DO UPDATE SET
       "name" = EXCLUDED."name",
       "price" = EXCLUDED."price",
+      "stock" = EXCLUDED."stock",
       "minPerSlot" = EXCLUDED."minPerSlot",
       "maxPerSlot" = EXCLUDED."maxPerSlot",
       "pricePerUnit" = EXCLUDED."pricePerUnit",
@@ -765,6 +767,7 @@ export async function upsertKitItem(data: {
     data.minecraftId,
     data.name,
     data.price,
+    Number(data.stock ?? -1),
     Number(data.minPerSlot ?? 1),
     Number(data.maxPerSlot ?? 64),
     Boolean(data.pricePerUnit ?? false),
@@ -985,6 +988,9 @@ export async function runMigrations() {
     await db.execute(sql`ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "discountBadge" varchar(64)`);
     await db.execute(sql`ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "showPixPrice" boolean NOT NULL DEFAULT true`);
     
+    // ─── Coluna stock para Kit Items (controle de estoque) ──────────────────────
+    await db.execute(sql`ALTER TABLE "kit_items" ADD COLUMN IF NOT EXISTS "stock" integer NOT NULL DEFAULT -1`);
+
     // ─── Novas colunas de Badge para Kit Items ────────────────────────────────
     await db.execute(sql`ALTER TABLE "kit_items" ADD COLUMN IF NOT EXISTS "badgeText" varchar(64)`);
     await db.execute(sql`ALTER TABLE "kit_items" ADD COLUMN IF NOT EXISTS "badgeColor" varchar(7) DEFAULT '#FF6B6B'`);

@@ -819,6 +819,7 @@ const adminRouter = router({
       minecraftId: z.string().min(1),
       name: z.string().min(1),
       price: z.string(),
+      stock: z.number().optional(),
       minPerSlot: z.number().optional(),
       maxPerSlot: z.number().optional(),
       pricePerUnit: z.boolean().optional(),
@@ -836,6 +837,7 @@ const adminRouter = router({
       // Converter undefined e strings vazias para null
       const data = {
         ...input,
+        stock: input.stock ?? -1,
         minPerSlot: input.minPerSlot ?? 1,
         maxPerSlot: input.maxPerSlot ?? 64,
         pricePerUnit: !!input.pricePerUnit,
