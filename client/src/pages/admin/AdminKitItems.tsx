@@ -47,10 +47,11 @@ import {
   type ToolEnchantOption,
   type GenericOption,
   type PotionOption,
+  type PotionType,
 } from "@/lib/kitEnchants";
 import { getItemTexture, getItemTextureFallback, getGenericFallback } from "@/lib/minecraftTextures";
 
-type KitItem = NonNullable<ReturnType<typeof trpc.admin.getKitItems.useQuery>["data"]>[0];
+type KitItem = Record<string, any> & { minecraftId: string; name: string };
 type ConfigType = "none" | "armor" | "book" | "tool" | "egg" | "potion" | "trim";
 
 type KitItemForm = {
@@ -186,6 +187,8 @@ function parseFormFromItem(item: KitItem): KitItemForm {
     bookUseFixedPrice: false,
     bookFixedPrice: "0",
     toolEnchants: [],
+    toolPriceFull: "0",
+    toolEnchantsFull: [],
     eggOptions: [],
     potionOptions: [],
     trimOptions: [],

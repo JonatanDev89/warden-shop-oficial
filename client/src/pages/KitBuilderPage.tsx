@@ -44,7 +44,7 @@ type PendingConfig =
   | { type: "potion"; item: KitItem }
   | { type: "trim"; item: KitItem };
 
-type KitItem = NonNullable<ReturnType<typeof trpc.shop.getKitItems.useQuery>["data"]>[0];
+type KitItem = Record<string, any> & { minecraftId: string; name: string };
 
 export default function KitBuilderPage() {
   const [, navigate] = useLocation();

@@ -71,7 +71,7 @@ const emptyForm: ProductForm = {
   showPixPrice: true,
 };
 
-type Product = NonNullable<ReturnType<typeof trpc.admin.getProducts.useQuery>["data"]>[0];
+type Product = Record<string, any> & { id: number; name: string };
 
 function SortableProduct({
   product,
@@ -209,7 +209,7 @@ export default function AdminProducts() {
     setDialogOpen(true);
   };
 
-  const openEdit = (p: NonNullable<typeof products>[0]) => {
+  const openEdit = (p: Product) => {
     setEditingId(p.id);
     const kitArr: string[] = (() => {
       try { return p.kitContents ? JSON.parse(p.kitContents) : []; } catch { return []; }

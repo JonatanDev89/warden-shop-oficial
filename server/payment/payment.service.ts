@@ -82,7 +82,6 @@ export async function initiatePayment(orderNumber: string): Promise<{
     expectedTotal,
     items: mpItems,
     payerEmail: order.email,
-    payerName: order.minecraftNickname,
   });
 
   await savePreferenceId(orderNumber, result.preferenceId);
@@ -147,7 +146,7 @@ export async function processPaymentUpdate(
   const { externalReference: orderNumber, status, statusDetail, paidAmount } = verified;
 
   if (!orderNumber) {
-    logger.warn("payment.no_external_reference", { mpPaymentId });
+    log.warn("payment.no_external_reference", { mpPaymentId });
     return { action: "skipped", orderNumber: "", reason: "external_reference ausente" };
   }
 

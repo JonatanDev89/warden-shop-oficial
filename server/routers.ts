@@ -59,6 +59,7 @@ import {
   decrementProductStock,
   decrementKitItemStock,
   getKitItemByMinecraftId,
+  countUserOrders,
 } from "./db";
 import { initiatePayment, initiatePixPayment } from "./payment/payment.service";
 import { getPendingOrdersForAddon } from "./addon-helpers";

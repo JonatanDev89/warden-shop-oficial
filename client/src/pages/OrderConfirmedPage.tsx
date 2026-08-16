@@ -86,7 +86,7 @@ export default function OrderConfirmedPage() {
   const paymentStatus = orderStatus?.paymentStatus ?? "pending";
   const isPaid = paymentStatus === "approved";
   const isFailed = paymentStatus === "rejected" || paymentStatus === "cancelled"
-    || paymentStatus === "refunded" || paymentStatus === "charged_back";
+    || paymentStatus === "refunded";
   const isPending = !isPaid && !isFailed;
   const isPolling = isPending && shouldPoll;
 

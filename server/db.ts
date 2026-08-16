@@ -35,7 +35,6 @@ export async function getDb() {
       const pool = new Pool({
         connectionString: process.env.DATABASE_URL,
         ssl: { rejectUnauthorized: false },
-        family: 4,
       });
       // Test connection
       pool.on("error", (err) => console.error("[Database] Pool error:", err.message));
@@ -145,8 +144,8 @@ export async function getCategoryById(id: number) {
 export async function createCategory(data: { name: string; description?: string; imageUrl?: string; showCouponDiscount?: boolean; overridePrice?: string | null; overridePriceEnabled?: boolean }) {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
-  const result = await db.insert(categories).values(data);
-  return result[0];
+  const [created] = await db.insert(categories).values(data).returning();
+  return created;
 }
 
 export async function updateCategory(id: number, data: { name?: string; description?: string; imageUrl?: string; showCouponDiscount?: boolean; overridePrice?: string | null; overridePriceEnabled?: boolean }) {

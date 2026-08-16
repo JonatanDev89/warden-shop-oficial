@@ -1,4 +1,5 @@
 import { trpc } from "@/lib/trpc";
+import { safeStorage } from "@/lib/storage";
 import { Link, useSearch, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -154,7 +155,7 @@ export default function CheckoutPage() {
       addItem({ productId: singleProduct.id, name: singleProduct.name, price: parseFloat(String(singleProduct.price)), imageUrl: singleProduct.imageUrl ?? undefined, stock: singleProduct.stock });
     } else if (existing.stock === undefined) {
       // Forçar atualização se o item já estiver no carrinho mas sem o campo stock (cache antigo)
-      updateQty(existing.productId, existing.quantity, existing.kitSlots);
+      updateQty(existing.productId, existing.quantity);
       // Como updateQty não aceita stock, vamos apenas garantir que novos itens tenham
       // Mas o ideal é limpar o carrinho se estiver com dados velhos
     }
@@ -278,7 +279,7 @@ export default function CheckoutPage() {
         </h1>
 
         {/* ── PIX / Confirmado ── */}
-        {(step === "pix" || step === "confirmed") && (
+        {(step === "generating" || step === "pix" || step === "confirmed") && (
           <div className="max-w-md mx-auto">
             {step === "generating" ? (
               <div className="rounded-2xl bg-card border border-border p-8 text-center space-y-4">
@@ -430,16 +431,16 @@ export default function CheckoutPage() {
                       </div>
                       {/* Controles */}
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <button type="button" onClick={() => updateQty(item.productId, item.quantity - 1, item.kitSlots)}
+                        <button type="button" onClick={() => updateQty(item.productId, item.quantity - 1)}
                           className="h-7 w-7 rounded-full border border-border bg-muted flex items-center justify-center hover:border-primary/50 transition-colors">
                           <Minus className="h-3 w-3" />
                         </button>
                         <span className="w-6 text-center text-sm font-semibold text-foreground">{item.quantity}</span>
-                        <button type="button" onClick={() => updateQty(item.productId, item.quantity + 1, item.kitSlots)}
+                        <button type="button" onClick={() => updateQty(item.productId, item.quantity + 1)}
                           className="h-7 w-7 rounded-full border border-border bg-muted flex items-center justify-center hover:border-primary/50 transition-colors">
                           <Plus className="h-3 w-3" />
                         </button>
-                        <button type="button" onClick={() => removeItem(item.productId, item.kitSlots)}
+                        <button type="button" onClick={() => removeItem(item.productId)}
                           className="h-7 w-7 rounded-full bg-destructive/10 text-destructive flex items-center justify-center hover:bg-destructive/20 transition-colors">
                           <X className="h-3 w-3" />
                         </button>
