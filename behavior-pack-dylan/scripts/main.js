@@ -346,6 +346,25 @@ class WardenShop {
         });
     }
 
+    /*
+       Prepara comandos repetidos de kits baseados em estrutura.
+       Executar `structure load ... ~ ~ ~` duas vezes no mesmo ponto
+       sobrescreve a primeira estrutura. Para cada unidade adicional,
+       deslocamos a estrutura 10 blocos no eixo X. Comandos normais
+       continuam sendo executados sem alteração.
+    */
+    prepareCommandForDelivery(command, iteration) {
+        if (iteration === 0 || !/\bstructure\s+load\b/i.test(command)) {
+            return command;
+        }
+
+        const offset = iteration * 10;
+        return command.replace(
+            /(\bstructure\s+load\s+\S+\s+)~(\s+~\s+~)/i,
+            `$1~${offset}$2`
+        );
+    }
+
     /* ── Item normal: executa comandos do produto ── */
     async deliverItem(player, item) {
         try {
@@ -359,7 +378,8 @@ class WardenShop {
             for (let i = 0; i < quantity; i++) {
                 for (const command of commands) {
                     try {
-                        world.getDimension('overworld').runCommand(command.replace(/{player}/g, player.name));
+                        const preparedCommand = this.prepareCommandForDelivery(command, i);
+                        world.getDimension('overworld').runCommand(preparedCommand.replace(/{player}/g, player.name));
                         totalExecuted++;
                     } catch (_) {}
                 }
