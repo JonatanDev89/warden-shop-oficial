@@ -178,12 +178,16 @@ const shopRouter = router({
 
           const price = parseFloat(String(product.price));
           subtotal += price * item.quantity;
-          orderItemsToCreate.push({
-            productId: product.id,
-            productName: product.name,
-            quantity: item.quantity,
-            unitPrice: price.toFixed(2),
-          });
+          // Cada unidade precisa ser uma linha própria para o addon mostrar
+          // um resgate separado e marcar cada kit individualmente como entregue.
+          for (let unit = 0; unit < item.quantity; unit++) {
+            orderItemsToCreate.push({
+              productId: product.id,
+              productName: product.name,
+              quantity: 1,
+              unitPrice: price.toFixed(2),
+            });
+          }
         }
       }
 
