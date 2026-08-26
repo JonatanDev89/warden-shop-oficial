@@ -11,6 +11,7 @@ import { serveStatic, setupVite } from "./vite";
 import { normalizePathname } from "./url-normalization";
 import { runMigrations } from "../db";
 import { handleMpWebhook } from "../payment/webhook.controller";
+import { findPotionOption, getPotionMetadata } from "../addon-potions";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -253,6 +254,8 @@ async function startServer() {
           const configLabel = match[5] ?? null;
           const minecraftId = match[4]!;
           let enchants: { id: string; level: number }[] = [];
+          const potionOption = findPotionOption(allKitItems, minecraftId);
+          const potion = getPotionMetadata(minecraftId, configLabel, potionOption);
 
           // Reconstruct enchants for Full/God tiers from itemConfig
           if (configLabel === "Full" || configLabel === "God") {
@@ -281,6 +284,7 @@ async function startServer() {
             minecraftId: match[4]!,
             configLabel,
             enchants,
+            ...(potion ? { potion } : {}),
           };
         }).filter(Boolean);
 

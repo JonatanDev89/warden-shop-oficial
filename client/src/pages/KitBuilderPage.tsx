@@ -272,6 +272,21 @@ export default function KitBuilderPage() {
     );
     const next = [...slots];
     const unitPrice = parseFloat(opt.price) || parseFloat(String(pendingConfig.item.price)) || 0;
+    const optionId = String(opt.id).toLowerCase();
+    const potionDeliveryType = optionId.startsWith("splash_")
+      ? "splash"
+      : optionId.startsWith("lingering_")
+        ? "lingering"
+        : "normal";
+    const potionEffectId = optionId
+      .replace(/^splash_/, "")
+      .replace(/^lingering_/, "")
+      .replace(/^potion_/, "")
+      .replace(/_potion$/, "");
+    const potionData = Number((opt as any).data);
+    const potionConfigLabel = cfg.type === "potion"
+      ? `potion:${potionDeliveryType}:${potionEffectId}:${(opt as any).level || "I"}${Number.isInteger(potionData) ? `:${potionData}` : ""}`
+      : undefined;
     next[selectedSlot] = {
       minecraftId: opt.id,
       name: opt.name,
@@ -279,7 +294,7 @@ export default function KitBuilderPage() {
       unitPrice: unitPrice.toString(),
       pricePerUnit: true,
       imageUrl: (opt as any).imageUrl || undefined,
-      configLabel: undefined,
+      configLabel: potionConfigLabel,
       displayLabel: (opt as any).level ? `Nível ${(opt as any).level}` : undefined,
     };
     setSlots(next);

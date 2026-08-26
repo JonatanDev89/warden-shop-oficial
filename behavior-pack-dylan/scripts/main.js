@@ -5,6 +5,57 @@ import { ActionFormData, MessageFormData } from '@minecraft/server-ui';
 const WARDEN_API_BASE = 'https://warden-shop-oficial.onrender.com/api/addon';
 const API_KEY = 'wsk_b08777ccc4637a0ee6ebfdcc269f56b4ffc2c69377dc02a28ab028c480db4575119cb4add260eb50c14b8b580ba01253';
 
+// No Bedrock, poções usam o item base + data value; IDs como
+// `regeneration_potion` são apenas identificadores usados pela loja.
+const POTION_DATA_BY_EFFECT = {
+    regeneration: 28,
+    swiftness: 14,
+    fire_resistance: 12,
+    healing: 21,
+    night_vision: 5,
+    strength: 31,
+    leaping: 9,
+    invisibility: 7,
+    water_breathing: 19,
+    poison: 25,
+    weakness: 34,
+    slowness: 17,
+    harming: 23,
+    slow_falling: 40,
+    turtle_master: 37,
+    wind_charging: 43,
+    weaving: 44,
+    oozing: 45,
+    infestation: 46,
+};
+
+function getPotionMetadata(slot) {
+    if (slot?.potion?.itemId && Number.isInteger(Number(slot.potion.data))) {
+        return {
+            itemId: slot.potion.itemId,
+            data: Number(slot.potion.data),
+        };
+    }
+
+    const rawId = String(slot?.minecraftId ?? '').toLowerCase().replace(/^minecraft:/, '');
+    let itemId = 'potion';
+    let effectId = rawId;
+
+    if (rawId.startsWith('splash_')) {
+        itemId = 'splash_potion';
+        effectId = rawId.slice('splash_'.length);
+    } else if (rawId.startsWith('lingering_')) {
+        itemId = 'lingering_potion';
+        effectId = rawId.slice('lingering_'.length);
+    }
+
+    effectId = effectId.replace(/^potion_/, '').replace(/_potion$/, '');
+    const data = POTION_DATA_BY_EFFECT[effectId];
+    if (!Number.isInteger(data)) return null;
+
+    return { itemId, data };
+}
+
 class WardenShop {
     constructor() {
         this.processingPlayers = new Set();
@@ -245,9 +296,9 @@ class WardenShop {
         this.processingPlayers.add(player.name);
 
         try {
-            const success = await this.deliverItem(player, item);
-            if (success) await this.markItemAsDelivered(item.itemId);
-            await this.showDeliveryResultScreen(player, success ? 1 : 0, success ? 0 : 1);
+            const delivered = await this.deliverItem(player, item);
+            const confirmed = delivered ? await this.markItemAsDelivered(item.itemId) : false;
+            await this.showDeliveryResultScreen(player, confirmed ? 1 : 0, confirmed ? 0 : 1);
         } finally {
             this.processingPlayers.delete(player.name);
         }
@@ -258,9 +309,9 @@ class WardenShop {
         this.processingPlayers.add(player.name);
 
         try {
-            const success = await this.deliverKitOrder(player, kit);
-            if (success) await this.markOrderAsDelivered(kit.id);
-            await this.showDeliveryResultScreen(player, success ? 1 : 0, success ? 0 : 1);
+            const delivered = await this.deliverKitOrder(player, kit);
+            const confirmed = delivered ? await this.markOrderAsDelivered(kit.id) : false;
+            await this.showDeliveryResultScreen(player, confirmed ? 1 : 0, confirmed ? 0 : 1);
         } finally {
             this.processingPlayers.delete(player.name);
         }
@@ -297,10 +348,23 @@ class WardenShop {
                             for (const slot of (order.kitSlots ?? [])) {
                                 if (!slot || slot.slot < 0 || slot.slot >= container.size) continue;
                                 try {
+                                    const quantity = Math.max(1, Number(slot.quantity) || 1);
+                                    const potion = getPotionMetadata(slot);
+
+                                    if (potion) {
+                                        // ItemStack não aceita data value no construtor. O comando
+                                        // Bedrock cria a poção correta diretamente no slot da shulker.
+                                        dim.runCommand(
+                                            `replaceitem block ${pos.x} ${pos.y} ${pos.z} slot.container ${slot.slot} ${potion.itemId} ${quantity} ${potion.data}`
+                                        );
+                                        placed++;
+                                        continue;
+                                    }
+
                                     const itemId = slot.minecraftId.includes(':')
                                         ? slot.minecraftId
                                         : `minecraft:${slot.minecraftId}`;
-                                    const item = new ItemStack(itemId, Math.max(1, slot.quantity));
+                                    const item = new ItemStack(itemId, quantity);
 
                                     // Apply enchantments if present
                                     if (slot.enchants?.length > 0) {
@@ -394,8 +458,12 @@ class WardenShop {
             request.method = HttpRequestMethod.Post;
             request.headers = [new HttpHeader('Content-Type', 'application/json')];
             request.body = JSON.stringify({ apiKey: API_KEY, itemId });
-            await http.request(request);
-        } catch (_) {}
+            const response = await http.request(request);
+            return response.status === 200;
+        } catch (e) {
+            console.warn(`[WardenShop] Falha ao marcar item ${itemId}:`, e);
+            return false;
+        }
     }
 
     async markOrderAsDelivered(orderId) {
@@ -404,8 +472,16 @@ class WardenShop {
             request.method = HttpRequestMethod.Post;
             request.headers = [new HttpHeader('Content-Type', 'application/json')];
             request.body = JSON.stringify({ apiKey: API_KEY, orderId });
-            await http.request(request);
-        } catch (_) {}
+            const response = await http.request(request);
+            if (response.status !== 200) {
+                console.warn(`[WardenShop] API recusou a confirmação do pedido ${orderId}: ${response.status}`);
+                return false;
+            }
+            return true;
+        } catch (e) {
+            console.warn(`[WardenShop] Falha ao marcar pedido ${orderId}:`, e);
+            return false;
+        }
     }
 
     async showDeliveryResultScreen(player, delivered, failed) {

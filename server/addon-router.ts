@@ -13,6 +13,7 @@ import {
   updateOrderStatusForAddon,
 } from "./addon-helpers";
 import crypto from "crypto";
+import { findPotionOption, getPotionMetadata } from "./addon-potions";
 
 /**
  * Validar API Key do addon
@@ -354,6 +355,8 @@ export const addonRouter = router({
             if (!match) return null;
             const configLabel = match[5] ?? null;
             const minecraftId = match[4]!;
+            const potionOption = findPotionOption(allKitItems, minecraftId);
+            const potion = getPotionMetadata(minecraftId, configLabel, potionOption);
             
             let enchants: { id: string; level: number }[] = [];
             
@@ -387,6 +390,7 @@ export const addonRouter = router({
               unitPrice: parseFloat(item.unitPrice.toString()),
               configLabel,
               enchants,
+              ...(potion ? { potion } : {}),
             };
           }).filter(Boolean);
 
